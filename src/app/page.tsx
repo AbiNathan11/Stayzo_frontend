@@ -20,19 +20,10 @@ export default function LandingPage() {
           </div>
           
           <div className="hidden md:flex items-center space-x-8 text-[13px] font-bold tracking-widest uppercase text-gray-700">
-            <Link href="#" className="text-[#F26B27]">Home</Link>
-            <Link href="#" className="hover:text-[#F26B27] transition">Tenants</Link>
-            <Link href="#" className="hover:text-[#F26B27] transition">Owners</Link>
-            <Link href="#" className="hover:text-[#F26B27] transition">Pages</Link>
-            <Link href="#" className="hover:text-[#F26B27] transition">Contacts</Link>
-          </div>
-
-          <div className="hidden md:flex items-center space-x-5 text-gray-800">
-            <Facebook className="w-4 h-4 hover:text-[#F26B27] cursor-pointer transition" />
-            <Twitter className="w-4 h-4 hover:text-[#F26B27] cursor-pointer transition" />
-            <Instagram className="w-4 h-4 hover:text-[#F26B27] cursor-pointer transition" />
-            <div className="w-px h-4 bg-gray-300 mx-2"></div>
-            <Search className="w-4 h-4 hover:text-[#F26B27] cursor-pointer transition" />
+            <Link href="#" className="hover:text-[#F26B27] transition">How it works</Link>
+            <Link href="#" className="hover:text-[#F26B27] transition">Contact Us</Link>
+            <Link href="/auth" className="hover:text-[#F26B27] transition">Login</Link>
+            <Link href="#" className="bg-[#F26B27] hover:bg-[#E05A16] text-white px-6 py-3 transition tracking-widest uppercase shadow-md shadow-[#F26B27]/20 rounded-sm">I am a landlord</Link>
           </div>
 
           <div className="md:hidden">
