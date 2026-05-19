@@ -1,0 +1,42 @@
+"use client";
+
+import React from 'react';
+import Link from 'next/link';
+
+export default function TenantDashboard() {
+  const handleLogout = () => {
+    localStorage.removeItem('stayzo_token');
+    window.location.href = '/';
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FDF8F3] text-[#2D2D2D] font-sans selection:bg-[#F26B27] selection:text-white p-8">
+      <div className="max-w-7xl mx-auto pt-4">
+        <div className="flex justify-between items-center mb-16">
+          <Link href="/" className="text-4xl font-serif italic font-extrabold text-[#1A1A1A] hover:opacity-80 transition">
+            Stayzo.
+          </Link>
+          <div className="flex space-x-6 items-center">
+            <Link href="/" className="text-gray-500 hover:text-[#1A1A1A] font-bold text-sm tracking-widest uppercase transition">
+              Home
+            </Link>
+            <button onClick={handleLogout} className="bg-[#F26B27] text-white px-6 py-2 hover:bg-[#E05A16] font-bold text-sm tracking-widest uppercase transition shadow-md">
+              Logout
+            </button>
+          </div>
+        </div>
+        
+        <h1 className="text-4xl md:text-5xl font-serif font-extrabold text-[#1A1A1A] mb-4">Tenant Dashboard</h1>
+        <p className="text-gray-600 text-[17px] font-medium mb-12 max-w-lg">Welcome back! Here is an overview of your bookings, saved properties, and intelligent agreements.</p>
+
+        <div className="bg-white p-10 shadow-xl border-l-4 border-[#F26B27] max-w-3xl">
+          <h2 className="text-2xl font-extrabold text-[#1A1A1A] mb-4">No active bookings</h2>
+          <p className="text-gray-500 font-medium leading-relaxed mb-6">You haven't booked any premium properties yet. Head over to our search engine to start exploring the best places to live.</p>
+          <Link href="/" className="text-[#F26B27] font-bold uppercase tracking-widest text-sm hover:underline flex items-center">
+            Search Properties →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
