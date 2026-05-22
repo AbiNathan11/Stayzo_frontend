@@ -25,8 +25,8 @@ interface Listing {
 
 export default function SearchResultsPage() {
   // Panel Visibility States
-  const [showFilters, setShowFilters] = useState(true);
-  const [showMap, setShowMap] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   // Filter States
   const [propertyType, setPropertyType] = useState<'house' | 'apartment' | 'commercial' | 'land'>('house');
@@ -90,7 +90,32 @@ export default function SearchResultsPage() {
       price: "$3,975",
       image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
       lat: 100,
+      lat: 100,
       lng: 260
+    },
+    {
+      id: 5,
+      title: "Oceanview Retreat",
+      address: "100 Beachfront Ave, Miami, FL",
+      beds: 3,
+      baths: 2,
+      sqft: 1850,
+      price: "$4,200",
+      image: "https://images.unsplash.com/photo-1494526585095-c41746248156?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      lat: 120,
+      lng: 280
+    },
+    {
+      id: 6,
+      title: "The Glass House",
+      address: "555 Summit Way, Aspen, CO",
+      beds: 5,
+      baths: 6,
+      sqft: 5200,
+      price: "$9,500",
+      image: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      lat: 140,
+      lng: 300
     }
   ];
 
@@ -105,14 +130,20 @@ export default function SearchResultsPage() {
 
   const selectedProperty = listings.find(l => l.id === activePropertyId) || listings[0];
 
+  // Dynamically determine grid columns based on open panels
+  const openPanelsCount = (showFilters ? 1 : 0) + (showMap ? 1 : 0);
+  let gridColsClass = "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"; // 0 panels open
+  if (openPanelsCount === 1) gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"; // 1 panel open
+  if (openPanelsCount === 2) gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2"; // 2 panels open
+
   return (
-    <div className="min-h-screen bg-[#F5F7F8] text-[#2D2D2D] font-sans flex flex-col">
+    <div className="h-screen overflow-hidden pt-[68px] bg-[#F5F7F8] text-[#2D2D2D] font-sans flex flex-col">
       
       {/* Top Navbar Component */}
       <Navbar />
 
       {/* Main Content Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col lg:flex-row overflow-hidden shadow-sm">
         
         {/* Column 1: Filters (Left) */}
         <aside className={`bg-white border-r border-gray-100 overflow-y-auto shrink-0 select-none transition-all duration-300 ${
@@ -356,7 +387,7 @@ export default function SearchResultsPage() {
                 }`}
               >
                 <Map className="w-3.5 h-3.5" />
-                <span>{showMap ? 'Hide Map' : 'Show Map'}</span>
+                <span>Map</span>
               </button>
 
               {/* Sort selector dropdown */}
@@ -367,18 +398,16 @@ export default function SearchResultsPage() {
             </div>
           </div>
 
-          {/* Cards List */}
-          <div className="space-y-4">
+          {/* Cards Grid (Square shape) */}
+          <div className={`grid ${gridColsClass} gap-6`}>
             {listings.map((listing) => (
               <div 
                 key={listing.id}
                 onClick={() => setActivePropertyId(listing.id)}
-                className={`bg-white p-3.5 rounded-2xl flex flex-col sm:flex-row shadow-sm hover:shadow-md transition-all cursor-pointer border-2 ${
-                  activePropertyId === listing.id ? 'border-[#1A1A1A]' : 'border-transparent'
-                }`}
+                className="bg-white p-4 rounded-3xl flex flex-col border border-gray-100 hover:shadow-md transition-all cursor-pointer"
               >
                 {/* Image */}
-                <div className="w-full sm:w-[180px] h-[130px] rounded-xl overflow-hidden shrink-0 relative bg-gray-100">
+                <div className="w-full h-[220px] rounded-2xl overflow-hidden shrink-0 relative bg-gray-100 mb-4">
                   <img 
                     src={listing.image} 
                     alt={listing.title} 
@@ -387,13 +416,13 @@ export default function SearchResultsPage() {
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 pt-4 sm:pt-1 sm:pl-5 flex flex-col justify-between">
+                <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-lg text-gray-900 leading-tight">{listing.title}</h3>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-lg text-gray-900 leading-tight">{listing.title}</h3>
                       <button 
                         onClick={(e) => handleBookmarkToggle(listing.id, e)}
-                        className={`p-1.5 rounded-lg border transition ${
+                        className={`p-2 rounded-xl border transition shrink-0 ml-3 ${
                           bookmarkedIds.includes(listing.id) 
                             ? 'bg-[#1A1A1A]/10 border-transparent text-[#1A1A1A]' 
                             : 'bg-white border-gray-150 text-gray-400 hover:text-gray-600'
@@ -402,15 +431,15 @@ export default function SearchResultsPage() {
                         <Bookmark className={`w-4 h-4 ${bookmarkedIds.includes(listing.id) ? 'fill-[#1A1A1A]' : ''}`} />
                       </button>
                     </div>
-                    <div className="flex items-center text-gray-400 text-xs font-semibold mb-3">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 mr-1 shrink-0" />
+                    <div className="flex items-center text-gray-500 text-sm mb-4">
+                      <MapPin className="w-4 h-4 text-gray-400 mr-1.5 shrink-0" />
                       {listing.address}
                     </div>
                   </div>
 
                   {/* Specs & Price */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
-                    <div className="flex items-center space-x-4 text-gray-400 font-bold text-xs">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                    <div className="flex items-center space-x-4 text-gray-500 text-xs font-medium">
                       <span className="flex items-center">
                         <BedDouble className="w-4 h-4 text-gray-400 mr-1.5" />
                         {listing.beds}
@@ -421,11 +450,11 @@ export default function SearchResultsPage() {
                       </span>
                       <span className="flex items-center">
                         <Maximize2 className="w-4 h-4 text-gray-400 mr-1.5" />
-                        {listing.sqft.toLocaleString()} sqft
+                        {listing.sqft.toLocaleString()}
                       </span>
                     </div>
-                    <div className="text-[#1A1A1A] font-extrabold text-lg">
-                      {listing.price}<span className="text-xs text-gray-400 font-semibold">/month</span>
+                    <div className="text-[#1A1A1A] font-bold text-lg">
+                      {listing.price}<span className="text-xs text-gray-400 font-normal">/mo</span>
                     </div>
                   </div>
                 </div>

@@ -21,10 +21,14 @@ export default function Navbar() {
   const isSearchPage = pathname === '/search';
 
   return (
-    <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 md:px-6 pointer-events-none">
-      <nav className="w-full max-w-5xl bg-white/95 backdrop-blur-sm border border-gray-100 shadow-lg shadow-gray-200/20 py-3 md:py-3.5 px-6 md:px-8 rounded-full flex justify-between items-center pointer-events-auto transition-all">
+    <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none ${isSearchPage ? 'top-0' : 'top-6 px-4 md:px-6'}`}>
+      <nav className={`w-full bg-white/95 backdrop-blur-sm flex justify-between items-center pointer-events-auto transition-all ${
+        isSearchPage 
+          ? 'border-b border-gray-100 py-3 md:py-3.5 px-6 lg:px-8' 
+          : 'max-w-5xl border border-gray-100 shadow-lg shadow-gray-200/20 py-3 md:py-3.5 px-6 md:px-8 rounded-full'
+      }`}>
         
-        {/* Logo with clean vertical bars representing building/bricks */}
+        {/* Logo with optional icon */}
         <Link href="/" className="flex items-center space-x-2.5 group">
           <div className="flex items-end space-x-1 h-5">
             <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
@@ -35,25 +39,30 @@ export default function Navbar() {
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
         
-        {/* Center Links */}
-        <div className="hidden lg:flex items-center space-x-8 text-xs font-bold text-gray-500 uppercase tracking-wide">
-          <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
-          <Link href="/search" className={`${pathname === '/search' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Properties</Link>
-          <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">About</Link>
-          <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</Link>
-        </div>
-
-        {/* Right Actions */}
-        {isSearchPage ? (
-          <div className="flex items-center space-x-5">
-            <div className="relative hidden xl:block">
+        {/* Center Links or Search Bar */}
+        {!isSearchPage ? (
+          <div className="hidden lg:flex items-center space-x-8 text-xs font-bold text-gray-500 uppercase tracking-wide">
+            <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
+            <Link href="/search" className={`${pathname === '/search' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Properties</Link>
+            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">About</Link>
+            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</Link>
+          </div>
+        ) : (
+          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
+            <div className="relative w-full">
               <input 
                 type="text" 
-                placeholder="Search" 
-                className="bg-[#F5F7F8] text-xs font-semibold text-gray-700 pl-9 pr-4 py-2 w-48 rounded-full outline-none focus:ring-1 focus:ring-[#1A1A1A] transition"
+                placeholder="Search properties by location, type..." 
+                className="w-full bg-[#F5F7F8] border border-gray-150 text-sm font-semibold text-gray-700 pl-11 pr-4 py-2.5 rounded-full outline-none focus:ring-1 focus:ring-[#1A1A1A] transition shadow-inner"
               />
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3.5 top-2.5" />
+              <Search className="w-4 h-4 text-gray-400 absolute left-4 top-3" />
             </div>
+          </div>
+        )}
+
+        {/* Right Actions */}
+        {(isSearchPage && isLoggedIn) ? (
+          <div className="flex items-center space-x-5">
 
             <Bookmark className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />
             <Bell className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { 
@@ -10,8 +11,18 @@ import {
   Facebook, Twitter, Linkedin, Youtube
 } from 'lucide-react';
 
+const LOCATIONS = ['All Locations', 'Colombo', 'Kandy', 'Galle', 'Negombo', 'Jaffna', 'Matara'];
+const PROPERTY_TYPES = ['All Types', 'Apartment', 'House', 'Villa', 'Studio', 'Room', 'Commercial'];
+const BUDGETS = ['Any Budget', 'Under Rs.50,000', 'Rs.50,000 - Rs.100,000', 'Rs.100,000 - Rs.200,000', 'Rs.200,000 - Rs.500,000', 'Over Rs.500,000'];
+
 export default function LandingPage() {
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [location, setLocation] = useState('All Locations');
+  const [propertyType, setPropertyType] = useState('All Types');
+  const [budget, setBudget] = useState('Any Budget');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -20,6 +31,25 @@ export default function LandingPage() {
     }
   }, []);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (location !== 'All Locations') params.set('location', location);
+    if (propertyType !== 'All Types') params.set('type', propertyType);
+    if (budget !== 'Any Budget') params.set('budget', budget);
+    router.push(`/search?${params.toString()}`);
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white">
       
@@ -27,7 +57,7 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section with Map Background and Floating Card */}
-      <section className="relative w-full bg-white overflow-hidden pt-44 pb-28">
+      <section className="relative w-full bg-white pt-44 pb-28 z-40">
         
         {/* Static Map Background Photo (styled with gradient mask for legibility) */}
         <div className="absolute inset-0 z-0 select-none">
@@ -91,7 +121,7 @@ export default function LandingPage() {
         </div>
 
         {/* Content Container */}
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-20 flex flex-col items-center text-center">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-50 flex flex-col items-center text-center">
           
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl text-[#1A1A1A] mb-8 font-sans">
@@ -104,39 +134,91 @@ export default function LandingPage() {
             Take control of your housing journey by renting secure, premium, and high-yield real estate properties.
           </p>
 
-          {/* Search Bar Panel (exactly matching Brickwise search bar) */}
-          <div className="w-full max-w-3xl bg-white border border-gray-150 rounded-full p-2.5 shadow-xl flex flex-col sm:flex-row items-center mb-10 gap-3 sm:gap-0">
-            {/* Location */}
-            <div className="flex-1 w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Location</span>
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm font-extrabold text-[#1A1A1A]">All Locations</span>
-                <ChevronDown className="w-4 h-4 text-gray-400 ml-2" />
-              </div>
-            </div>
+          {/* Functional Search Bar */}
+          <div ref={searchRef} className="w-full max-w-3xl relative mb-10 z-50">
+            <div className="bg-white border border-gray-200 rounded-full p-2.5 shadow-xl flex flex-col sm:flex-row items-center gap-3 sm:gap-0 relative z-50">
 
-            {/* Property Type */}
-            <div className="flex-1 w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Property Type</span>
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm font-extrabold text-[#1A1A1A]">All Types</span>
-                <ChevronDown className="w-4 h-4 text-gray-400 ml-2" />
+              {/* Location Dropdown */}
+              <div className="relative flex-1 w-full">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === 'location' ? null : 'location')}
+                  className="w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start focus:outline-none"
+                >
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Location</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-sm font-extrabold text-[#1A1A1A]">{location}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${openDropdown === 'location' ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                {openDropdown === 'location' && (
+                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+                    {LOCATIONS.map(l => (
+                      <button key={l} onClick={() => { setLocation(l); setOpenDropdown(null); }}
+                        className={`w-full text-left px-5 py-3 text-sm font-semibold hover:bg-gray-50 transition ${location === l ? 'text-[#1A1A1A] font-extrabold bg-gray-50' : 'text-gray-600'}`}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Budget */}
-            <div className="flex-1 w-full px-6 py-2 flex flex-col items-start">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Budget</span>
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm font-extrabold text-[#1A1A1A]">$500 - $1200</span>
-                <ChevronDown className="w-4 h-4 text-gray-400 ml-2" />
+              {/* Property Type Dropdown */}
+              <div className="relative flex-1 w-full">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
+                  className="w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start focus:outline-none"
+                >
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Property Type</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-sm font-extrabold text-[#1A1A1A]">{propertyType}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${openDropdown === 'type' ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                {openDropdown === 'type' && (
+                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+                    {PROPERTY_TYPES.map(t => (
+                      <button key={t} onClick={() => { setPropertyType(t); setOpenDropdown(null); }}
+                        className={`w-full text-left px-5 py-3 text-sm font-semibold hover:bg-gray-50 transition ${propertyType === t ? 'text-[#1A1A1A] font-extrabold bg-gray-50' : 'text-gray-600'}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Black round search button */}
-            <Link href="/search" className="bg-[#1A1A1A] hover:bg-black w-14 h-14 rounded-full flex items-center justify-center text-white shadow-md transition shrink-0">
-              <Search className="w-5 h-5" />
-            </Link>
+              {/* Budget Dropdown */}
+              <div className="relative flex-1 w-full">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === 'budget' ? null : 'budget')}
+                  className="w-full px-6 py-2 flex flex-col items-start focus:outline-none"
+                >
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Budget</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-sm font-extrabold text-[#1A1A1A]">{budget}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${openDropdown === 'budget' ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                {openDropdown === 'budget' && (
+                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+                    {BUDGETS.map(b => (
+                      <button key={b} onClick={() => { setBudget(b); setOpenDropdown(null); }}
+                        className={`w-full text-left px-5 py-3 text-sm font-semibold hover:bg-gray-50 transition ${budget === b ? 'text-[#1A1A1A] font-extrabold bg-gray-50' : 'text-gray-600'}`}>
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Search Button */}
+              <button
+                onClick={handleSearch}
+                className="bg-[#1A1A1A] hover:bg-black w-14 h-14 rounded-full flex items-center justify-center text-white shadow-md transition shrink-0 active:scale-95"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+
+            </div>
           </div>
 
           {/* Removed floating card */}
@@ -448,10 +530,9 @@ export default function LandingPage() {
               <div className="pt-4">
                 <button 
                   type="submit"
-                  className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3 rounded-full flex items-center space-x-2.5 text-xs font-extrabold shadow-sm transition active:scale-95"
+                  className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3 rounded-full text-xs font-extrabold shadow-sm transition active:scale-95"
                 >
-                  <span className="text-[8px] transform translate-y-[0.5px]">▶</span>
-                  <span>Send a message</span>
+                  Send a message
                 </button>
               </div>
             </form>
