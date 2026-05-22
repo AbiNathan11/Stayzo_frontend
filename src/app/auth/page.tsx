@@ -64,10 +64,10 @@ export default function TenantAuth() {
       <header className="w-full bg-white border-b border-gray-100 py-4 px-6 sm:px-8 flex justify-between items-center z-50 shrink-0">
         <Link href="/" className="flex items-center space-x-2.5 group">
           <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
           </div>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
@@ -153,7 +153,7 @@ export default function TenantAuth() {
                       setLastName('');
                       setError('');
                     }}
-                    className="text-[#F26B27] hover:underline font-extrabold cursor-pointer"
+                    className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
                   >
                     {mode === 'login' ? 'Sign up' : 'Log in'}
                   </button>
@@ -171,7 +171,7 @@ export default function TenantAuth() {
               </button>
 
               <h2 className="text-3xl font-extrabold text-[#1A1A1A] mb-3 tracking-tight">Check your email</h2>
-              <div className="flex items-center space-x-2 text-[#F26B27] mb-8">
+              <div className="flex items-center space-x-2 text-[#1A1A1A] mb-8">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <p className="text-xs font-semibold text-gray-400">
                   We've sent a 6-digit code to <span className="font-extrabold text-[#1A1A1A] break-all">{email || 'your email'}</span>
@@ -204,7 +204,7 @@ export default function TenantAuth() {
               </form>
 
               <p className="text-center text-xs text-gray-400 font-semibold mt-8">
-                Didn't receive it? <button className="text-[#F26B27] hover:underline font-extrabold cursor-pointer">Resend code</button>
+                Didn't receive it? <button className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer">Resend code</button>
               </p>
             </div>
           )}
@@ -214,3 +214,4 @@ export default function TenantAuth() {
     </div>
   );
 }
+

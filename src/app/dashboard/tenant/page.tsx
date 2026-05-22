@@ -161,10 +161,10 @@ export default function TenantDashboard() {
         {/* Left Brand Logo */}
         <Link href="/" className="flex items-center space-x-2.5 group">
           <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
           </div>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
@@ -221,7 +221,7 @@ export default function TenantDashboard() {
                 <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Profile</h1>
                 <nav className="flex flex-col space-y-1.5">
                   <button className="flex items-center space-x-3.5 w-full px-4 py-3 rounded-2xl text-xs font-extrabold transition text-left bg-gray-100 text-gray-900 select-none">
-                    <div className="w-5 h-5 rounded-full bg-[#F26B27]/10 text-[#F26B27] flex items-center justify-center text-[10px] font-extrabold shrink-0 border border-[#F26B27]/10">
+                    <div className="w-5 h-5 rounded-full bg-[#1A1A1A]/10 text-[#1A1A1A] flex items-center justify-center text-[10px] font-extrabold shrink-0 border border-[#1A1A1A]/10">
                       {userInitial}
                     </div>
                     <span>About me</span>
@@ -261,7 +261,7 @@ export default function TenantDashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-extrabold text-xs text-gray-900 truncate mb-0.5">{chat.landlordName}</h4>
-                        <p className="text-[9px] font-bold text-[#F26B27] truncate mb-0.5">{chat.propertyName}</p>
+                        <p className="text-[9px] font-bold text-[#1A1A1A] truncate mb-0.5">{chat.propertyName}</p>
                         <p className="text-[10px] font-semibold text-gray-400 truncate">{chat.lastMessage}</p>
                       </div>
                     </button>
@@ -318,7 +318,7 @@ export default function TenantDashboard() {
                 
                 {/* Center Card: Big initials Avatar Card */}
                 <div className="w-full lg:w-[280px] bg-white border border-gray-200 rounded-3xl p-8 shadow-sm flex flex-col items-center justify-center text-center shrink-0">
-                  <div className="w-24 h-24 rounded-full bg-[#F26B27]/10 border border-[#F26B27]/20 flex items-center justify-center text-4xl font-extrabold text-[#F26B27] mb-4">
+                  <div className="w-24 h-24 rounded-full bg-[#1A1A1A]/10 border border-[#1A1A1A]/20 flex items-center justify-center text-4xl font-extrabold text-[#1A1A1A] mb-4">
                     {userInitial}
                   </div>
                   <h3 className="text-2xl font-extrabold text-gray-900 leading-tight">
@@ -367,7 +367,7 @@ export default function TenantDashboard() {
                 <div className="bg-white p-5 border-b border-gray-150 flex items-center justify-between shrink-0">
                   <div>
                     <h3 className="font-extrabold text-gray-900 text-sm">{activeChat.landlordName}</h3>
-                    <p className="text-[10px] font-bold text-[#F26B27]">{activeChat.propertyName}</p>
+                    <p className="text-[10px] font-bold text-[#1A1A1A]">{activeChat.propertyName}</p>
                   </div>
                 </div>
 
@@ -484,7 +484,7 @@ export default function TenantDashboard() {
                         </div>
 
                         <div className="pt-1 flex items-center justify-between">
-                          <div className="text-[#F26B27] font-extrabold text-base">
+                          <div className="text-[#1A1A1A] font-extrabold text-base">
                             {item.price}<span className="text-xs text-gray-400 font-semibold">/month</span>
                           </div>
                           <Link 
@@ -510,3 +510,4 @@ export default function TenantDashboard() {
     </div>
   );
 }
+

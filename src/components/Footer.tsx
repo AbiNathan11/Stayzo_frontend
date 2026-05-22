@@ -18,16 +18,16 @@ export default function Footer() {
               We offer a wide range of premium rental properties and smart lease agreements to fit your lifestyle. Discover verified, high-fidelity listings in Sri Lanka.
             </p>
             <div className="flex items-center space-x-3.5 pt-2">
-              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#1A1A1A] hover:text-white transition shadow-sm">
                 <Facebook className="w-4 h-4" />
               </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#1A1A1A] hover:text-white transition shadow-sm">
                 <Twitter className="w-4 h-4" />
               </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#1A1A1A] hover:text-white transition shadow-sm">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#1A1A1A] hover:text-white transition shadow-sm">
                 <Youtube className="w-4 h-4" />
               </a>
             </div>
@@ -61,3 +61,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+

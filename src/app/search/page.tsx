@@ -180,7 +180,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={rentalPeriod.all} 
                   onChange={(e) => setRentalPeriod({ ...rentalPeriod, all: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 All
               </label>
@@ -189,7 +189,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={rentalPeriod.letly} 
                   onChange={(e) => setRentalPeriod({ ...rentalPeriod, letly: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 Letly
               </label>
@@ -198,7 +198,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={rentalPeriod.innly} 
                   onChange={(e) => setRentalPeriod({ ...rentalPeriod, innly: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 Innly
               </label>
@@ -209,9 +209,9 @@ export default function SearchResultsPage() {
           <div className="mb-6">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Price range</h3>
             <div className="h-1 bg-gray-100 rounded-lg relative mb-4">
-              <div className="absolute left-[15%] right-[25%] top-0 bottom-0 bg-[#F26B27] rounded-lg"></div>
-              <div className="absolute w-3.5 h-3.5 bg-white border border-[#F26B27] rounded-full left-[15%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
-              <div className="absolute w-3.5 h-3.5 bg-white border border-[#F26B27] rounded-full right-[25%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
+              <div className="absolute left-[15%] right-[25%] top-0 bottom-0 bg-[#1A1A1A] rounded-lg"></div>
+              <div className="absolute w-3.5 h-3.5 bg-white border border-[#1A1A1A] rounded-full left-[15%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
+              <div className="absolute w-3.5 h-3.5 bg-white border border-[#1A1A1A] rounded-full right-[25%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
             </div>
             <div className="flex items-center space-x-2">
               <div className="relative flex-1">
@@ -269,9 +269,9 @@ export default function SearchResultsPage() {
           <div className="mb-6">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Property area range</h3>
             <div className="h-1 bg-gray-100 rounded-lg relative mb-4">
-              <div className="absolute left-[20%] right-[30%] top-0 bottom-0 bg-[#F26B27] rounded-lg"></div>
-              <div className="absolute w-3.5 h-3.5 bg-white border border-[#F26B27] rounded-full left-[20%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
-              <div className="absolute w-3.5 h-3.5 bg-white border border-[#F26B27] rounded-full right-[30%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
+              <div className="absolute left-[20%] right-[30%] top-0 bottom-0 bg-[#1A1A1A] rounded-lg"></div>
+              <div className="absolute w-3.5 h-3.5 bg-white border border-[#1A1A1A] rounded-full left-[20%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
+              <div className="absolute w-3.5 h-3.5 bg-white border border-[#1A1A1A] rounded-full right-[30%] top-1/2 transform -translate-y-1/2 cursor-pointer shadow-sm"></div>
             </div>
             <div className="flex items-center space-x-2">
               <input 
@@ -299,7 +299,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={conveniences.parking} 
                   onChange={(e) => setConveniences({ ...conveniences, parking: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 Parking slot
               </label>
@@ -308,7 +308,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={conveniences.pet} 
                   onChange={(e) => setConveniences({ ...conveniences, pet: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 Pet allowed
               </label>
@@ -317,7 +317,7 @@ export default function SearchResultsPage() {
                   type="checkbox" 
                   checked={conveniences.furnished} 
                   onChange={(e) => setConveniences({ ...conveniences, furnished: e.target.checked })}
-                  className="accent-[#F26B27] rounded mr-2.5 w-4 h-4 cursor-pointer"
+                  className="accent-[#1A1A1A] rounded mr-2.5 w-4 h-4 cursor-pointer"
                 />
                 Furnished
               </label>
@@ -330,7 +330,7 @@ export default function SearchResultsPage() {
           {/* Search Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h1 className="text-xl font-bold text-gray-900">
-              Search results <span className="font-extrabold text-[#F26B27]">547</span>
+              Search results <span className="font-extrabold text-[#1A1A1A]">547</span>
             </h1>
             <div className="flex items-center flex-wrap gap-2.5">
               {/* Toggle Filters Button */}
@@ -395,11 +395,11 @@ export default function SearchResultsPage() {
                         onClick={(e) => handleBookmarkToggle(listing.id, e)}
                         className={`p-1.5 rounded-lg border transition ${
                           bookmarkedIds.includes(listing.id) 
-                            ? 'bg-[#F26B27]/10 border-transparent text-[#F26B27]' 
+                            ? 'bg-[#1A1A1A]/10 border-transparent text-[#1A1A1A]' 
                             : 'bg-white border-gray-150 text-gray-400 hover:text-gray-600'
                         }`}
                       >
-                        <Bookmark className={`w-4 h-4 ${bookmarkedIds.includes(listing.id) ? 'fill-[#F26B27]' : ''}`} />
+                        <Bookmark className={`w-4 h-4 ${bookmarkedIds.includes(listing.id) ? 'fill-[#1A1A1A]' : ''}`} />
                       </button>
                     </div>
                     <div className="flex items-center text-gray-400 text-xs font-semibold mb-3">
@@ -424,7 +424,7 @@ export default function SearchResultsPage() {
                         {listing.sqft.toLocaleString()} sqft
                       </span>
                     </div>
-                    <div className="text-[#F26B27] font-extrabold text-lg">
+                    <div className="text-[#1A1A1A] font-extrabold text-lg">
                       {listing.price}<span className="text-xs text-gray-400 font-semibold">/month</span>
                     </div>
                   </div>
@@ -451,12 +451,12 @@ export default function SearchResultsPage() {
           {/* Map Pins */}
           <div className="absolute inset-0 z-10">
             {/* Generic Pins */}
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '80px', left: '70px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '150px', left: '320px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '90px', left: '440px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '250px', left: '50px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '350px', left: '410px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#F26B27] rounded-full border border-white shadow-sm" style={{ top: '420px', left: '260px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '80px', left: '70px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '150px', left: '320px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '90px', left: '440px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '250px', left: '50px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '350px', left: '410px' }}></div>
+            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '420px', left: '260px' }}></div>
 
             {/* Interactive Pins corresponding to listings */}
             {listings.map((listing) => (
@@ -466,7 +466,7 @@ export default function SearchResultsPage() {
                 className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
                   activePropertyId === listing.id 
                     ? 'w-10 h-10 bg-[#1A1A1A]/20 border border-[#1A1A1A] rounded-full flex items-center justify-center z-20' 
-                    : 'w-4 h-4 bg-[#F26B27] border-2 border-white rounded-full shadow-lg hover:scale-125 z-10'
+                    : 'w-4 h-4 bg-[#1A1A1A] border-2 border-white rounded-full shadow-lg hover:scale-125 z-10'
                 }`}
                 style={{ top: `${listing.lng}px`, left: `${listing.lat}px` }}
               >
@@ -491,7 +491,7 @@ export default function SearchResultsPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h4 className="font-extrabold text-[#F26B27] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
+              <h4 className="font-extrabold text-[#1A1A1A] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
               <p className="text-[10px] font-semibold text-gray-500 line-clamp-1">{selectedProperty.address}</p>
             </div>
           </div>
@@ -507,3 +507,4 @@ export default function SearchResultsPage() {
     </div>
   );
 }
+

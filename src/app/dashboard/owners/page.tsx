@@ -10,7 +10,7 @@ export default function OwnerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3] text-[#2D2D2D] font-sans selection:bg-[#F26B27] selection:text-white p-8">
+    <div className="min-h-screen bg-[#FDF8F3] text-[#2D2D2D] font-sans selection:bg-[#1A1A1A] selection:text-white p-8">
       <div className="max-w-7xl mx-auto pt-4">
         <div className="flex justify-between items-center mb-16">
           <Link href="/" className="text-4xl font-serif italic font-extrabold text-[#1A1A1A] hover:opacity-80 transition">
@@ -32,7 +32,7 @@ export default function OwnerDashboard() {
         <div className="bg-white p-10 shadow-xl max-w-3xl">
           <h2 className="text-2xl font-extrabold text-[#1A1A1A] mb-4">You have no listings yet</h2>
           <p className="text-gray-500 font-medium leading-relaxed mb-8">List your property today and gain access to thousands of verified tenants worldwide.</p>
-          <button className="bg-[#F26B27] text-white px-8 py-4 font-bold text-sm tracking-widest uppercase transition shadow-md shadow-[#F26B27]/20 hover:bg-[#E05A16]">
+          <button className="bg-[#1A1A1A] text-white px-8 py-4 font-bold text-sm tracking-widest uppercase transition shadow-md shadow-[#1A1A1A]/20 hover:bg-[#E05A16]">
             Create First Listing
           </button>
         </div>
@@ -40,3 +40,4 @@ export default function OwnerDashboard() {
     </div>
   );
 }
+
