@@ -27,10 +27,10 @@ export default function Navbar() {
         {/* Logo with clean vertical bars representing building/bricks */}
         <Link href="/" className="flex items-center space-x-2.5 group">
           <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
           </div>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
@@ -55,8 +55,8 @@ export default function Navbar() {
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3.5 top-2.5" />
             </div>
 
-            <Bookmark className="w-4 h-4 text-gray-600 hover:text-[#F26B27] cursor-pointer transition" />
-            <Bell className="w-4 h-4 text-gray-600 hover:text-[#F26B27] cursor-pointer transition" />
+            <Bookmark className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />
+            <Bell className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />
             
             <div className="w-px h-5 bg-gray-200"></div>
 
@@ -71,7 +71,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden md:flex items-center space-x-6">
             {isLoggedIn ? (
-              <Link href="/dashboard/tenant" className="text-[#1A1A1A] hover:text-[#F26B27] transition flex items-center">
+              <Link href="/dashboard/tenant" className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center">
                 <User className="w-5 h-5" />
               </Link>
             ) : (
@@ -91,3 +91,5 @@ export default function Navbar() {
     </div>
   );
 }
+
+
