@@ -49,7 +49,15 @@ export default function TenantAuth() {
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
       
       if (data.token) localStorage.setItem('stayzo_token', data.token);
-      window.location.href = '/'; 
+      
+      const lowerEmail = email.toLowerCase();
+      if (lowerEmail.startsWith('admin@')) {
+        window.location.href = '/dashboard/admin';
+      } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
+        window.location.href = '/dashboard/owners';
+      } else {
+        window.location.href = '/';
+      } 
     } catch (err: any) {
       setError(err.message);
     } finally {
