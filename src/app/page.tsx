@@ -145,90 +145,134 @@ export default function LandingPage() {
       </section>
 
 
-      {/* Why Choose Us Section exactly matching bottom section of screenshot */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-          
-          {/* Left Column: Heading and Info */}
-          <div className="flex flex-col items-start pt-4">
-            <span className="text-xs font-bold text-[#F26B27] uppercase tracking-wider mb-4">— Reason to choose us</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A] leading-[1.15] mb-6 tracking-tight">
-              Discover the value <br/> behind smart property <br/> rentals
-            </h2>
-            <p className="text-gray-500 font-medium leading-relaxed text-[15px] mb-8 max-w-md">
-              We handle the heavy lifting by conducting in-depth verification, inspecting the properties, and finding high-performing homes for you.
-            </p>
-            <Link href="/search" className="bg-[#1A1A1A] hover:bg-black text-white px-7 py-4 rounded-full text-xs font-bold tracking-wider uppercase transition inline-flex items-center shadow-md">
-              Find the best for you <ArrowRight className="w-3.5 h-3.5 ml-2" />
-            </Link>
+      {/* New Reason to Choose Us (Bento Grid) */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
+        <div className="flex flex-col items-center text-center mb-16">
+          <span className="text-xs font-bold text-[#F26B27] uppercase tracking-wider mb-4">Why Stayzo</span>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A] leading-[1.15] mb-6 tracking-tight">
+            A seamless renting <br className="hidden md:block" /> experience from start to finish.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Bento Item 1 */}
+          <div className="bg-[#1A1A1A] text-white p-10 rounded-[32px] flex flex-col justify-between md:col-span-2 min-h-[300px]">
+            <div>
+              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                <ShieldCheck className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-extrabold mb-3">100% Verified Landlords</h3>
+              <p className="text-gray-400 font-medium leading-relaxed max-w-md text-sm">
+                Every property and landlord is thoroughly vetted by our team. Say goodbye to scams and misleading photos. We guarantee the authenticity of every listing.
+              </p>
+            </div>
+            <div className="mt-8 flex items-center text-[#F26B27] text-sm font-bold uppercase tracking-wider cursor-pointer">
+              Learn More <ArrowRight className="w-4 h-4 ml-2" />
+            </div>
           </div>
 
-          {/* Right Column: Grid Cards Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Card 1: Smart Suggestions */}
-            <div className="bg-[#FDFDFD] border border-gray-100 p-8 rounded-3xl shadow-sm flex flex-col justify-between min-h-[220px]">
-              <div className="mb-4">
-                {/* Visual input bar mock */}
-                <div className="bg-gray-50 rounded-full border border-gray-100 p-2 pl-4 flex items-center justify-between mb-6">
-                  <span className="text-[10px] text-gray-400 font-semibold">Search with "AI"</span>
-                  <div className="bg-[#1A1A1A] w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px]">✨</div>
-                </div>
-                <h3 className="font-extrabold text-[#1A1A1A] text-lg mb-2">Smart Suggestions</h3>
-                <p className="text-gray-500 text-xs leading-relaxed font-semibold">
-                  AI scans listings to find your best-fit property.
-                </p>
+          {/* Bento Item 2 */}
+          <div className="bg-[#F8FAFB] border border-gray-150 p-10 rounded-[32px] flex flex-col justify-between min-h-[300px]">
+            <div>
+              <div className="w-12 h-12 bg-[#F26B27]/10 rounded-full flex items-center justify-center mb-6">
+                <Sparkles className="w-6 h-6 text-[#F26B27]" />
               </div>
+              <h3 className="text-xl font-extrabold text-[#1A1A1A] mb-3">Smart Agreements</h3>
+              <p className="text-gray-500 font-medium leading-relaxed text-sm">
+                Sign legally binding lease agreements digitally. No more paperwork, no more hassle.
+              </p>
             </div>
+          </div>
 
-            {/* Card 2: 99% Trusted Investor */}
-            <div className="bg-[#FDFDFD] border border-gray-100 p-8 rounded-3xl shadow-sm flex flex-col justify-between min-h-[220px]">
-              <div className="mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#F26B27]/10 flex items-center justify-center text-[#F26B27] mb-6">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-[#1A1A1A] text-lg mb-2">99% Trusted Tenant</h3>
-                <p className="text-gray-500 text-xs leading-relaxed font-semibold">
-                  Users trust our verification and return for more deals.
-                </p>
+          {/* Bento Item 3 */}
+          <div className="bg-[#F8FAFB] border border-gray-150 p-10 rounded-[32px] flex flex-col justify-between min-h-[300px]">
+            <div>
+              <div className="w-12 h-12 bg-[#F26B27]/10 rounded-full flex items-center justify-center mb-6">
+                <Building2 className="w-6 h-6 text-[#F26B27]" />
               </div>
+              <h3 className="text-xl font-extrabold text-[#1A1A1A] mb-3">Premium Spaces</h3>
+              <p className="text-gray-500 font-medium leading-relaxed text-sm">
+                We focus on high-quality, modern, and secure environments that elevate your standard of living.
+              </p>
             </div>
+          </div>
 
-            {/* Card 3: Invest Where It Matters (Wide) */}
-            <div className="bg-[#FDFDFD] border border-gray-100 p-8 rounded-3xl shadow-sm md:col-span-2 relative overflow-hidden min-h-[240px] flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="max-w-xs z-10">
-                <h3 className="font-extrabold text-[#1A1A1A] text-lg mb-2">Rent Where It Matters</h3>
-                <p className="text-gray-500 text-xs leading-relaxed font-semibold">
-                  We pinpoint high-demand, high-growth areas backed by market data.
-                </p>
+          {/* Bento Item 4 */}
+          <div className="bg-[#F26B27] text-white p-10 rounded-[32px] flex flex-col justify-between md:col-span-2 min-h-[300px]">
+            <div>
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-6">
+                <Home className="w-6 h-6 text-white" />
               </div>
-
-              {/* Graphic Visual Representation (Map mockup from screen) */}
-              <div className="relative w-full max-w-[200px] h-[130px] bg-[#E8EEF0] rounded-2xl overflow-hidden shrink-0 border border-gray-100 shadow-sm flex items-center justify-center z-10">
-                {/* SVG roads inside visual map */}
-                <svg className="absolute inset-0 w-full h-full text-white/50" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M 0,20 L 100,20" />
-                  <path d="M 0,60 L 100,60" />
-                  <path d="M 40,0 L 40,100" />
-                </svg>
-                {/* Marker */}
-                <div className="absolute w-5 h-5 rounded-full bg-[#F26B27] border-2 border-white shadow-md flex items-center justify-center text-[7px] text-white font-extrabold z-10 animate-bounce">📍</div>
-                {/* Tiny property card representation */}
-                <div className="absolute bottom-2 left-2 right-2 bg-white rounded-lg p-1.5 shadow-md flex items-center space-x-2 border border-gray-150">
-                  <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-50 shrink-0">
-                    <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&q=80" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[7px] font-extrabold text-[#1A1A1A] truncate">Luxury Bungalow</p>
-                    <p className="text-[6px] font-bold text-[#F26B27]">$20,000</p>
-                  </div>
-                </div>
-              </div>
+              <h3 className="text-2xl font-extrabold mb-3">End-to-End Management</h3>
+              <p className="text-white/80 font-medium leading-relaxed max-w-md text-sm">
+                From finding the property to managing maintenance requests, Stayzo acts as your trusted middleman. Enjoy a stress-free tenancy.
+              </p>
             </div>
-
           </div>
         </div>
       </section>
+
+      {/* FAQ Section (Floating Cards Accordion Layout) */}
+      <section className="bg-[#F8FAFB] pt-24 pb-24 border-t border-gray-100">
+        <div className="max-w-3xl mx-auto px-6">
+          
+          <div className="text-center mb-12">
+            <div className="flex justify-center items-center space-x-2 mb-4">
+               <span className="w-1.5 h-1.5 rounded-full bg-[#F26B27]"></span>
+               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A1A1A]">FAQs</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#1A1A1A] tracking-tight mb-4">
+              Frequently asked <span className="relative inline-block">
+                questions
+                <svg className="absolute -bottom-2 left-0 w-full h-2 text-[#F26B27]" viewBox="0 0 100 20" preserveAspectRatio="none">
+                  <path d="M0,15 Q50,5 100,15" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                </svg>
+              </span>
+            </h2>
+            <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-sm mx-auto">
+              Here are some common questions about our renting services to help you understand better.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: "How does the AI smart matching work?",
+                a: "Our advanced AI algorithm analyzes your preferences, budget, and lifestyle needs to instantly match you with premium properties that perfectly align with your criteria, saving you hours of manual searching."
+              },
+              {
+                q: "Are the digital lease agreements legally binding?",
+                a: "Yes. All Stayzo digital agreements comply strictly with local real estate laws. They are cryptographically secure, digitally signed, and safely stored on our cloud infrastructure for your peace of mind."
+              },
+              {
+                q: "How does Stayzo verify landlords and properties?",
+                a: "Trust is our priority. Every landlord and property undergoes a rigorous vetting process. We verify legal ownership, inspect the physical premises, and conduct background checks before listing any property on our platform."
+              },
+              {
+                q: "Is it secure to process rent payments through Stayzo?",
+                a: "Absolutely. We process all transactions through highly secure, bank-level encrypted gateways. Your rent payments are automated, tracked, and receipted instantly to ensure a stress-free financial experience."
+              }
+            ].map((faq, i) => (
+              <details key={i} className="group bg-white rounded-3xl overflow-hidden cursor-pointer shadow-sm transition-all border border-gray-100/50 hover:shadow-md">
+                <summary className="flex justify-between items-center p-6 md:p-8 select-none marker:content-none list-none outline-none">
+                  <span className="text-sm font-extrabold text-[#1A1A1A] pr-4">{faq.q}</span>
+                  <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center shrink-0 relative transition-transform">
+                    {/* Horizontal minus line */}
+                    <div className="w-3.5 h-[2px] bg-white absolute rounded-full"></div>
+                    {/* Vertical plus line (disappears on open) */}
+                    <div className="w-[2px] h-3.5 bg-white absolute rounded-full group-open:opacity-0 transition-opacity"></div>
+                  </div>
+                </summary>
+                <div className="px-6 md:px-8 pb-8 text-gray-500 font-medium text-[13px] leading-relaxed pt-1 opacity-0 group-open:opacity-100 transition-opacity">
+                  {faq.a}
+                </div>
+              </details>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
       {/* Contact Us Section exactly matching user mockup image */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
