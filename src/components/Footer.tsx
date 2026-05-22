@@ -6,81 +6,64 @@ import { Facebook, Twitter, Linkedin, Youtube } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-100 pt-16 pb-12 w-full">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 pb-12 border-b border-gray-100">
+    <footer className="w-full bg-[#F8FAFB] px-6 pb-6 pt-12 select-none">
+      <div className="max-w-7xl mx-auto bg-[#1A1A1A] text-white rounded-[32px] p-10 md:p-20 shadow-xl overflow-hidden relative">
+        
+        {/* Columns Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 pb-12">
           
-          {/* Logo & Description */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center space-x-2.5 mb-6 group">
-              <div className="flex items-end space-x-1 h-5">
-                <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-                <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-                <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-                <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#F26B27] transition-colors"></div>
-              </div>
-              <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
-            </Link>
-            <p className="text-gray-400 text-xs font-semibold leading-relaxed max-w-sm">
-              Premium renting made simple. We connect landlords and tenants with verified high-fidelity listings, secure payment methods, and automated leasing in Sri Lanka.
+          {/* Column 1: Info and Socials */}
+          <div className="space-y-6">
+            <p className="text-gray-400 text-xs font-semibold leading-relaxed max-w-xs">
+              We offer a wide range of premium rental properties and smart lease agreements to fit your lifestyle. Discover verified, high-fidelity listings in Sri Lanka.
             </p>
+            <div className="flex items-center space-x-3.5 pt-2">
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+                <Twitter className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+                <Linkedin className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-[#F26B27] hover:text-white transition shadow-sm">
+                <Youtube className="w-4 h-4" />
+              </a>
+            </div>
           </div>
 
-          {/* Column 1: Explore */}
-          <div>
-            <h4 className="font-extrabold text-[#1A1A1A] text-xs uppercase tracking-wider mb-4">Explore</h4>
-            <ul className="space-y-2.5 text-xs font-bold text-gray-400">
-              <li><Link href="/search" className="hover:text-[#1A1A1A] transition">Properties</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">For Landlords</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">For Tenants</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Popular Locations</Link></li>
+          {/* Column 2: Extra Links */}
+          <div className="space-y-4">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-white">Extra links</h4>
+            <ul className="space-y-2.5 text-xs font-semibold text-gray-400">
+              <li><Link href="/" className="hover:text-white transition">Home</Link></li>
+              <li><Link href="/search" className="hover:text-white transition">Buyers</Link></li>
+              <li><Link href="/search" className="hover:text-white transition">Sellers</Link></li>
+              <li><Link href="#" className="hover:text-white transition">Our team</Link></li>
+              <li><Link href="#" className="hover:text-white transition">About Us</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: Company */}
-          <div>
-            <h4 className="font-extrabold text-[#1A1A1A] text-xs uppercase tracking-wider mb-4">Company</h4>
-            <ul className="space-y-2.5 text-xs font-bold text-gray-400">
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">About Us</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Careers</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Press</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Contact</Link></li>
-            </ul>
-          </div>
-
-          {/* Column 3: Legal */}
-          <div>
-            <h4 className="font-extrabold text-[#1A1A1A] text-xs uppercase tracking-wider mb-4">Legal</h4>
-            <ul className="space-y-2.5 text-xs font-bold text-gray-400">
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Cookie settings</Link></li>
-              <li><Link href="#" className="hover:text-[#1A1A1A] transition">Security</Link></li>
+          {/* Column 3: Contact Info */}
+          <div className="space-y-4">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-white">Contact</h4>
+            <ul className="space-y-2.5 text-xs font-semibold text-gray-400">
+              <li>123 Example Road, Colombo 03, Sri Lanka</li>
+              <li><a href="mailto:email@example.com" className="hover:text-white transition">email@example.com</a></li>
+              <li><a href="tel:5555555555" className="hover:text-white transition">(555) 555-5555</a></li>
             </ul>
           </div>
 
         </div>
 
-        {/* Bottom copyright & social icons */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <p className="text-gray-400 text-[11px] font-bold">
-            &copy; {new Date().getFullYear()} Stayzo Inc. All rights reserved.
-          </p>
-          <div className="flex items-center space-x-6 text-gray-400">
-            <a href="#" className="hover:text-[#1A1A1A] transition">
-              <Facebook className="w-4 h-4" />
-            </a>
-            <a href="#" className="hover:text-[#1A1A1A] transition">
-              <Twitter className="w-4 h-4" />
-            </a>
-            <a href="#" className="hover:text-[#1A1A1A] transition">
-              <Linkedin className="w-4 h-4" />
-            </a>
-            <a href="#" className="hover:text-[#1A1A1A] transition">
-              <Youtube className="w-4 h-4" />
-            </a>
-          </div>
+        {/* Huge Bottom Logo Text */}
+        <div className="mt-12 md:mt-20 border-t border-white/5 pt-12 md:pt-16 text-center select-none overflow-hidden">
+          <span className="text-[12vw] font-extrabold tracking-tighter text-white block leading-none select-none select-none uppercase opacity-95">
+            Stayzo™
+          </span>
         </div>
+
       </div>
     </footer>
   );
