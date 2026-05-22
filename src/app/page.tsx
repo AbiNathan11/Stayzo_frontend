@@ -448,10 +448,9 @@ export default function LandingPage() {
               <div className="pt-4">
                 <button 
                   type="submit"
-                  className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3 rounded-full flex items-center space-x-2.5 text-xs font-extrabold shadow-sm transition active:scale-95"
+                  className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3 rounded-full text-xs font-extrabold shadow-sm transition active:scale-95"
                 >
-                  <span className="text-[8px] transform translate-y-[0.5px]">▶</span>
-                  <span>Send a message</span>
+                  Send a message
                 </button>
               </div>
             </form>
