@@ -57,13 +57,6 @@ export default function Footer() {
 
         </div>
 
-        {/* Huge Bottom Logo Text */}
-        <div className="mt-12 md:mt-20 border-t border-white/5 pt-12 md:pt-16 text-center select-none overflow-hidden">
-          <span className="text-[12vw] font-extrabold tracking-tighter text-white block leading-none select-none select-none uppercase opacity-95">
-            Stayzo™
-          </span>
-        </div>
-
       </div>
     </footer>
   );
