@@ -66,14 +66,14 @@ export default function LandingPage() {
             alt="Kandy Sri Lanka Regional Map Background"
             className="w-full h-full object-cover opacity-[0.3] filter grayscale contrast-[0.9] brightness-[1.02]"
           />
-          {/* Gradient mask: Fades out the map at the top for title readability, leaves it clear and sharp at the bottom */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/35 to-transparent pointer-events-none"></div>
+          {/* Gradient mask: Heavy at top for readability, barely fades at bottom to show map clearly */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/60 to-white/10 pointer-events-none"></div>
         </div>
 
         {/* Scattered Map Pins representing properties */}
         <div className="absolute inset-0 z-10 pointer-events-none hidden lg:block">
           {/* Left Side Pins */}
-          <div className="absolute top-[22%] left-[6%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[22%] left-[6%]" style={{animation: 'floatPin 3s ease-in-out infinite'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -82,7 +82,7 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="absolute top-[48%] left-[12%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[48%] left-[12%]" style={{animation: 'floatPin 3.6s ease-in-out infinite 0.5s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -91,7 +91,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="absolute top-[72%] left-[8%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[72%] left-[8%]" style={{animation: 'floatPin 4s ease-in-out infinite 1s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -101,7 +101,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Side Pins */}
-          <div className="absolute top-[26%] right-[8%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[26%] right-[8%]" style={{animation: 'floatPin 3.3s ease-in-out infinite 0.8s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -110,7 +110,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="absolute top-[62%] right-[10%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[62%] right-[10%]" style={{animation: 'floatPin 3.8s ease-in-out infinite 1.3s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
