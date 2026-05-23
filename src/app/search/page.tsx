@@ -376,11 +376,7 @@ export default function SearchResultsPage() {
         {/* Column 2: Listings results (Center) */}
         <main className="flex-1 bg-white p-6 overflow-y-auto no-scrollbar">
           {/* Search Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h1 className="text-xl font-bold text-gray-900">
-              Search results <span className="font-extrabold text-[#1A1A1A]">547</span>
-            </h1>
-            <div className="flex items-center flex-wrap gap-2.5">
+          <div className="flex items-center flex-wrap gap-2.5 mb-6">
               {/* Toggle Filters Button */}
               <button 
                 onClick={() => setShowFilters(!showFilters)}
@@ -406,7 +402,6 @@ export default function SearchResultsPage() {
                 <Map className="w-3.5 h-3.5" />
                 <span>Map</span>
               </button>
-            </div>
           </div>
 
           {/* Cards Grid (Square shape) */}

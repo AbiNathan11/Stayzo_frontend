@@ -66,14 +66,14 @@ export default function LandingPage() {
             alt="Kandy Sri Lanka Regional Map Background"
             className="w-full h-full object-cover opacity-[0.3] filter grayscale contrast-[0.9] brightness-[1.02]"
           />
-          {/* Gradient mask: Fades out the map at the top for title readability, leaves it clear and sharp at the bottom */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/35 to-transparent pointer-events-none"></div>
+          {/* Gradient mask: Heavy at top for readability, barely fades at bottom to show map clearly */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/60 to-white/10 pointer-events-none"></div>
         </div>
 
         {/* Scattered Map Pins representing properties */}
         <div className="absolute inset-0 z-10 pointer-events-none hidden lg:block">
           {/* Left Side Pins */}
-          <div className="absolute top-[22%] left-[6%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[22%] left-[6%]" style={{animation: 'floatPin 3s ease-in-out infinite'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -82,7 +82,7 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="absolute top-[48%] left-[12%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[48%] left-[12%]" style={{animation: 'floatPin 3.6s ease-in-out infinite 0.5s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -91,7 +91,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="absolute top-[72%] left-[8%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[72%] left-[8%]" style={{animation: 'floatPin 4s ease-in-out infinite 1s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -101,7 +101,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Side Pins */}
-          <div className="absolute top-[26%] right-[8%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[26%] right-[8%]" style={{animation: 'floatPin 3.3s ease-in-out infinite 0.8s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -110,7 +110,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="absolute top-[62%] right-[10%] hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-[62%] right-[10%]" style={{animation: 'floatPin 3.8s ease-in-out infinite 1.3s'}}>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <MapPin className="w-12 h-12 text-[#1A1A1A] fill-[#1A1A1A] filter drop-shadow-md" />
               <div className="absolute top-[5px] w-[22px] h-[22px] rounded-full overflow-hidden bg-white">
@@ -228,8 +228,9 @@ export default function LandingPage() {
 
 
       {/* Why Stayzo — 3-Column Horizontal Features Layout */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
-        <div className="bg-[#F8FAFB] rounded-[40px] p-12 md:p-20 border border-gray-100">
+      <section id="features" className="bg-[#F4F4F6] border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="bg-white rounded-[40px] p-12 md:p-20 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 lg:gap-12 items-start">
 
             {/* Left Column: Label + Heading + Description + CTA */}
@@ -300,15 +301,17 @@ export default function LandingPage() {
 
           </div>
         </div>
+        </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
+      <section id="testimonials" className="bg-white border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-16 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12 gap-6">
           <div>
-            <span className="text-xs font-bold text-[#1A1A1A] uppercase tracking-wider mb-4 block">— Testimonials</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A] leading-[1.15] tracking-tight">
+            <span className="text-xs font-extrabold text-[#1A1A1A] uppercase tracking-[0.2em] mb-6 border-b-2 border-[#1A1A1A] pb-1 inline-block">Testimonials</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A] leading-[1.15] tracking-tight mt-4">
               What our tenants <br className="hidden md:block" /> are saying.
             </h2>
           </div>
@@ -317,8 +320,8 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* 3-Column Clean Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Horizontal Scrolling Cards */}
+        <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
           {[
             {
               quote: "Impressed by the professionalism and attention to detail. Stayzo made every step of my renting journey completely stress-free.",
@@ -337,9 +340,21 @@ export default function LandingPage() {
               name: "Priya R.",
               handle: "@priyarents",
               avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+            },
+            {
+              quote: "From viewing to signing, everything was smooth and transparent. Best rental platform I have ever used in Sri Lanka.",
+              name: "Anil P.",
+              handle: "@anilp_colomob",
+              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+            },
+            {
+              quote: "The digital lease agreement saved me so much time. I signed everything online and moved in within a week. Incredible!",
+              name: "Nisha T.",
+              handle: "@nisha_t",
+              avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
             }
           ].map((t, i) => (
-            <div key={i} className="bg-[#F8FAFB] rounded-3xl p-8 flex flex-col justify-between min-h-[260px] border border-gray-100/80">
+            <div key={i} className="bg-[#F8FAFB] rounded-3xl p-8 flex flex-col justify-between border border-gray-100/80 snap-start shrink-0 w-[320px] md:w-[360px]">
               {/* Large quotation mark */}
               <div>
                 <span className="text-5xl font-extrabold text-gray-200 leading-none select-none">"</span>
@@ -362,26 +377,19 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        </div>
       </section>
 
-      {/* FAQ Section (Floating Cards Accordion Layout) */}
-      <section className="bg-[#F8FAFB] pt-24 pb-24 border-t border-gray-100">
+      {/* FAQ Section */}
+      <section className="bg-[#F4F4F6] pt-24 pb-24 border-t border-gray-100">
         <div className="max-w-3xl mx-auto px-6">
           
-          <div className="text-center mb-12">
-            <div className="flex justify-center items-center space-x-2 mb-4">
-               <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]"></span>
-               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A1A1A]">FAQs</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#1A1A1A] tracking-tight mb-4">
-              Frequently asked <span className="relative inline-block">
-                questions
-                <svg className="absolute -bottom-2 left-0 w-full h-2 text-[#1A1A1A]" viewBox="0 0 100 20" preserveAspectRatio="none">
-                  <path d="M0,15 Q50,5 100,15" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                </svg>
-              </span>
+          <div className="text-left mb-12">
+            <span className="text-xs font-extrabold text-[#1A1A1A] uppercase tracking-[0.2em] mb-6 border-b-2 border-[#1A1A1A] pb-1 inline-block">FAQs</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A] tracking-tight mb-4 mt-4">
+              Frequently asked questions
             </h2>
-            <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-sm mx-auto">
+            <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-sm">
               Here are some common questions about our renting services to help you understand better.
             </p>
           </div>
@@ -425,13 +433,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact Us Section exactly matching user mockup image */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
+      {/* Contact Us Section */}
+      <section id="contact" className="bg-white border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           
           {/* Left Column: Get In Touch Info */}
           <div>
-            <span className="text-xs font-bold text-gray-400 tracking-wider mb-5 block">/ get in touch /</span>
+            <span className="text-xs font-extrabold text-[#1A1A1A] uppercase tracking-[0.2em] mb-6 border-b-2 border-[#1A1A1A] pb-1 inline-block">Get In Touch</span>
             <h2 className="text-4xl lg:text-[46px] font-extrabold text-[#1A1A1A] leading-[1.1] mb-8 font-sans">
               We are always ready <br />
               to help you and <br />
@@ -538,6 +547,7 @@ export default function LandingPage() {
             </form>
           </div>
 
+        </div>
         </div>
       </section>
 

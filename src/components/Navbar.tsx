@@ -43,9 +43,9 @@ export default function Navbar() {
         {!isSearchPage ? (
           <div className="hidden lg:flex items-center space-x-8 text-xs font-bold text-gray-500 uppercase tracking-wide">
             <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
-            <Link href="/search" className={`${pathname === '/search' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Properties</Link>
-            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">About</Link>
-            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</Link>
+            <a href="/#features" className="hover:text-[#1A1A1A] px-4 py-2 transition">Features</a>
+            <a href="/#testimonials" className="hover:text-[#1A1A1A] px-4 py-2 transition">Testimonials</a>
+            <a href="/#contact" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</a>
           </div>
         ) : (
           <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
