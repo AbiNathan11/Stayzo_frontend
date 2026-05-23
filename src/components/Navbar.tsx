@@ -10,13 +10,33 @@ import {
 export default function Navbar() {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('stayzo_token');
       setIsLoggedIn(!!token);
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUserEmail(payload.email || '');
+        } catch (e) {
+          console.error('Failed to parse token', e);
+        }
+      }
     }
   }, []);
+
+  const getDashboardLink = () => {
+    const lowerEmail = userEmail.toLowerCase();
+    if (lowerEmail.startsWith('admin@')) {
+      return '/dashboard/admin';
+    }
+    if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
+      return '/dashboard/owners';
+    }
+    return '/dashboard/tenant';
+  };
 
   const isSearchPage = pathname === '/search';
 
@@ -79,7 +99,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden md:flex items-center space-x-6">
             {isLoggedIn ? (
-              <Link href="/dashboard/tenant" className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center">
+              <Link href={getDashboardLink()} className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center" title="Go to Dashboard">
                 <User className="w-5 h-5" />
               </Link>
             ) : (
