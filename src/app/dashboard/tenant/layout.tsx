@@ -43,7 +43,6 @@ export default function TenantDashboardLayout({
 
   const navItems = [
     { name: 'Overview', href: '/dashboard/tenant', icon: LayoutDashboard },
-    { name: 'My Bookings', href: '/dashboard/tenant/bookings', icon: KeyRound },
     { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
     { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
     { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
