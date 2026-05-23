@@ -37,7 +37,7 @@ export default function OwnerDashboard() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-[60px] flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/dashboard/owners" className="flex items-center space-x-2.5 group">
+          <Link href="/" className="flex items-center space-x-2.5 group">
             <div className="flex items-end space-x-[3px] h-5">
               <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
               <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
@@ -72,7 +72,7 @@ export default function OwnerDashboard() {
           {/* Right side */}
           <div className="flex items-center space-x-3">
             <Link
-              href="/dashboard/tenant"
+              href="/"
               className="flex items-center space-x-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[12px] font-extrabold tracking-wider uppercase px-5 py-2.5 rounded-full transition-colors shadow-md"
             >
               <span>I am a Tenant</span>
