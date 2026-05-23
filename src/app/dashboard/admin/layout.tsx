@@ -87,8 +87,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Menu Sections */}
         <div className="flex-1 px-4 py-8 overflow-y-auto space-y-8 select-none">
-          {navSections.map((section) => (
-            <div key={section.label}>
+          {navSections.map((section, idx) => (
+            <div key={idx}>
               <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-4 block mb-4">
                 {section.label}
               </span>
