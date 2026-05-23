@@ -44,21 +44,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navSections = [
     {
-      label: '',
       items: [
         { href: '/dashboard/admin', label: 'Overview Dashboard', icon: LayoutDashboard },
         { href: '/dashboard/admin/users', label: 'User Accounts', icon: Users },
       ],
     },
     {
-      label: '',
       items: [
         { href: '/dashboard/admin/activities', label: 'Activity Monitor', icon: Activity },
         { href: '/dashboard/admin/reviews', label: 'Ratings & Reviews', icon: MessageSquare },
       ],
     },
     {
-      label: '',
       items: [
         { href: '/dashboard/admin/agreements', label: 'Agreements & Disputes', icon: FileText },
       ],
@@ -89,9 +86,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex-1 px-4 py-8 overflow-y-auto space-y-8 select-none">
           {navSections.map((section, idx) => (
             <div key={idx}>
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-4 block mb-4">
-                {section.label}
-              </span>
+              {section.label && (
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-4 block mb-4">
+                  {section.label}
+                </span>
+              )}
               <nav className="space-y-1">
                 {section.items.map((item) => {
                   const isActive = pathname === item.href;
