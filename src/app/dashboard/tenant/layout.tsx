@@ -55,10 +55,10 @@ export default function TenantDashboardLayout({
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
       
       {/* Top Header */}
-      <header className="w-full bg-white border-b border-gray-150 py-5 px-6 sm:px-12 flex justify-between items-center z-50 shrink-0 select-none">
+      <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex justify-between items-center z-50 shrink-0 select-none">
         
         {/* Left Brand Logo */}
-        <Link href="/" className="flex items-center space-x-2.5 group">
+        <Link href="/" className="flex items-center space-x-2 group">
           <div className="flex items-end space-x-1 h-5">
             <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
             <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
@@ -68,69 +68,53 @@ export default function TenantDashboardLayout({
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
 
-        {/* Center Navigation Links (Simplified for Layout) */}
-        <nav className="hidden md:flex items-center space-x-8 text-xs font-bold text-gray-500">
-          <span className="text-gray-900 font-extrabold uppercase tracking-wider">Tenant Dashboard</span>
-        </nav>
-
         {/* Right utility options */}
-        <div className="flex items-center space-x-6">
-          <div className="hidden sm:flex items-center space-x-2 text-xs font-bold text-gray-600">
-            <div className="w-6 h-6 rounded-full bg-[#1A1A1A]/10 text-[#1A1A1A] flex items-center justify-center text-[10px] font-extrabold shrink-0 border border-[#1A1A1A]/10">
-              {userInitial}
-            </div>
-            <span>{user?.firstName}</span>
-          </div>
+        <div className="flex items-center space-x-4">
+          <span className="hidden sm:inline text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 px-4 py-2 rounded-full transition">
+            Switch to owner
+          </span>
           <button 
             onClick={handleLogout} 
-            className="flex items-center space-x-1.5 text-xs font-extrabold text-red-500 hover:text-red-600 transition uppercase tracking-wider cursor-pointer"
+            className="flex items-center space-x-3 bg-white border border-gray-200 hover:shadow-md transition rounded-full p-2 pr-4 cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Log out</span>
+            <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+              {userInitial}
+            </div>
+            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
 
-      {/* Main Layout Grid */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto px-6 sm:px-12 py-10 gap-10">
-        
-        {/* Left Column: Sidebar Navigation */}
-        <aside className="w-full md:w-[260px] shrink-0">
-          <div className="space-y-6 sticky top-8">
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-6">Menu</h1>
+      {/* Horizontal Dashboard Navigation */}
+      <div className="w-full bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40 overflow-x-auto no-scrollbar">
+        <nav className="max-w-[1200px] mx-auto px-6 sm:px-10 flex items-center space-x-1 sm:space-x-4 py-3">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
             
-            <nav className="flex flex-col space-y-1.5">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                
-                return (
-                  <Link 
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center space-x-3.5 w-full px-4 py-3 rounded-2xl text-xs font-extrabold transition text-left select-none ${
-                      isActive 
-                        ? 'bg-gray-100 text-gray-900' 
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1A1A1A]' : 'text-gray-400'}`} />
-                    <span>{item.name}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-        </aside>
+            return (
+              <Link 
+                key={item.href}
+                href={item.href}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition whitespace-nowrap select-none ${
+                  isActive 
+                    ? 'bg-[#1A1A1A] text-white' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
 
-        {/* Vertical divider line */}
-        <div className="hidden md:block w-px bg-gray-100 self-stretch"></div>
-
-        {/* Right Column: Displaying Active Page Content */}
-        <main className="flex-1 min-w-0">
+      {/* Main Content Area */}
+      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-10">
+        <main className="w-full min-w-0">
           {children}
         </main>
-
       </div>
     </div>
   );
