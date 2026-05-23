@@ -228,8 +228,9 @@ export default function LandingPage() {
 
 
       {/* Why Stayzo — 3-Column Horizontal Features Layout */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
-        <div className="bg-[#F8FAFB] rounded-[40px] p-12 md:p-20 border border-gray-100">
+      <section id="features" className="bg-[#F4F4F6] border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="bg-white rounded-[40px] p-12 md:p-20 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 lg:gap-12 items-start">
 
             {/* Left Column: Label + Heading + Description + CTA */}
@@ -300,10 +301,12 @@ export default function LandingPage() {
 
           </div>
         </div>
+        </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
+      <section id="testimonials" className="bg-white border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12 gap-6">
           <div>
@@ -374,10 +377,11 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        </div>
       </section>
 
-      {/* FAQ Section (Floating Cards Accordion Layout) */}
-      <section className="bg-[#F8FAFB] pt-24 pb-24 border-t border-gray-100">
+      {/* FAQ Section */}
+      <section className="bg-[#F4F4F6] pt-24 pb-24 border-t border-gray-100">
         <div className="max-w-3xl mx-auto px-6">
           
           <div className="text-left mb-12">
@@ -429,8 +433,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact Us Section exactly matching user mockup image */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-24 bg-white border-t border-gray-100">
+      {/* Contact Us Section */}
+      <section id="contact" className="bg-white border-t border-gray-100 py-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           
           {/* Left Column: Get In Touch Info */}
@@ -542,6 +547,7 @@ export default function LandingPage() {
             </form>
           </div>
 
+        </div>
         </div>
       </section>
 
