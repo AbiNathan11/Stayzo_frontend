@@ -41,7 +41,7 @@ export default function TenantOverviewPage() {
         
         {/* Giant Avatar Card (Left side of content area) */}
         <div className="w-full lg:w-[320px] bg-white border border-gray-100 shadow-[0_6px_16px_rgba(0,0,0,0.12)] rounded-3xl p-10 flex flex-col items-center text-center shrink-0">
-          <div className="w-[104px] h-[104px] rounded-full bg-[#F26B27]/10 text-[#F26B27] flex items-center justify-center text-[40px] font-semibold mb-4">
+          <div className="w-[104px] h-[104px] rounded-full bg-gray-100 text-gray-800 flex items-center justify-center text-[40px] font-semibold mb-4">
             {userInitial}
           </div>
           <h3 className="text-[32px] font-semibold text-gray-900 leading-tight">
@@ -58,7 +58,7 @@ export default function TenantOverviewPage() {
             <p className="text-gray-500 text-sm leading-relaxed">
               Your Stayzo profile is an important part of every reservation. Complete yours to help landlords and other guests get to know you.
             </p>
-            <button className="bg-[#F26B27] hover:bg-[#D95A1E] text-white px-6 py-3.5 rounded-lg text-sm font-semibold transition active:scale-95 mt-2">
+            <button className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3.5 rounded-lg text-sm font-semibold transition active:scale-95 mt-2">
               Get started
             </button>
           </div>
