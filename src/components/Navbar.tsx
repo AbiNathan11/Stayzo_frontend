@@ -24,7 +24,7 @@ export default function Navbar() {
     <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none ${isSearchPage ? 'top-0' : 'top-6 px-4 md:px-6'}`}>
       <nav className={`w-full bg-white/95 backdrop-blur-sm flex justify-between items-center pointer-events-auto transition-all ${
         isSearchPage 
-          ? 'border-b border-gray-100 py-3 md:py-3.5 px-6 lg:px-8' 
+          ? 'relative border-b border-gray-100 py-3 md:py-3.5 px-6 lg:px-8' 
           : 'max-w-5xl border border-gray-100 shadow-lg shadow-gray-200/20 py-3 md:py-3.5 px-6 md:px-8 rounded-full'
       }`}>
         
@@ -48,14 +48,13 @@ export default function Navbar() {
             <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</Link>
           </div>
         ) : (
-          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
+          <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
             <div className="relative w-full">
               <input 
                 type="text" 
-                placeholder="Search properties by location, type..." 
-                className="w-full bg-[#F5F7F8] border border-gray-150 text-sm font-semibold text-gray-700 pl-11 pr-4 py-2.5 rounded-full outline-none focus:ring-1 focus:ring-[#1A1A1A] transition shadow-inner"
+                className="w-full bg-[#F5F7F8] border border-gray-150 text-xs font-semibold text-gray-700 pl-8 pr-3 py-2 rounded-full outline-none focus:ring-1 focus:ring-[#1A1A1A] transition shadow-inner"
               />
-              <Search className="w-4 h-4 text-gray-400 absolute left-4 top-3" />
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-[10px]" />
             </div>
           </div>
         )}
