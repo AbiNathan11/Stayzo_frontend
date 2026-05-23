@@ -225,13 +225,13 @@ export default function SearchResultsPage() {
   const selectedProperty = listings.find(l => l.id === activePropertyId) || listings[0];
 
   // Dynamically determine grid columns based on open panels
-  let gridColsClass = "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"; // Both closed
+  let gridColsClass = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"; // Both closed (max 7)
   if (showFilters && !showMap) {
-    gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"; // Filters only (max 4)
+    gridColsClass = "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"; // Filters only (max 5)
   } else if (!showFilters && showMap) {
-    gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"; // Map only (max 3)
+    gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"; // Map only (max 4, keeps space for map)
   } else if (showFilters && showMap) {
-    gridColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2"; // Both open (max 2)
+    gridColsClass = "grid-cols-1 sm:grid-cols-2"; // Both open (max 2)
   }
 
   return (
