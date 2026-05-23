@@ -44,21 +44,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navSections = [
     {
-      label: '',
       items: [
         { href: '/dashboard/admin', label: 'Overview Dashboard', icon: LayoutDashboard },
         { href: '/dashboard/admin/users', label: 'User Accounts', icon: Users },
       ],
     },
     {
-      label: '',
       items: [
         { href: '/dashboard/admin/activities', label: 'Activity Monitor', icon: Activity },
         { href: '/dashboard/admin/reviews', label: 'Ratings & Reviews', icon: MessageSquare },
       ],
     },
     {
-      label: '',
       items: [
         { href: '/dashboard/admin/agreements', label: 'Agreements & Disputes', icon: FileText },
       ],
@@ -87,31 +84,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Menu Sections */}
         <div className="flex-1 px-4 py-8 overflow-y-auto space-y-8 select-none">
-          {navSections.map((section) => (
-            <div key={section.label}>
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-4 block mb-4">
-                {section.label}
-              </span>
-              <nav className="space-y-1">
-                {section.items.map((item) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs font-extrabold transition text-left cursor-pointer ${isActive
-                        ? 'bg-[#1A1A1A] text-white shadow-sm'
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
+          {navSections.map((section, idx) => (
+            <nav key={idx} className="space-y-1">
+              {section.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs font-extrabold transition text-left cursor-pointer ${isActive
+                      ? 'bg-[#1A1A1A] text-white shadow-sm'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
           ))}
         </div>
 
