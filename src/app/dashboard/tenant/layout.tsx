@@ -53,10 +53,10 @@ export default function TenantDashboardLayout({
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
       
       {/* Top Header with Navigation */}
-      <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex justify-between items-center z-50 shrink-0 select-none sticky top-0">
+      <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex items-center justify-between z-50 shrink-0 select-none sticky top-0">
         
-        <div className="flex items-center space-x-8">
-          {/* Left Brand Logo */}
+        {/* Left Brand Logo */}
+        <div className="flex-1 flex justify-start">
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="flex items-end space-x-1 h-5">
               <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
@@ -66,32 +66,31 @@ export default function TenantDashboardLayout({
             </div>
             <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
           </Link>
-
-          {/* Navigation Links next to heading */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link 
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap select-none ${
-                    isActive 
-                      ? 'bg-[#1A1A1A] text-white' 
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                  <span>{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
         </div>
 
+        {/* Center Navigation Links */}
+        <nav className="hidden lg:flex items-center space-x-1 flex-none">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link 
+                key={item.href}
+                href={item.href}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap select-none ${
+                  isActive 
+                    ? 'bg-[#1A1A1A] text-white' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
         {/* Right utility options */}
-        <div className="flex items-center space-x-4">
+        <div className="flex-1 flex justify-end items-center space-x-4">
           <span className="hidden sm:inline text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 px-4 py-2 rounded-full transition">
             Switch to owner
           </span>
