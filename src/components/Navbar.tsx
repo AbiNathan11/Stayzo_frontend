@@ -10,13 +10,33 @@ import {
 export default function Navbar() {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('stayzo_token');
       setIsLoggedIn(!!token);
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUserEmail(payload.email || '');
+        } catch (e) {
+          console.error('Failed to parse token', e);
+        }
+      }
     }
   }, []);
+
+  const getDashboardLink = () => {
+    const lowerEmail = userEmail.toLowerCase();
+    if (lowerEmail.startsWith('admin@')) {
+      return '/dashboard/admin';
+    }
+    if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
+      return '/dashboard/owners';
+    }
+    return '/dashboard/tenant';
+  };
 
   const isSearchPage = pathname === '/search';
 
@@ -42,9 +62,9 @@ export default function Navbar() {
         {!isSearchPage ? (
           <div className="hidden lg:flex items-center space-x-8 text-xs font-bold text-gray-500 uppercase tracking-wide">
             <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
-            <Link href="/search" className={`${pathname === '/search' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Properties</Link>
-            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">About</Link>
-            <Link href="#" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</Link>
+            <a href="/#features" className="hover:text-[#1A1A1A] px-4 py-2 transition">Features</a>
+            <a href="/#testimonials" className="hover:text-[#1A1A1A] px-4 py-2 transition">Testimonials</a>
+            <a href="/#contact" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</a>
           </div>
         ) : (
           <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
@@ -78,7 +98,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden md:flex items-center space-x-6">
             {isLoggedIn ? (
-              <Link href="/dashboard/tenant" className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center">
+              <Link href={getDashboardLink()} className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center" title="Go to Dashboard">
                 <User className="w-5 h-5" />
               </Link>
             ) : (
