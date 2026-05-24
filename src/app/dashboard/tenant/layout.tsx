@@ -46,7 +46,6 @@ export default function TenantDashboardLayout({
     { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
     { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
     { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
-    { name: 'Digital Vault', href: '/dashboard/tenant/documents', icon: FileText },
     { name: 'Relocation Services', href: '/dashboard/tenant/services', icon: Compass },
   ];
 
