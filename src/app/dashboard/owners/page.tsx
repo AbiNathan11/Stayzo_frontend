@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ArrowRight } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 const navLinks = [
   { label: 'Home', href: '/dashboard/owners' },
@@ -91,7 +92,7 @@ export default function OwnerDashboard() {
       </header>
 
       {/* ── Hero Section ── */}
-      <main className="flex-1 flex items-center justify-center px-6 text-center">
+      <main className="flex-1 flex items-center justify-center px-6 text-center min-h-[calc(100vh-60px)]">
         <div className="max-w-2xl">
           <h1
             className="text-[56px] md:text-[72px] font-black text-[#1A1A1A] leading-none tracking-tight mb-6"
@@ -121,6 +122,7 @@ export default function OwnerDashboard() {
         </div>
       </main>
 
+      <Footer />
     </div>
   );
 }

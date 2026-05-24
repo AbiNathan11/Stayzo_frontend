@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ArrowRight, AlertTriangle, Pencil, ChevronRight } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Listing {
@@ -291,6 +292,7 @@ export default function OwnerListings() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

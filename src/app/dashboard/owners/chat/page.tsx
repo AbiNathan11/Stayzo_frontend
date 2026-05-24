@@ -13,6 +13,7 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
+import Footer from "@/components/Footer";
 
 // ─── Nav Links ──────────────────────────────────────────────────────────────
 const navLinks = [
@@ -104,7 +105,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   const sendMessage = () => {
@@ -131,7 +132,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#F0EEF8] overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-[#F0EEF8]">
       {/* ── Navbar ── */}
       <header className="w-full bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-[60px] flex items-center justify-between">
@@ -190,10 +191,11 @@ export default function ChatPage() {
       </header>
 
       {/* ── Body: 3-Column Layout ── */}
-      <main className="flex flex-1 overflow-hidden w-full">
+      <main className="flex h-[calc(100vh-60px)] overflow-hidden w-full">
         {/* ── Left Sidebar: Conversation List ── */}
-        <aside className="w-[210px] min-w-[210px] bg-white border-r border-gray-100 flex flex-col overflow-hidden">
-          <div className="px-4 pt-5 pb-3">
+        <aside className="w-[210px] min-w-[210px] bg-white border-r border-gray-100 flex flex-col overflow-hidden h-full">
+          {/* Fixed: Title + Search */}
+          <div className="px-4 pt-5 pb-3 flex-shrink-0">
             <h2 className="text-[15px] font-black text-[#1A1A1A] tracking-tight mb-3">
               Messages
             </h2>
@@ -211,8 +213,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Conversation Items */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Scrollable: Conversation Items */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {conversations
               .filter((c) =>
                 c.name.toLowerCase().includes(search.toLowerCase())
@@ -256,9 +258,9 @@ export default function ChatPage() {
         </aside>
 
         {/* ── Center: Chat Area ── */}
-        <section className="flex-1 flex flex-col bg-white overflow-hidden min-w-0">
-          {/* Chat Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <section className="flex-1 flex flex-col bg-white overflow-hidden min-w-0 h-full">
+          {/* Fixed: Chat Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
             <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -287,8 +289,8 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-x-auto overflow-y-auto px-6 py-6 space-y-4">
+          {/* Scrollable: Message Bubbles */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-4">
             {/* Date Divider */}
             <div className="flex items-center gap-3 my-2">
               <div className="flex-1 h-px bg-gray-200" />
@@ -331,8 +333,8 @@ export default function ChatPage() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Message Input */}
-          <div className="px-6 py-4 border-t border-gray-100">
+          {/* Fixed: Message Input */}
+          <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0">
             <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-gray-400 transition-colors">
               <button
                 id="chat-attach-btn"
@@ -450,7 +452,7 @@ export default function ChatPage() {
         </aside>
       </main>
 
-
+      <Footer />
     </div>
   );
 }
