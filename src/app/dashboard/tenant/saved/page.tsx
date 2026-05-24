@@ -42,7 +42,7 @@ export default function SavedPropertiesPage() {
     }
   ]);
 
-  const [showCompare, setShowCompare] = useState(false);
+
 
   const handleRemoveFromWishlist = (id: number) => {
     setWishlist(wishlist.filter(item => item.id !== id));
@@ -56,46 +56,8 @@ export default function SavedPropertiesPage() {
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">Saved Properties</h2>
           <p className="text-gray-500 text-xs font-semibold mt-1">Your bookmarked premium stays and comparison matrix.</p>
         </div>
-        <button 
-          onClick={() => setShowCompare(!showCompare)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition ${
-            showCompare ? 'bg-[#1A1A1A] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <Scale className="w-4 h-4" /> 
-          {showCompare ? 'Hide Comparison Matrix' : 'Compare Saved'}
-        </button>
       </div>
 
-      {showCompare && wishlist.length > 1 && (
-        <div className="bg-[#F8FAFB] border border-[#1A1A1A]/10 rounded-3xl p-6 shadow-sm overflow-x-auto">
-          <h3 className="text-sm font-extrabold text-gray-900 mb-4 uppercase tracking-wider">Comparison Matrix</h3>
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead>
-              <tr className="text-gray-400 font-extrabold uppercase tracking-wider border-b border-gray-200">
-                <th className="py-3 px-4">Feature</th>
-                {wishlist.map(item => (
-                  <th key={item.id} className="py-3 px-4 text-gray-900">{item.title}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-150 font-semibold text-gray-700">
-              <tr>
-                <td className="py-3 px-4 font-bold">Price</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4 text-[#1A1A1A] font-extrabold">{item.price}</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold">Size</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4">{item.beds} Bed, {item.baths} Bath, {item.sqft} sqft</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold">Noise Level</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4">{item.noiseLevel}</td>)}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {wishlist.length === 0 ? (
         <div className="bg-white border border-gray-150 rounded-[32px] p-12 shadow-sm text-center space-y-4">
