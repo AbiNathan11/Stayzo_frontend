@@ -83,9 +83,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Menu Sections */}
-        <div className="flex-1 px-4 py-8 overflow-y-auto space-y-8 select-none">
+        <div className="flex-1 px-4 py-8 overflow-y-auto space-y-3 select-none"> {/* Changed space-y-8 to space-y-3 */}
           {navSections.map((section, idx) => (
-            <nav key={idx} className="space-y-1">
+            <nav key={idx} className="space-y-3"> {/* Changed space-y-1 to space-y-3 */}
               {section.items.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
