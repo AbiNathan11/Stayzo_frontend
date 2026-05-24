@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Home, CalendarClock, Bell, MessageSquare, FileSignature, ShieldCheck, Download, UploadCloud } from 'lucide-react';
+import { Home, CalendarClock, Bell, MessageSquare, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TenantOverviewPage() {
-  const [user, setUser] = useState<{ firstName: string; lastName: string } | null>(null);
+  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('stayzo_token');
@@ -14,175 +14,177 @@ export default function TenantOverviewPage() {
         const payload = JSON.parse(atob(token.split('.')[1]));
         setUser({
           firstName: payload.firstName || 'Abiramy',
-          lastName: payload.lastName || ''
+          lastName: payload.lastName || '',
+          email: payload.email || 'abiramy@example.com'
         });
       } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '' });
+        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
       }
     } else {
-      setUser({ firstName: 'Abiramy', lastName: '' });
+      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
     }
   }, []);
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-300">
       
-      {/* Title & Edit Button */}
-      <div className="flex items-center space-x-4">
-        <h2 className="text-3xl font-semibold tracking-tight text-gray-900">About me</h2>
-        <button className="text-sm font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-1.5 transition cursor-pointer select-none">
-          Edit
-        </button>
+      {/* Dashboard Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A]">Dashboard Overview</h2>
       </div>
 
-      <div className="flex flex-col lg:flex-row items-start gap-12">
+      {/* Bento Grid Layout (Strictly Black & White Theme) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
         
-        {/* Giant Avatar Card (Left side of content area) */}
-        <div className="w-full lg:w-[320px] bg-white border border-gray-100 shadow-[0_6px_16px_rgba(0,0,0,0.12)] rounded-3xl p-10 flex flex-col items-center text-center shrink-0">
-          <div className="w-[104px] h-[104px] rounded-full bg-gray-100 text-gray-800 flex items-center justify-center text-[40px] font-semibold mb-4">
-            {userInitial}
-          </div>
-          <h3 className="text-[32px] font-semibold text-gray-900 leading-tight">
-            {user?.firstName}
-          </h3>
-          <p className="text-gray-500 text-sm font-semibold mt-1">Tenant</p>
-        </div>
-
-        {/* Complete Profile & Stats (Right side of content area) */}
-        <div className="flex-1 space-y-10">
-          
-          <div className="space-y-4 max-w-md">
-            <h4 className="text-xl font-semibold text-gray-900">Complete your profile</h4>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Your Stayzo profile is an important part of every reservation. Complete yours to help landlords and other guests get to know you.
-            </p>
-            <button className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-3.5 rounded-lg text-sm font-semibold transition active:scale-95 mt-2">
-              Get started
+        {/* 1. Profile Details & Photo (Spans 2 columns) */}
+        <div className="col-span-1 md:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-sm hover:shadow-md transition">
+          {/* Profile Photo Area */}
+          <div className="relative group shrink-0">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-100 text-[#1A1A1A] border-4 border-white shadow-sm flex items-center justify-center text-4xl sm:text-5xl font-bold overflow-hidden">
+              {userInitial}
+            </div>
+            <button className="absolute bottom-0 right-0 sm:bottom-2 sm:right-2 bg-[#1A1A1A] hover:bg-black text-white p-2 rounded-full shadow-md transition">
+              <Camera className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="border-t border-gray-200 pt-10">
-            <h4 className="text-xl font-semibold text-gray-900 mb-6">Tenant Analytics</h4>
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-md transition">
-                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
-                  <Home className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Active Bookings</p>
-                  <h3 className="text-2xl font-bold text-gray-900 mt-1">1</h3>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-md transition">
-                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
-                  <CalendarClock className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Pending Visits</p>
-                  <h3 className="text-2xl font-bold text-gray-900 mt-1">2</h3>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-md transition">
-                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Unread Messages</p>
-                  <h3 className="text-2xl font-bold text-gray-900 mt-1">3</h3>
-                </div>
-              </div>
-
+          
+          {/* Profile Details Area */}
+          <div className="flex-1 w-full text-center sm:text-left space-y-4">
+            <div>
+              <h3 className="text-2xl font-bold text-[#1A1A1A] leading-tight">
+                {user?.firstName} {user?.lastName}
+              </h3>
+              <p className="text-gray-500 text-sm font-semibold mt-1">{user?.email}</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button className="flex-1 flex items-center justify-center space-x-2 text-sm font-bold text-white bg-[#1A1A1A] hover:bg-black rounded-xl px-4 py-2.5 transition">
+                <Edit3 className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </button>
+              <button className="flex-1 flex items-center justify-center space-x-2 text-sm font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl px-4 py-2.5 transition">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Verify Identity</span>
+              </button>
             </div>
           </div>
+        </div>
 
-          <div className="border-t border-gray-200 pt-10">
-            <h4 className="text-xl font-semibold text-gray-900 mb-6">Digital Document Vault</h4>
-            <p className="text-gray-500 text-sm mb-6">Securely manage your legal agreements and verified KYC identity documents.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Signed Agreements */}
-              <section className="bg-white border border-gray-200 rounded-3xl p-6 hover:shadow-md transition">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
-                    <FileSignature className="w-5 h-5 text-blue-600" />
-                  </div>
+        {/* 2. My Reviews (Spans 1 or 2 columns) */}
+        <div className="col-span-1 md:col-span-1 xl:col-span-2 bg-[#1A1A1A] text-white rounded-3xl p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Star className="w-5 h-5 fill-white text-white" />
+              <h3 className="text-lg font-bold">My Reviews</h3>
+            </div>
+            <p className="text-gray-400 text-xs font-semibold leading-relaxed">
+              Read what landlords and property managers have said about you, and manage reviews you've written.
+            </p>
+          </div>
+          
+          <div className="mt-6 flex gap-3">
+            <button className="flex-1 bg-white text-[#1A1A1A] hover:bg-gray-100 rounded-xl py-2.5 text-xs font-bold transition shadow-sm">
+              View All
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Analytics Cards (Span 1 column each) */}
+        <div className="col-span-1 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-6">
+            <Home className="w-6 h-6 text-[#1A1A1A]" />
+          </div>
+          <div>
+            <h3 className="text-4xl font-black text-[#1A1A1A] mb-1">1</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Booking</p>
+          </div>
+        </div>
+
+        <div className="col-span-1 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-6">
+            <CalendarClock className="w-6 h-6 text-[#1A1A1A]" />
+          </div>
+          <div>
+            <h3 className="text-4xl font-black text-[#1A1A1A] mb-1">2</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pending Visits</p>
+          </div>
+        </div>
+
+        <div className="col-span-1 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-6">
+            <Bell className="w-6 h-6 text-[#1A1A1A]" />
+          </div>
+          <div>
+            <h3 className="text-4xl font-black text-[#1A1A1A] mb-1">3</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Unread Messages</p>
+          </div>
+        </div>
+
+        {/* 4. Digital Document Vault (Spans full width) */}
+        <div className="col-span-1 md:col-span-3 xl:col-span-4 bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h4 className="text-xl font-bold text-[#1A1A1A]">Digital Document Vault</h4>
+              <p className="text-gray-500 text-sm mt-1">Manage legal agreements and verified KYC documents.</p>
+            </div>
+            <button className="bg-[#1A1A1A] text-white hover:bg-black px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
+              <UploadCloud className="w-4 h-4" /> Upload Document
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Signed Agreements */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 hover:shadow-sm transition">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                  <FileSignature className="w-4 h-4 text-[#1A1A1A]" />
+                </div>
+                <h3 className="text-sm font-bold text-[#1A1A1A]">Signed Agreements</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition cursor-pointer">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">My Signed Agreements</h3>
-                    <p className="text-[10px] font-bold text-gray-400">E-signed rental contracts</p>
+                    <h4 className="text-xs font-bold text-[#1A1A1A]">Villa Tropical Cana Lease</h4>
+                    <p className="text-[10px] text-gray-500 mt-0.5 font-medium">Oct 1, 2026</p>
                   </div>
+                  <Download className="w-4 h-4 text-[#1A1A1A] hover:text-gray-600" />
                 </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-150">
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-900">Villa Tropical Cana Lease</h4>
-                      <p className="text-[10px] font-semibold text-gray-500 mt-0.5">Signed on Oct 1, 2026</p>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-800 transition p-2 bg-white rounded-lg shadow-sm border border-gray-200">
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-150">
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-900">Colombo Heights Agreement</h4>
-                      <p className="text-[10px] font-semibold text-gray-500 mt-0.5">Signed on Jan 15, 2024</p>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-800 transition p-2 bg-white rounded-lg shadow-sm border border-gray-200">
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              {/* Verified KYC */}
-              <section className="bg-white border border-gray-200 rounded-3xl p-6 hover:shadow-md transition">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
-                    <ShieldCheck className="w-5 h-5 text-green-600" />
-                  </div>
+                <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition cursor-pointer">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Verified KYC</h3>
-                    <p className="text-[10px] font-bold text-gray-400">Identity verification status</p>
+                    <h4 className="text-xs font-bold text-[#1A1A1A]">Colombo Heights Agreement</h4>
+                    <p className="text-[10px] text-gray-500 mt-0.5 font-medium">Jan 15, 2024</p>
+                  </div>
+                  <Download className="w-4 h-4 text-[#1A1A1A] hover:text-gray-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Verified KYC */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 hover:shadow-sm transition">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                  <ShieldCheck className="w-4 h-4 text-[#1A1A1A]" />
+                </div>
+                <h3 className="text-sm font-bold text-[#1A1A1A]">Verified KYC</h3>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-[#1A1A1A]" />
+                  <div>
+                    <h4 className="text-xs font-bold text-[#1A1A1A]">National ID Card (NIC)</h4>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Verified & Secure</p>
                   </div>
                 </div>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-green-500" />
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-900">National ID Card (NIC)</h4>
-                      <p className="text-[10px] font-semibold text-gray-500 mt-0.5">Verified & Watermarked securely</p>
-                    </div>
-                  </div>
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase">Verified</span>
-                </div>
-
-                <button className="w-full border-2 border-dashed border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition rounded-2xl p-4 flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-gray-900">
-                  <UploadCloud className="w-6 h-6" />
-                  <span className="text-xs font-bold">Upload New Document</span>
-                  <span className="text-[9px] font-semibold text-gray-400">JPG, PNG or PDF (Max 5MB)</span>
-                </button>
-              </section>
+                <span className="bg-[#1A1A1A] text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">Verified</span>
+              </div>
             </div>
           </div>
         </div>
 
       </div>
-
-      {/* Reviews Button Link Card */}
-      <div className="pt-4">
-        <button className="flex items-center space-x-3 text-sm font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl px-5 py-4 transition select-none">
-          <MessageSquare className="w-5 h-5 text-gray-600" />
-          <span>Reviews I've written</span>
-        </button>
-      </div>
-
     </div>
   );
 }

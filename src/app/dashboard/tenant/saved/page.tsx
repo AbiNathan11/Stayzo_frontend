@@ -104,46 +104,43 @@ export default function SavedPropertiesPage() {
           <Link href="/search" className="inline-block bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-sm mt-2">Browse properties</Link>
         </div>
       ) : (
-        <div className="flex flex-col space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlist.map((item) => (
-            <div key={item.id} className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col sm:flex-row group">
-              {/* Left Side: Image */}
-              <div className="h-[200px] sm:h-auto sm:w-[280px] sm:min-h-[180px] bg-gray-50 relative shrink-0">
+            <div key={item.id} className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group">
+              {/* Top Side: Image */}
+              <div className="h-[220px] w-full bg-gray-50 relative shrink-0">
                 <img src={item.image} alt={item.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
                 <button 
                   onClick={() => handleRemoveFromWishlist(item.id)} 
-                  className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm hover:bg-white text-red-500 p-2.5 rounded-full shadow-sm transition"
+                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition"
                   title="Remove from saved"
                 >
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                  <Heart className="w-4 h-4 fill-[#1A1A1A] text-[#1A1A1A]" />
                 </button>
               </div>
               
-              {/* Right Side: Details */}
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-xl text-gray-900 mb-1">{item.title}</h3>
-                    <p className="text-gray-500 text-sm font-medium">{item.address}</p>
+              {/* Bottom Side: Details */}
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg text-[#1A1A1A] leading-tight">{item.title}</h3>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-extrabold text-[#1A1A1A]">{item.price}</div>
-                    <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">/month</div>
-                  </div>
+                  <p className="text-gray-500 text-xs font-medium mb-4">{item.address}</p>
                 </div>
 
-                <div className="my-5 flex items-center space-x-6 text-sm font-semibold text-gray-700">
-                  <span className="flex items-center gap-2"><BedDouble className="w-4 h-4 text-[#F26B27]" />{item.beds} Beds</span>
-                  <span className="flex items-center gap-2"><Bath className="w-4 h-4 text-[#F26B27]" />{item.baths} Baths</span>
-                  <span className="flex items-center gap-2"><Maximize2 className="w-4 h-4 text-[#F26B27]" />{item.sqft.toLocaleString()} sqft</span>
+                <div className="flex items-center space-x-4 text-xs font-semibold text-gray-700 mb-4">
+                  <span className="flex items-center gap-1.5"><BedDouble className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.beds}</span>
+                  <span className="flex items-center gap-1.5"><Bath className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.baths}</span>
+                  <span className="flex items-center gap-1.5"><Maximize2 className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.sqft}</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="text-xs font-bold px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg">
-                    Noise: {item.noiseLevel}
+                  <div>
+                    <span className="text-lg font-extrabold text-[#1A1A1A]">{item.price}</span>
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase ml-1">/mo</span>
                   </div>
-                  <Link href="/search" className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold transition shadow-sm">
-                    View Details
+                  <Link href="/search" className="bg-[#1A1A1A] hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+                    View
                   </Link>
                 </div>
               </div>

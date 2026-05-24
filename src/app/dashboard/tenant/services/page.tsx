@@ -17,16 +17,16 @@ export default function ServicesPage() {
         {/* Boarding Food Tiffin */}
         <section className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-[#FFF8F3] flex items-center justify-center border border-[#F26B27]/20 mb-5">
-              <Coffee className="w-6 h-6 text-[#F26B27]" />
+            <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center border border-gray-200 mb-5">
+              <Coffee className="w-6 h-6 text-[#1A1A1A]" />
             </div>
-            <h3 className="text-xl font-extrabold text-gray-900 mb-2">Boarding Food Tiffin</h3>
+            <h3 className="text-xl font-extrabold text-[#1A1A1A] mb-2">Boarding Food Tiffin</h3>
             <p className="text-xs font-semibold text-gray-500 leading-relaxed mb-6">
               Subscribe to daily packaged meals delivered straight to your door. Explore menus from verified home cooks in your local area.
             </p>
           </div>
           
-          <div className="flex items-center justify-between border-t border-gray-150 pt-4 mt-auto">
+          <div className="flex items-center justify-between border-t border-gray-200 pt-4 mt-auto">
             <span className="text-xs font-extrabold text-[#1A1A1A]">View Local Menu</span>
             <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#1A1A1A] group-hover:text-white transition">
               <ChevronRight className="w-4 h-4" />
@@ -37,10 +37,10 @@ export default function ServicesPage() {
         {/* Nearby Part-time Jobs */}
         <section className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 mb-5">
-              <Briefcase className="w-6 h-6 text-indigo-600" />
+            <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center border border-gray-200 mb-5">
+              <Briefcase className="w-6 h-6 text-[#1A1A1A]" />
             </div>
-            <h3 className="text-xl font-extrabold text-gray-900 mb-2">Nearby Part-time Jobs</h3>
+            <h3 className="text-xl font-extrabold text-[#1A1A1A] mb-2">Nearby Part-time Jobs</h3>
             <p className="text-xs font-semibold text-gray-500 leading-relaxed mb-6">
               Explore student jobs and part-time vacancies specifically filtered for your geographic location and schedule.
             </p>
