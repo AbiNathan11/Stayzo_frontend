@@ -46,12 +46,12 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto">
           {/* Active Contact */}
           <div className="flex items-center gap-3 p-4 bg-white border-l-4 border-[#1A1A1A] cursor-pointer">
-            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-lg shrink-0">
               N
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-gray-900 truncate">Nimal Bandara</h3>
+                <h3 className="font-bold text-[#1A1A1A] truncate">Nimal Bandara</h3>
                 <span className="text-[10px] text-gray-400 font-semibold shrink-0">10:12 AM</span>
               </div>
               <p className="text-xs text-gray-500 truncate">Yes, the apartment is available...</p>
@@ -60,12 +60,12 @@ export default function ChatPage() {
 
           {/* Other Contact */}
           <div className="flex items-center gap-3 p-4 hover:bg-gray-50 border-l-4 border-transparent cursor-pointer transition">
-            <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-lg shrink-0">
+            <div className="w-12 h-12 rounded-full bg-gray-100 text-[#1A1A1A] border border-gray-200 flex items-center justify-center font-bold text-lg shrink-0">
               S
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-gray-900 truncate">Saman Perera</h3>
+                <h3 className="font-bold text-[#1A1A1A] truncate">Saman Perera</h3>
                 <span className="text-[10px] text-gray-400 font-semibold shrink-0">Oct 12</span>
               </div>
               <p className="text-xs text-gray-500 truncate">Thank you for the payment.</p>
@@ -80,20 +80,20 @@ export default function ChatPage() {
         {/* Chat Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-sm shrink-0">
               N
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Nimal Bandara</h3>
+              <h3 className="font-bold text-[#1A1A1A]">Nimal Bandara</h3>
               <p className="text-xs text-gray-500 font-medium">Colombo Heights Apartment</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3 text-gray-400">
+          <div className="flex items-center gap-3 text-[#1A1A1A]">
             <button 
               onClick={() => setTranslateOn(!translateOn)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                translateOn ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100 text-gray-500'
+                translateOn ? 'bg-[#1A1A1A] text-white' : 'hover:bg-gray-100 text-[#1A1A1A]'
               }`}
               title="Bilingual Translation"
             >
@@ -108,7 +108,7 @@ export default function ChatPage() {
 
         {/* Translation Alert */}
         {translateOn && (
-          <div className="bg-blue-50 border-b border-blue-100 px-6 py-2 flex items-center gap-2 text-xs font-semibold text-blue-700 shrink-0">
+          <div className="bg-gray-100 border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-semibold text-[#1A1A1A] shrink-0">
             <Info className="w-4 h-4" />
             Incoming messages are automatically translated to your preferred language.
           </div>

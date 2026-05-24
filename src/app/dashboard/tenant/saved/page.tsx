@@ -42,7 +42,7 @@ export default function SavedPropertiesPage() {
     }
   ]);
 
-  const [showCompare, setShowCompare] = useState(false);
+
 
   const handleRemoveFromWishlist = (id: number) => {
     setWishlist(wishlist.filter(item => item.id !== id));
@@ -56,46 +56,8 @@ export default function SavedPropertiesPage() {
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">Saved Properties</h2>
           <p className="text-gray-500 text-xs font-semibold mt-1">Your bookmarked premium stays and comparison matrix.</p>
         </div>
-        <button 
-          onClick={() => setShowCompare(!showCompare)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition ${
-            showCompare ? 'bg-[#1A1A1A] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <Scale className="w-4 h-4" /> 
-          {showCompare ? 'Hide Comparison Matrix' : 'Compare Saved'}
-        </button>
       </div>
 
-      {showCompare && wishlist.length > 1 && (
-        <div className="bg-[#F8FAFB] border border-[#1A1A1A]/10 rounded-3xl p-6 shadow-sm overflow-x-auto">
-          <h3 className="text-sm font-extrabold text-gray-900 mb-4 uppercase tracking-wider">Comparison Matrix</h3>
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead>
-              <tr className="text-gray-400 font-extrabold uppercase tracking-wider border-b border-gray-200">
-                <th className="py-3 px-4">Feature</th>
-                {wishlist.map(item => (
-                  <th key={item.id} className="py-3 px-4 text-gray-900">{item.title}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-150 font-semibold text-gray-700">
-              <tr>
-                <td className="py-3 px-4 font-bold">Price</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4 text-[#1A1A1A] font-extrabold">{item.price}</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold">Size</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4">{item.beds} Bed, {item.baths} Bath, {item.sqft} sqft</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold">Noise Level</td>
-                {wishlist.map(item => <td key={item.id} className="py-3 px-4">{item.noiseLevel}</td>)}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {wishlist.length === 0 ? (
         <div className="bg-white border border-gray-150 rounded-[32px] p-12 shadow-sm text-center space-y-4">
@@ -104,28 +66,44 @@ export default function SavedPropertiesPage() {
           <Link href="/search" className="inline-block bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-sm mt-2">Browse properties</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlist.map((item) => (
-            <div key={item.id} className="bg-white border border-gray-150 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-              <div className="h-[200px] w-full bg-gray-50 relative shrink-0">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                <button onClick={() => handleRemoveFromWishlist(item.id)} className="absolute top-3.5 right-3.5 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 p-2.5 rounded-xl shadow-md border border-gray-150 transition">
-                  <Trash2 className="w-3.5 h-3.5" />
+            <div key={item.id} className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group">
+              {/* Top Side: Image */}
+              <div className="h-[220px] w-full bg-gray-50 relative shrink-0">
+                <img src={item.image} alt={item.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
+                <button 
+                  onClick={() => handleRemoveFromWishlist(item.id)} 
+                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition"
+                  title="Remove from saved"
+                >
+                  <Heart className="w-4 h-4 fill-[#1A1A1A] text-[#1A1A1A]" />
                 </button>
               </div>
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-3.5">
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-base text-gray-900 leading-tight">{item.title}</h3>
-                  <p className="text-gray-400 text-[10px] font-bold truncate">{item.address}</p>
+              
+              {/* Bottom Side: Details */}
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg text-[#1A1A1A] leading-tight">{item.title}</h3>
+                  </div>
+                  <p className="text-gray-500 text-xs font-medium mb-4">{item.address}</p>
                 </div>
-                <div className="flex items-center space-x-4 text-xs font-bold text-gray-500">
-                  <span className="flex items-center"><BedDouble className="w-3.5 h-3.5 text-gray-400 mr-1.5" />{item.beds}</span>
-                  <span className="flex items-center"><Bath className="w-3.5 h-3.5 text-gray-400 mr-1.5" />{item.baths}</span>
-                  <span className="flex items-center"><Maximize2 className="w-3.5 h-3.5 text-gray-400 mr-1.5" />{item.sqft.toLocaleString()} sqft</span>
+
+                <div className="flex items-center space-x-4 text-xs font-semibold text-gray-700 mb-4">
+                  <span className="flex items-center gap-1.5"><BedDouble className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.beds}</span>
+                  <span className="flex items-center gap-1.5"><Bath className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.baths}</span>
+                  <span className="flex items-center gap-1.5"><Maximize2 className="w-3.5 h-3.5 text-[#1A1A1A]" />{item.sqft}</span>
                 </div>
-                <div className="pt-1 flex items-center justify-between">
-                  <div className="text-[#1A1A1A] font-extrabold text-base">{item.price}<span className="text-xs text-gray-400 font-semibold">/month</span></div>
-                  <Link href="/search" className="bg-[#1A1A1A] hover:bg-black text-white px-3.5 py-2 rounded-xl text-xs font-extrabold transition">View</Link>
+
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div>
+                    <span className="text-lg font-extrabold text-[#1A1A1A]">{item.price}</span>
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase ml-1">/mo</span>
+                  </div>
+                  <Link href="/search" className="bg-[#1A1A1A] hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+                    View
+                  </Link>
                 </div>
               </div>
             </div>
