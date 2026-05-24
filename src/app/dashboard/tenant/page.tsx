@@ -40,15 +40,15 @@ export default function TenantOverviewPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Profile Card (Spans 1 column on desktop) */}
-        <div className="col-span-1 md:col-span-1 bg-[#1A1A1A] text-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="col-span-1 md:col-span-1 bg-white text-[#1A1A1A] border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 opacity-50 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
           
           <div className="flex flex-col items-center text-center space-y-4 relative z-10">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-white text-[#1A1A1A] flex items-center justify-center text-4xl font-black shadow-sm">
+              <div className="w-24 h-24 rounded-full bg-gray-100 text-[#1A1A1A] flex items-center justify-center text-4xl font-black shadow-sm">
                 {userInitial}
               </div>
-              <button className="absolute bottom-0 right-0 bg-gray-200 text-[#1A1A1A] hover:bg-white p-2 rounded-full shadow-md transition">
+              <button className="absolute bottom-0 right-0 bg-[#1A1A1A] hover:bg-black text-white p-2 rounded-full shadow-md transition">
                 <Camera className="w-4 h-4" />
               </button>
             </div>
@@ -57,15 +57,15 @@ export default function TenantOverviewPage() {
               <h3 className="text-xl font-bold leading-tight">
                 {user?.firstName} {user?.lastName}
               </h3>
-              <p className="text-gray-400 text-xs font-semibold mt-1">{user?.email}</p>
+              <p className="text-gray-500 text-xs font-semibold mt-1">{user?.email}</p>
             </div>
 
             <div className="w-full flex flex-col gap-2 mt-4">
-              <button className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-[#1A1A1A] bg-white hover:bg-gray-100 rounded-xl px-4 py-2.5 transition shadow-sm">
+              <button className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-white bg-[#1A1A1A] hover:bg-black rounded-xl px-4 py-2.5 transition shadow-sm">
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Profile</span>
               </button>
-              <button className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-white border border-gray-600 hover:bg-gray-800 rounded-xl px-4 py-2.5 transition">
+              <button className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl px-4 py-2.5 transition">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Verify Identity</span>
               </button>
