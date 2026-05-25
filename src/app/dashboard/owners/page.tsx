@@ -112,12 +112,13 @@ export default function OwnerDashboard() {
               <span>GET STARTED</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <button
+            <Link
               id="owner-learn-more-btn"
-              className="bg-white hover:bg-gray-50 text-[#1A1A1A] text-[13px] font-extrabold tracking-widest uppercase px-8 py-4 rounded-full border border-gray-200 transition-all shadow hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+              href="/dashboard/owners/learn_more"
+              className="bg-white hover:bg-gray-50 text-[#1A1A1A] text-[13px] font-extrabold tracking-widest uppercase px-8 py-4 rounded-full border border-gray-200 transition-all shadow hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
             >
               LEARN MORE
-            </button>
+            </Link>
           </div>
         </div>
       </main>
