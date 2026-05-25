@@ -23,6 +23,32 @@ export default function LandingPage() {
   const [budget, setBudget] = useState('Any Budget');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  
+  const [contactForm, setContactForm] = useState({ fullName: '', email: '', subject: '', message: '' });
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.fullName || !contactForm.email || !contactForm.message) {
+      alert("Please fill in all required fields (Full name, Email, and Message).");
+      return;
+    }
+    const existing = localStorage.getItem('stayzo_contact_messages');
+    const messages = existing ? JSON.parse(existing) : [];
+    const newMsg = {
+      id: `MSG-${Date.now()}`,
+      fullName: contactForm.fullName,
+      email: contactForm.email,
+      subject: contactForm.subject || 'General Inquiry',
+      message: contactForm.message,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      status: 'Unread'
+    };
+    messages.unshift(newMsg); // Newest messages at top
+    localStorage.setItem('stayzo_contact_messages', JSON.stringify(messages));
+    alert("Thank you! Your message has been sent successfully.");
+    setContactForm({ fullName: '', email: '', subject: '', message: '' });
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -503,11 +529,14 @@ export default function LandingPage() {
               Define your goals and identify areas where Stayzo can add value to your renting experience.
             </p>
 
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+            <form onSubmit={handleContactSubmit} className="space-y-8">
               <div>
                 <input 
                   type="text" 
-                  placeholder="Full name" 
+                  placeholder="Full name *" 
+                  required
+                  value={contactForm.fullName}
+                  onChange={(e) => setContactForm({ ...contactForm, fullName: e.target.value })}
                   className="w-full bg-transparent border-b border-gray-200 pb-3 text-sm focus:outline-none focus:border-[#1A1A1A] text-gray-800 placeholder-gray-400 font-semibold transition-colors"
                 />
               </div>
@@ -515,7 +544,10 @@ export default function LandingPage() {
               <div>
                 <input 
                   type="email" 
-                  placeholder="Email" 
+                  placeholder="Email *" 
+                  required
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                   className="w-full bg-transparent border-b border-gray-200 pb-3 text-sm focus:outline-none focus:border-[#1A1A1A] text-gray-800 placeholder-gray-400 font-semibold transition-colors"
                 />
               </div>
@@ -524,13 +556,18 @@ export default function LandingPage() {
                 <input 
                   type="text" 
                   placeholder="Subject" 
+                  value={contactForm.subject}
+                  onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
                   className="w-full bg-transparent border-b border-gray-200 pb-3 text-sm focus:outline-none focus:border-[#1A1A1A] text-gray-800 placeholder-gray-400 font-semibold transition-colors"
                 />
               </div>
 
               <div>
                 <textarea 
-                  placeholder="Message" 
+                  placeholder="Message *" 
+                  required
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                   rows={2}
                   className="w-full bg-transparent border-b border-gray-200 pb-3 text-sm focus:outline-none focus:border-[#1A1A1A] text-gray-800 placeholder-gray-400 font-semibold resize-none transition-colors"
                 ></textarea>

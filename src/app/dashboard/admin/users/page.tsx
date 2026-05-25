@@ -77,73 +77,104 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Users Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredUsers.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-400 font-semibold">
-            No user accounts found matching your search.
-          </div>
-        ) : (
-          filteredUsers.map((account) => (
-            <div
-              key={account.id}
-              className={`border rounded-3xl p-6 transition flex flex-col justify-between space-y-4 hover:shadow-md ${account.status === 'Suspended' ? 'bg-red-50/20 border-red-100' : 'bg-white border-gray-100'}`}
-            >
-              {/* Top Info */}
-              <div className="space-y-3.5">
-                <div className="flex justify-between items-start">
-                  <div className="w-10 h-10 rounded-2xl bg-[#1A1A1A]/5 border border-gray-100 flex items-center justify-center font-extrabold text-sm select-none">
-                    {account.name.charAt(0)}
-                  </div>
-                  <div className="flex space-x-1.5">
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${account.role === 'Landlord' ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
-                      {account.role}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${account.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                      {account.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center space-x-1.5">
-                    <h4 className="font-extrabold text-base text-gray-900 truncate leading-tight">{account.name}</h4>
-                    {account.verified && (
-                      <span title="Verified Professional">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500 fill-emerald-500/10 shrink-0" />
+      {/* Users Table */}
+      <div className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs font-bold">
+            <thead>
+              <tr className="border-b border-gray-100 text-gray-400 uppercase tracking-widest text-[9px]">
+                <th className="py-4 px-6">User Details</th>
+                <th className="py-4 px-6">Email Address</th>
+                <th className="py-4 px-6">Account Role</th>
+                <th className="py-4 px-6">Joined Date</th>
+                <th className="py-4 px-6">Account Status</th>
+                <th className="py-4 px-6 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-gray-400 font-semibold">
+                    No user accounts found matching your search.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((account) => (
+                  <tr 
+                    key={account.id} 
+                    className={`hover:bg-gray-50/30 transition ${account.status === 'Suspended' ? 'bg-red-50/10' : ''}`}
+                  >
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-xl bg-gray-100 text-[#1A1A1A] border border-gray-200/50 flex items-center justify-center font-extrabold text-sm select-none shrink-0">
+                          {account.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-extrabold text-gray-900 text-sm leading-none">{account.name}</span>
+                            {account.verified && (
+                              <span title="Verified User">
+                                <ShieldCheck className="w-4 h-4 text-emerald-500 fill-emerald-500/10 shrink-0" />
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[9px] text-gray-400 font-semibold block mt-1">ID: #USR-{1000 + account.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-1.5 text-gray-700">
+                        <Mail className="w-3.5 h-3.5 text-gray-300" />
+                        <span>{account.email}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border ${account.role === 'Landlord' 
+                        ? 'bg-purple-50 text-purple-600 border-purple-100' 
+                        : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                        {account.role}
                       </span>
-                    )}
-                  </div>
-                  <p className="text-gray-400 font-semibold text-xs mt-1 flex items-center space-x-1">
-                    <Mail className="w-3.5 h-3.5 text-gray-300" />
-                    <span className="truncate">{account.email}</span>
-                  </p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-2 flex items-center space-x-1">
-                    <Calendar className="w-3.5 h-3.5 text-gray-300" />
-                    <span>Joined: {account.joinedDate}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="pt-4 border-t border-gray-50 flex items-center justify-between gap-3 text-xs select-none">
-                <button
-                  onClick={() => toggleVerifyUser(account.id)}
-                  className={`flex-1 py-2 px-3.5 rounded-xl font-extrabold transition cursor-pointer border flex items-center justify-center space-x-1.5 ${account.verified ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>{account.verified ? 'Verified' : 'Verify Account'}</span>
-                </button>
-                <button
-                  onClick={() => toggleSuspendUser(account.id)}
-                  className={`py-2 px-3.5 rounded-xl font-extrabold transition cursor-pointer border ${account.status === 'Suspended' ? 'bg-red-500 border-red-500 text-white hover:bg-red-600' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
-                >
-                  {account.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+                    </td>
+                    <td className="py-4 px-6 text-gray-400 font-semibold">
+                      <div className="flex items-center space-x-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-gray-300" />
+                        <span>{account.joinedDate}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border ${account.status === 'Active' 
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                        : 'bg-red-50 text-red-600 border-red-100'}`}>
+                        {account.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center justify-center space-x-2 text-xs select-none">
+                        <button
+                          onClick={() => toggleVerifyUser(account.id)}
+                          className={`px-3 py-1.5 rounded-xl font-extrabold transition cursor-pointer border flex items-center space-x-1 ${account.verified 
+                            ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100' 
+                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>{account.verified ? 'Verified' : 'Verify'}</span>
+                        </button>
+                        <button
+                          onClick={() => toggleSuspendUser(account.id)}
+                          className={`px-3 py-1.5 rounded-xl font-extrabold transition cursor-pointer border ${account.status === 'Suspended' 
+                            ? 'bg-red-500 border-red-500 text-white hover:bg-red-600' 
+                            : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
+                        >
+                          {account.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

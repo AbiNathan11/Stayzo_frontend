@@ -3,13 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, FileText, MessageSquare, LogOut } from 'lucide-react';
+// Added Building2 icon for the Listing Interactions item
+import { LayoutDashboard, Users, Activity, FileText, MessageSquare, LogOut, Building2, Mail, X } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [adminUser, setAdminUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
+  
+  // Profile modal states
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '' });
 
   useEffect(() => {
+    const savedProfile = localStorage.getItem('stayzo_admin_profile');
+    if (savedProfile) {
+      setAdminUser(JSON.parse(savedProfile));
+      return;
+    }
+
     const token = localStorage.getItem('stayzo_token');
     if (token) {
       try {
@@ -28,15 +40,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.firstName || !editForm.email) {
+      alert("First name and Email are required.");
+      return;
+    }
+    const updated = {
+      firstName: editForm.firstName,
+      lastName: editForm.lastName,
+      email: editForm.email
+    };
+    setAdminUser(updated);
+    localStorage.setItem('stayzo_admin_profile', JSON.stringify(updated));
+    setIsEditing(false);
+    alert("Profile details updated successfully.");
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('stayzo_token');
+    localStorage.removeItem('stayzo_admin_profile');
     window.location.href = '/';
   };
 
   const getPageTitle = () => {
     if (pathname === '/dashboard/admin') return 'Platform Overview';
     if (pathname?.startsWith('/dashboard/admin/users')) return 'Users Management';
+    if (pathname?.startsWith('/dashboard/admin/listings')) return 'Listing Interactions';
     if (pathname?.startsWith('/dashboard/admin/activities')) return 'Activities Management';
+    if (pathname?.startsWith('/dashboard/admin/messages')) return 'Contact Messages';
     if (pathname?.startsWith('/dashboard/admin/reviews')) return 'Reviews Management';
     if (pathname?.startsWith('/dashboard/admin/agreements')) return 'Agreements Management';
     return 'Dashboard';
@@ -51,7 +83,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
     {
       items: [
+        // Placed here parallel with user and platform activity monitoring pipelines
+        { href: '/dashboard/admin/listings', label: 'Listing Interactions', icon: Building2 },
         { href: '/dashboard/admin/activities', label: 'Activity Monitor', icon: Activity },
+        { href: '/dashboard/admin/messages', label: 'Messages', icon: Mail },
         { href: '/dashboard/admin/reviews', label: 'Ratings & Reviews', icon: MessageSquare },
       ],
     },
@@ -63,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex">
+    <div className="h-screen overflow-hidden bg-[#F8FAFC] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex">
 
       {/* SIDEBAR */}
       <aside className="w-[280px] bg-white border-r border-gray-100 flex flex-col shrink-0">
@@ -83,9 +118,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Menu Sections */}
-        <div className="flex-1 px-4 py-8 overflow-y-auto space-y-3 select-none"> {/* Changed space-y-8 to space-y-3 */}
+        <div className="flex-1 px-4 py-8 overflow-y-auto space-y-3 select-none">
           {navSections.map((section, idx) => (
-            <nav key={idx} className="space-y-3"> {/* Changed space-y-1 to space-y-3 */}
+            <nav key={idx} className="space-y-3">
               {section.items.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -135,7 +170,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => {
+                if (adminUser) {
+                  setEditForm({
+                    firstName: adminUser.firstName,
+                    lastName: adminUser.lastName,
+                    email: adminUser.email
+                  });
+                }
+                setIsProfileOpen(true);
+              }}
+              className="flex items-center space-x-3 hover:opacity-80 transition text-left outline-none cursor-pointer"
+            >
               <div className="text-right">
                 <p className="text-xs font-extrabold text-gray-900">{adminUser?.firstName} {adminUser?.lastName}</p>
                 <p className="text-[10px] font-bold text-gray-400">{adminUser?.email}</p>
@@ -143,7 +190,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="w-10 h-10 rounded-full bg-[#1A1A1A] text-white border border-gray-100 shadow-sm flex items-center justify-center font-extrabold text-sm select-none">
                 {adminUser?.firstName?.charAt(0).toUpperCase() || 'A'}
               </div>
-            </div>
+            </button>
           </div>
         </header>
 
@@ -153,6 +200,125 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
 
       </div>
+
+      {/* PROFILE DIALOG MODAL */}
+      {isProfileOpen && adminUser && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-6 relative animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <h3 className="font-extrabold text-lg text-gray-900">Admin Profile Details</h3>
+              <button 
+                onClick={() => { setIsProfileOpen(false); setIsEditing(false); }}
+                className="text-gray-400 hover:text-gray-700 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!isEditing ? (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-2xl">
+                  <div className="w-12 h-12 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-extrabold text-lg">
+                    {adminUser.firstName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-base text-gray-900">{adminUser.firstName} {adminUser.lastName}</h4>
+                    <p className="text-xs text-gray-400 font-semibold">{adminUser.email}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 text-xs font-bold text-gray-700">
+                  <div className="grid grid-cols-3 border-b border-gray-100 pb-2">
+                    <span className="text-gray-400 font-extrabold">First Name</span>
+                    <span className="col-span-2 text-gray-900">{adminUser.firstName}</span>
+                  </div>
+                  <div className="grid grid-cols-3 border-b border-gray-100 pb-2">
+                    <span className="text-gray-400 font-extrabold">Last Name</span>
+                    <span className="col-span-2 text-gray-900">{adminUser.lastName || '-'}</span>
+                  </div>
+                  <div className="grid grid-cols-3">
+                    <span className="text-gray-400 font-extrabold">Email Address</span>
+                    <span className="col-span-2 text-gray-900">{adminUser.email}</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setEditForm({
+                        firstName: adminUser.firstName,
+                        lastName: adminUser.lastName,
+                        email: adminUser.email
+                      });
+                      setIsEditing(true);
+                    }}
+                    className="flex-1 bg-[#1A1A1A] hover:bg-black text-white py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 outline-none focus:ring-1 focus:ring-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">Last Name</label>
+                  <input
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 outline-none focus:ring-1 focus:ring-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 outline-none focus:ring-1 focus:ring-gray-300"
+                  />
+                </div>
+
+                <div className="pt-4 flex space-x-3">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
