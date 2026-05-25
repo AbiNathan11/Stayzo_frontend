@@ -215,6 +215,7 @@ export default function SearchResultsPage() {
 
   const handleBookmarkToggle = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (bookmarkedIds.includes(id)) {
       setBookmarkedIds(bookmarkedIds.filter(bId => bId !== id));
     } else {
@@ -407,10 +408,11 @@ export default function SearchResultsPage() {
           {/* Cards Grid (Square shape) */}
           <div className={`grid ${gridColsClass} gap-6`}>
             {listings.map((listing) => (
-              <div 
+              <Link 
                 key={listing.id}
-                onClick={() => setActivePropertyId(listing.id)}
-                className="flex flex-col cursor-pointer group"
+                href={`/properties/${listing.id}`}
+                onMouseEnter={() => setActivePropertyId(listing.id)}
+                className="flex flex-col group no-underline"
               >
                 {/* Image Container */}
                 <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden shrink-0 relative bg-gray-100 mb-2">
@@ -439,7 +441,7 @@ export default function SearchResultsPage() {
                 {/* Details (Airbnb Simple Style) */}
                 <div className="flex-1 flex flex-col justify-between pt-1">
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-sm md:text-base leading-snug">{listing.title}</h3>
+                    <h3 className="font-semibold text-gray-900 text-sm md:text-base leading-snug group-hover:text-black transition-colors">{listing.title}</h3>
                     <div className="flex items-center text-sm text-gray-500 mt-1 font-normal flex-wrap">
                       <span>{listing.price} <span className="text-xs text-gray-400 font-normal">/ mo</span></span>
                       <span className="mx-1.5">•</span>
@@ -453,7 +455,7 @@ export default function SearchResultsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </main>
@@ -504,8 +506,9 @@ export default function SearchResultsPage() {
             ))}
 
             {/* Overlapping Hover/Popup details block from the image */}
-            <div 
-              className="absolute bg-white rounded-2xl p-3 shadow-2xl flex flex-col max-w-[240px] z-30 transition-all duration-500 border border-gray-100"
+            <Link 
+              href={`/properties/${selectedProperty.id}`}
+              className="absolute bg-white rounded-2xl p-3 shadow-2xl flex flex-col max-w-[240px] z-30 transition-all duration-500 border border-gray-150 hover:border-gray-300 no-underline cursor-pointer"
               style={{ top: `${selectedProperty.lng - 100}px`, left: `${selectedProperty.lat + 30}px` }}
             >
               <div className="w-full h-[100px] rounded-xl overflow-hidden mb-2 bg-gray-50">
@@ -517,7 +520,7 @@ export default function SearchResultsPage() {
               </div>
               <h4 className="font-extrabold text-[#1A1A1A] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
               <p className="text-[10px] font-semibold text-gray-500 line-clamp-1">{selectedProperty.address}</p>
-            </div>
+            </Link>
           </div>
 
           {/* Bottom Zoom Tools */}
