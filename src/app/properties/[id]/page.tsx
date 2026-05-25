@@ -36,6 +36,7 @@ interface PropertyDetail {
   about: string[];
   highlights: { title: string; desc: string }[];
   places: { type: string; count: number; size: string }[];
+  mapCoords: { lat: number; lng: number; zoom: number };
 }
 
 export default function PropertyDetailPage({ params }: { params: { id: string } }) {
@@ -89,7 +90,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
       places: [
         { type: "Master Suite", count: 1, size: "32 m²+" },
         { type: "Double Room", count: 2, size: "20 m²+" }
-      ]
+      ],
+      mapCoords: { lat: 6.0535, lng: 80.2210, zoom: 15 }
     },
     {
       id: 2,
@@ -137,7 +139,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
       places: [
         { type: "Deluxe Studio", count: 2, size: "26 m²+" },
         { type: "Single Cabin", count: 2, size: "15 m²+" }
-      ]
+      ],
+      mapCoords: { lat: 6.0100, lng: 80.1990, zoom: 15 }
     },
     {
       id: 3,
@@ -185,7 +188,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
       places: [
         { type: "Private Suite", count: 1, size: "24 m²+" },
         { type: "Standard Single", count: 1, size: "14 m²+" }
-      ]
+      ],
+      mapCoords: { lat: 6.0480, lng: 80.2050, zoom: 15 }
     },
     {
       id: 4,
@@ -233,9 +237,22 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
       places: [
         { type: "Executive Suite", count: 2, size: "36 m²+" },
         { type: "Deluxe Bedroom", count: 3, size: "22 m²+" }
-      ]
+      ],
+      mapCoords: { lat: 6.0535, lng: 80.2210, zoom: 15 }
     }
   ];
+
+  // Per-location map coordinates for fallback IDs 5–12
+  const fallbackCoords: Record<number, { lat: number; lng: number; zoom: number }> = {
+    5:  { lat: 6.0535, lng: 80.2210, zoom: 15 }, // Galle
+    6:  { lat: 5.9842, lng: 80.1989, zoom: 15 }, // Talpe
+    7:  { lat: 6.0535, lng: 80.2210, zoom: 15 }, // Galle
+    8:  { lat: 6.1395, lng: 80.1050, zoom: 15 }, // Hikkaduwa
+    9:  { lat: 5.9486, lng: 80.4502, zoom: 15 }, // Mirissa
+    10: { lat: 5.9744, lng: 80.4322, zoom: 15 }, // Weligama
+    11: { lat: 7.2906, lng: 80.6337, zoom: 14 }, // Kandy
+    12: { lat: 6.9271, lng: 79.8612, zoom: 14 }, // Colombo
+  };
 
   // Helper function to create dynamic properties for IDs 5 to 12
   const getPropertyDetail = (idNum: number): PropertyDetail => {
@@ -350,7 +367,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
       places: [
         { type: "Private Suite", count: 1, size: "22 m²+" },
         { type: "Standard room", count: 2, size: "14 m²+" }
-      ]
+      ],
+      mapCoords: fallbackCoords[idNum] || { lat: 6.0535, lng: 80.2210, zoom: 15 }
     };
   };
 
@@ -644,6 +662,62 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* ── Location Map Section ── */}
+            <div className="border-t border-gray-100 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Location</h4>
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${property.mapCoords.lat}&mlon=${property.mapCoords.lng}#map=${property.mapCoords.zoom}/${property.mapCoords.lat}/${property.mapCoords.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#1A1A1A] hover:underline transition"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open in Maps
+                </a>
+              </div>
+
+              {/* Address pill */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-1.5 bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">
+                  <MapPin className="w-3 h-3" />
+                  {property.address}
+                </div>
+                <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-600 text-[10px] font-bold px-3 py-1.5 rounded-full">
+                  <CheckCircle className="w-3 h-3 text-emerald-500" />
+                  Exact location on booking
+                </div>
+              </div>
+
+              {/* Map iframe container */}
+              <div className="relative w-full h-[340px] rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
+                {/* Grayscale OpenStreetMap embed centred on the property coords */}
+                <iframe
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.mapCoords.lng - 0.018}%2C${property.mapCoords.lat - 0.012}%2C${property.mapCoords.lng + 0.018}%2C${property.mapCoords.lat + 0.012}&layer=mapnik&marker=${property.mapCoords.lat}%2C${property.mapCoords.lng}`}
+                  className="w-full h-full border-none"
+                  style={{ filter: 'grayscale(100%) contrast(88%) brightness(104%)' }}
+                  title={`Map of ${property.address}`}
+                  loading="lazy"
+                />
+
+                {/* Floating property pin card overlay */}
+                <div className="absolute bottom-4 left-4 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 max-w-[240px] pointer-events-none">
+                  <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-white fill-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-extrabold text-[#1A1A1A] truncate">{property.title}</p>
+                    <p className="text-[10px] text-gray-500 font-semibold truncate">{property.address}</p>
+                  </div>
+                </div>
+
+                {/* Top-right zoom hint */}
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border border-gray-100 text-[9px] font-bold text-gray-500 px-2.5 py-1 rounded-lg shadow-sm pointer-events-none">
+                  Scroll to zoom
+                </div>
               </div>
             </div>
 
