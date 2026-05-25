@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Navbar from '../../../components/Navbar';
 import Footer from '../../../components/Footer';
 import { 
   Heart, BedDouble, Bath, Maximize2, 
@@ -419,11 +418,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
         </div>
       )}
 
-      {/* Top Navbar */}
-      <Navbar />
-
       {/* Main Container */}
-      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-28">
+      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-8 lg:py-12">
         
         {/* Navigation Breadcrumbs / Return Link */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
