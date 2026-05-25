@@ -56,6 +56,7 @@ export default function StartListingPage() {
   const [formData, setFormData] = useState({
     houseNo: "",
     street: "",
+    streetLine2: "",
     city: "",
     district: "",
     postalCode: "",
@@ -63,8 +64,8 @@ export default function StartListingPage() {
     kitchens: 1,
     bedrooms: 1,
     beds: 1,
-    bathrooms: 1,
-    bathroomType: "Attached",
+    attachedBathrooms: 0,
+    separateBathrooms: 1,
     rentPerMonth: "",
     advanceMoney: "",
     advanceDetails: "",
@@ -103,9 +104,32 @@ export default function StartListingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
+      {/* ── Global Header ── */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
+        <div className="flex items-center space-x-2.5">
+          <div className="flex items-end space-x-[3px] h-5">
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
+          </div>
+          <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">Stayzo</span>
+        </div>
+        <button className="text-sm font-semibold text-gray-800 hover:text-black hover:underline underline-offset-4 transition-all">
+          Save & exit
+        </button>
+      </header>
+
       {/* ── Main Content Area ── */}
-      <main className="flex-1 overflow-y-auto pb-32">
-        <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
+      <main className="flex-1 overflow-y-auto pt-16 pb-32">
+        <div className="max-w-3xl mx-auto px-6 pt-8 pb-12 md:pt-12 md:pb-20">
+          
+          {/* Sub-header Step Indicator */}
+          <div className="mb-6">
+            <span className="text-xs font-bold text-gray-800 tracking-widest uppercase">
+              Step {currentStep} of {TOTAL_STEPS}
+            </span>
+          </div>
           
           {/* STEP 1: ADDRESS */}
           {currentStep === 1 && (
@@ -128,7 +152,7 @@ export default function StartListingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Street Name
+                    Street Name (Line 1)
                   </label>
                   <input
                     type="text"
@@ -138,16 +162,28 @@ export default function StartListingPage() {
                     placeholder="e.g. Main Street"
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Street Name (Line 2)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.streetLine2}
+                    onChange={(e) => setFormData({ ...formData, streetLine2: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
+                    placeholder="e.g. Area, Building name (Optional)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
                     <input
@@ -249,7 +285,8 @@ export default function StartListingPage() {
                   { label: "Kitchens", field: "kitchens" },
                   { label: "Bedrooms", field: "bedrooms" },
                   { label: "Beds", field: "beds" },
-                  { label: "Bathrooms", field: "bathrooms" },
+                  { label: "Attached Bathrooms", field: "attachedBathrooms" },
+                  { label: "Separate Bathrooms", field: "separateBathrooms" },
                 ].map((item) => (
                   <div key={item.field} className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0">
                     <span className="text-lg text-gray-800">{item.label}</span>
@@ -272,25 +309,6 @@ export default function StartListingPage() {
                   </div>
                 ))}
 
-                {/* Bathroom Type Toggle */}
-                <div className="py-4 mt-4">
-                  <span className="text-lg text-gray-800 block mb-4">Bathroom Type</span>
-                  <div className="flex gap-4">
-                    {["Attached", "Not Attached"].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setFormData({ ...formData, bathroomType: type })}
-                        className={`flex-1 py-3 px-4 rounded-xl border font-medium text-sm transition-all ${
-                          formData.bathroomType === type
-                            ? "border-black bg-gray-50 ring-1 ring-black text-black"
-                            : "border-gray-200 text-gray-600 hover:border-gray-900"
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -465,7 +483,7 @@ export default function StartListingPage() {
           />
         </div>
 
-        <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="w-full px-6 lg:px-10 h-20 flex items-center justify-between">
           <button
             onClick={handleBack}
             className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors"
