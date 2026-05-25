@@ -106,7 +106,7 @@ export default function OwnerDashboard() {
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link
               id="owner-get-started-btn"
-              href="/dashboard/owners/listings/new"
+              href="/dashboard/owners/start_listing"
               className="flex items-center space-x-2 bg-[#1A1A1A] hover:bg-black text-white text-[13px] font-extrabold tracking-widest uppercase px-8 py-4 rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
             >
               <span>GET STARTED</span>
