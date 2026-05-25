@@ -72,6 +72,9 @@ export default function StartListingPage() {
     expectedTenants: 1,
     foodFacilities: "",
     partTimeJobs: "",
+    ownershipType: "Owner",
+    realOwnerName: "",
+    realOwnerEmail: "",
   });
 
   // Example handlers for counters
@@ -83,6 +86,14 @@ export default function StartListingPage() {
   };
 
   const handleNext = () => {
+    // Validation for Step 2: Broker Fields
+    if (currentStep === 2 && formData.ownershipType === "Broker") {
+      if (!formData.realOwnerName.trim() || !formData.realOwnerEmail.trim()) {
+        alert("Please provide the property owner's full name and email address.");
+        return;
+      }
+    }
+
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep((prev) => prev + 1);
     } else {
@@ -216,13 +227,67 @@ export default function StartListingPage() {
               <p className="text-gray-500 mb-8">
                 Please upload a recent electrical or water bill to verify your address.
               </p>
-              <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
+
+              {/* Document Upload Zone */}
+              <div className="mb-10 border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover:scale-105 transition-transform">
                   <UploadCloud className="w-8 h-8 text-gray-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
                 <p className="text-xs text-gray-500 mt-2">SVG, PNG, JPG or PDF (max. 5MB)</p>
               </div>
+
+              {/* Ownership Type Section */}
+              <div className="mb-10">
+                <label className="block text-base font-semibold text-gray-900 mb-4">
+                  What is your relationship to this property?
+                </label>
+                <div className="flex gap-4">
+                  {["Owner", "Broker"].map((role) => (
+                    <button
+                      key={role}
+                      onClick={() => setFormData({ ...formData, ownershipType: role })}
+                      className={`flex-1 py-4 px-6 rounded-xl border-2 font-medium text-sm transition-all ${
+                        formData.ownershipType === role
+                          ? "border-black bg-gray-50 text-black"
+                          : "border-gray-200 text-gray-600 hover:border-gray-900"
+                      }`}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Conditional Broker Form */}
+              {formData.ownershipType === "Broker" && (
+                <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Owner&apos;s Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.realOwnerName}
+                      onChange={(e) => setFormData({ ...formData, realOwnerName: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
+                      placeholder="Enter the property owner's name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Owner&apos;s Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.realOwnerEmail}
+                      onChange={(e) => setFormData({ ...formData, realOwnerEmail: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
+                      placeholder="Enter the property owner's email"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
