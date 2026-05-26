@@ -4,14 +4,10 @@ import React, { useState } from 'react';
 import {
   Star,
   Home,
-  Check,
-  AlertOctagon,
-  Trash2,
   Search,
   ThumbsUp,
-  Smile,
-  Meh,
-  Frown
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface ReviewItem {
@@ -104,8 +100,6 @@ export default function ReviewsPage() {
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [starFilter, setStarFilter] = useState<'All' | '5' | '4' | '3' | '2' | '1'>('All');
-  const [sentimentFilter, setSentimentFilter] = useState<'All' | 'Positive' | 'Neutral' | 'Negative'>('All');
 
   // Rating Distribution statistics
   const totalReviewsCount = reviews.length;
@@ -125,27 +119,21 @@ export default function ReviewsPage() {
     setReviews(reviews.map(r => r.id === id ? { ...r, status: 'Flagged' } : r));
   };
 
-  const handleDelete = (id: string) => {
-    setReviews(reviews.filter(r => r.id !== id));
-  };
-
   // Filter logic
+  // Simple search-only filtering; star and sentiment filters removed
   const filteredReviews = reviews.filter(r => {
     const matchesSearch =
       r.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.targetName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStar = starFilter === 'All' || r.rating.toString() === starFilter;
-    const matchesSentiment = sentimentFilter === 'All' || r.sentiment === sentimentFilter;
-
-    return matchesSearch && matchesStar && matchesSentiment;
+    return matchesSearch;
   });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
 
       {/* RATING OVERVIEW CARDS & BAR GRAPH */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Left Card: Overall Platform Rating */}
         <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col justify-between space-y-6">
@@ -193,10 +181,10 @@ export default function ReviewsPage() {
                   <div className="flex-1 bg-gray-50 h-2.5 rounded-full overflow-hidden border border-gray-100/50">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${stars === 5 ? 'bg-emerald-400' :
-                          stars === 4 ? 'bg-emerald-300' :
-                            stars === 3 ? 'bg-amber-300' :
-                              stars === 2 ? 'bg-amber-400' :
-                                'bg-red-400'
+                        stars === 4 ? 'bg-emerald-300' :
+                          stars === 3 ? 'bg-amber-300' :
+                            stars === 2 ? 'bg-amber-400' :
+                              'bg-red-400'
                         }`}
                       style={{ width: `${percentage}%` }}
                     ></div>
@@ -205,30 +193,6 @@ export default function ReviewsPage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Right Card: Quick Moderation Queue metrics */}
-        <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col justify-between space-y-6">
-          <div className="space-y-2">
-            <h4 className="font-extrabold text-sm text-gray-900">Compliance &amp; Moderation</h4>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Policy compliance index &amp; speed</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-xs font-extrabold">
-            <div className="bg-red-50/40 border border-red-100 rounded-2xl p-4">
-              <span className="text-[9px] text-red-500 uppercase tracking-widest block font-extrabold">Flagged Items</span>
-              <span className="text-2xl font-extrabold text-red-600 block mt-1">{reviews.filter(r => r.status === 'Flagged').length}</span>
-            </div>
-            <div className="bg-amber-50/40 border border-amber-100 rounded-2xl p-4">
-              <span className="text-[9px] text-amber-600 tracking-widest block font-extrabold">Pending Audits</span>
-              <span className="text-2xl font-extrabold text-amber-700 block mt-1">{reviews.filter(r => r.status === 'Pending').length}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center text-[10px] text-gray-400 font-extrabold space-x-1.5 pt-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Policy compliance is standard (100%)</span>
           </div>
         </div>
 
@@ -259,33 +223,6 @@ export default function ReviewsPage() {
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3.5 top-3" />
             </div>
 
-            {/* Stars rating filter */}
-            <div className="bg-[#F8FAFB] p-1 rounded-xl flex items-center space-x-0.5 text-[9px] font-extrabold uppercase select-none border border-gray-50">
-              <span className="text-gray-400 px-2 select-none font-extrabold uppercase text-[8px]">Stars</span>
-              {['All', '5', '4', '3', '2', '1'].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setStarFilter(star as any)}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${starFilter === star ? 'bg-white text-gray-900 shadow-sm border border-gray-100' : 'text-gray-400 hover:text-gray-700'}`}
-                >
-                  {star === 'All' ? 'All' : `${star}★`}
-                </button>
-              ))}
-            </div>
-
-            {/* Sentiment filter */}
-            <div className="bg-[#F8FAFB] p-1 rounded-xl flex items-center space-x-1 text-[9px] font-extrabold uppercase select-none border border-gray-50">
-              {['All', 'Positive', 'Neutral', 'Negative'].map((sent) => (
-                <button
-                  key={sent}
-                  onClick={() => setSentimentFilter(sent as any)}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${sentimentFilter === sent ? 'bg-white text-gray-900 shadow-sm border border-gray-100' : 'text-gray-400 hover:text-gray-700'}`}
-                >
-                  {sent}
-                </button>
-              ))}
-            </div>
-
           </div>
         </div>
 
@@ -299,10 +236,11 @@ export default function ReviewsPage() {
             filteredReviews.map((item) => (
               <div
                 key={item.id}
-                className={`border rounded-3xl p-6 transition flex flex-col justify-between space-y-6 hover:shadow-md ${item.status === 'Flagged' ? 'bg-red-50/10 border-red-100' :
-                    item.status === 'Pending' ? 'bg-amber-50/10 border-amber-100' :
-                      'bg-white border-gray-100'
-                  }`}
+                className={`border rounded-3xl p-6 transition flex flex-col justify-between space-y-6 hover:shadow-md ${
+                  item.status === 'Flagged'
+                    ? 'opacity-60 bg-gray-50/50 border-gray-200'
+                    : 'bg-white border-gray-100'
+                }`}
               >
                 {/* Upper Body: Identity and Target Entity */}
                 <div className="space-y-4">
@@ -316,36 +254,26 @@ export default function ReviewsPage() {
                         <p className="text-[10px] text-gray-400 font-semibold">{item.authorEmail}</p>
                       </div>
                     </div>
-
-                    <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
-                      <span className={`px-2.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${item.sentiment === 'Positive' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          item.sentiment === 'Neutral' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-red-50 text-red-600 border-red-100'
-                        } flex items-center space-x-1`}>
-                        {item.sentiment === 'Positive' && <Smile className="w-2.5 h-2.5 mr-0.5" />}
-                        {item.sentiment === 'Neutral' && <Meh className="w-2.5 h-2.5 mr-0.5" />}
-                        {item.sentiment === 'Negative' && <Frown className="w-2.5 h-2.5 mr-0.5" />}
-                        <span>{item.sentiment} AI Index</span>
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase border ${item.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          item.status === 'Flagged' ? 'bg-red-50 text-red-600 border-red-100' :
-                            'bg-amber-50 text-amber-600 border-amber-100'
-                        }`}>
-                        {item.status}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Target Property Segment */}
-                  <div className="bg-[#F8FAFB] rounded-2xl p-4 border border-gray-50 flex justify-between items-center text-xs font-bold text-gray-800">
-                    <div className="flex items-center space-x-2">
-                      <Home className="w-4 h-4 text-purple-500 shrink-0" />
-                      <div>
-                        <span className="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest block">Property Target</span>
-                        <span className="font-extrabold text-gray-900">{item.targetName}</span>
+                  {/* Property Image Placeholder */}
+                  <div className="flex items-center space-x-4 mb-2">
+                    <img
+                      src="https://via.placeholder.com/80"
+                      alt="Property"
+                      className="w-20 h-20 object-cover rounded-md border border-gray-200"
+                    />
+                    <div className="bg-[#F8FAFB] rounded-2xl p-4 border border-gray-50 flex justify-between items-center text-xs font-bold text-gray-800 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Home className="w-4 h-4 text-purple-500 shrink-0" />
+                        <div>
+                          <span className="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest block">Property Target</span>
+                          <span className="font-extrabold text-gray-900">{item.targetName}</span>
+                        </div>
                       </div>
+                      <span className="text-gray-400 font-semibold text-[10px]">{item.date}</span>
                     </div>
-                    <span className="text-gray-400 font-semibold text-[10px]">{item.date}</span>
                   </div>
 
                   {/* Rating Stars and Review Text */}
@@ -372,32 +300,29 @@ export default function ReviewsPage() {
                   </div>
 
                   <div className="flex items-center space-x-2 shrink-0">
-                    {item.status !== 'Approved' && (
-                      <button
-                        onClick={() => handleApprove(item.id)}
-                        className="bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 px-3.5 py-2 rounded-xl font-extrabold transition cursor-pointer flex items-center space-x-1"
-                        title="Approve / Clear Flag"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Approve</span>
-                      </button>
-                    )}
-                    {item.status !== 'Flagged' && (
-                      <button
-                        onClick={() => handleFlag(item.id)}
-                        className="bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 px-3.5 py-2 rounded-xl font-extrabold transition cursor-pointer flex items-center space-x-1"
-                        title="Flag under policy investigation"
-                      >
-                        <AlertOctagon className="w-3.5 h-3.5" />
-                        <span>Flag</span>
-                      </button>
-                    )}
                     <button
-                      onClick={() => handleDelete(item.id)}
-                      className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white p-2 rounded-xl font-extrabold transition cursor-pointer"
-                      title="Deactivate and delete review"
+                      onClick={() => handleApprove(item.id)}
+                      className={`px-3.5 py-2 rounded-xl font-extrabold transition cursor-pointer flex items-center space-x-1.5 border text-xs ${
+                        item.status === 'Approved'
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+                      }`}
+                      title="Show review on platform"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View</span>
+                    </button>
+                    <button
+                      onClick={() => handleFlag(item.id)}
+                      className={`px-3.5 py-2 rounded-xl font-extrabold transition cursor-pointer flex items-center space-x-1.5 border text-xs ${
+                        item.status === 'Flagged'
+                          ? 'bg-red-50 text-red-600 border-red-100'
+                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+                      }`}
+                      title="Hide review from platform"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>Hide</span>
                     </button>
                   </div>
                 </div>
