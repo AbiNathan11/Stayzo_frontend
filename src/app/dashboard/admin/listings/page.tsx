@@ -11,61 +11,30 @@ import {
     Check
 } from 'lucide-react';
 
-// Mock data representing approved property listings
-const initialListings = [
-    {
-        id: 'PROP-9021',
-        title: 'Luxury Apex Studio Apartment',
-        owner: 'Nimal Bandara',
-        ownerEmail: 'nimal@example.com',
-        location: 'Colombo 03, Sri Lanka',
-        price: 'Rs 150,000/mo',
-        fraudScore: 12,
-        status: 'Active',
-        image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80',
-        reason: 'Regular verified account activity'
-    },
-    {
-        id: 'PROP-4402',
-        title: 'Downtown Co-living Shared Room',
-        owner: 'Malith Perera',
-        ownerEmail: 'malith@example.com',
-        location: 'Kandy Central, Sri Lanka',
-        price: 'Rs 25,000/mo',
-        fraudScore: 8,
-        status: 'Active',
-        image: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=400&q=80',
-        reason: 'Owner identity checked and approved'
-    },
-    {
-        id: 'PROP-1104',
-        title: 'Serene Beachfront Oasis Villa',
-        owner: 'Jane Doe',
-        ownerEmail: 'jane@example.com',
-        location: 'Hikkaduwa Coastal, Sri Lanka',
-        price: 'Rs 450,000/mo',
-        fraudScore: 15,
-        status: 'Active',
-        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
-        reason: 'Ownership deed verified'
-    },
-    {
-        id: 'PROP-5509',
-        title: 'Modern Highrise Penthouse Suite',
-        owner: 'Aberam Krish',
-        ownerEmail: 'aberam@example.com',
-        location: 'Colombo 05, Sri Lanka',
-        price: 'Rs 280,000/mo',
-        fraudScore: 22,
-        status: 'Disabled',
-        image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=400&q=80',
-        reason: 'Temporarily hidden by administrator request'
-    }
-];
-
 export default function ListingInteractionsPage() {
-    const [listings, setListings] = useState(initialListings);
+    const [listings, setListings] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+
+    React.useEffect(() => {
+        fetch('http://localhost:3001/api/properties')
+            .then(res => res.json())
+            .then(data => {
+                const mapped = data.map((item: any) => ({
+                    id: item.id,
+                    title: item.title,
+                    owner: item.owner ? `${item.owner.firstName || ''} ${item.owner.lastName || ''}`.trim() || 'Admin/Owner' : 'Unknown Owner',
+                    ownerEmail: item.owner?.email || 'N/A',
+                    location: `${item.city || 'Anytown'}, ${item.state || 'ST'}`,
+                    price: `$${item.price}/mo`,
+                    fraudScore: Math.floor(Math.random() * 25), // Mock fraud score for demo
+                    status: item.status || 'Active',
+                    image: item.images?.[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80',
+                    reason: 'Loaded from database'
+                }));
+                setListings(mapped);
+            })
+            .catch(console.error);
+    }, []);
 
     const toggleStatus = (id: string) => {
         setListings(listings.map((item) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link'; // Use simple link or button to redirect
 import Navbar from '../../components/Navbar';
 import { 
@@ -39,181 +39,35 @@ export default function SearchResultsPage() {
   const [suitableFor, setSuitableFor] = useState<string>('');
   
   // Active/Hovered Card for Map Sync
-  const [activePropertyId, setActivePropertyId] = useState<number>(1);
-  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([1, 3]);
+  const [activePropertyId, setActivePropertyId] = useState<string | number>(1);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const [listings, setListings] = useState<any[]>([]);
 
-  const listings: Listing[] = [
-    {
-      id: 1,
-      title: "Villa in Galle",
-      address: "Galle, Sri Lanka",
-      beds: 3,
-      baths: 2,
-      sqft: 1800,
-      price: "Rs. 17,827",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 160,
-      lng: 150,
-      rating: 4.97,
-      guestFavorite: true
-    },
-    {
-      id: 2,
-      title: "Guesthouse in Unawatuna",
-      address: "Unawatuna, Sri Lanka",
-      beds: 4,
-      baths: 4,
-      sqft: 2500,
-      price: "Rs. 96,000",
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 280,
-      lng: 190,
-      rating: 5.0,
-      guestFavorite: true
-    },
-    {
-      id: 3,
-      title: "Villa in Hapugala",
-      address: "Hapugala, Sri Lanka",
-      beds: 2,
-      baths: 2,
-      sqft: 1400,
-      price: "Rs. 49,071",
-      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 220,
-      lng: 310,
-      rating: 4.92,
-      guestFavorite: true
-    },
-    {
-      id: 4,
-      title: "Villa in Galle",
-      address: "Galle, Sri Lanka",
-      beds: 5,
-      baths: 5,
-      sqft: 3500,
-      price: "Rs. 233,671",
-      image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 100,
-      lng: 260,
-      rating: 4.98,
-      guestFavorite: true
-    },
-    {
-      id: 5,
-      title: "Villa in Galle",
-      address: "Galle, Sri Lanka",
-      beds: 3,
-      baths: 3,
-      sqft: 2100,
-      price: "Rs. 151,886",
-      image: "https://images.unsplash.com/photo-1494526585095-c41746248156?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 120,
-      lng: 280,
-      rating: 4.97,
-      guestFavorite: true
-    },
-    {
-      id: 6,
-      title: "Villa in Talpe",
-      address: "Talpe, Sri Lanka",
-      beds: 6,
-      baths: 6,
-      sqft: 4800,
-      price: "Rs. 456,836",
-      image: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 140,
-      lng: 300,
-      rating: 5.0,
-      guestFavorite: false
-    },
-    {
-      id: 7,
-      title: "Condo in Galle",
-      address: "Galle, Sri Lanka",
-      beds: 2,
-      baths: 2,
-      sqft: 1100,
-      price: "Rs. 100,374",
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 150,
-      lng: 290,
-      rating: 4.9,
-      guestFavorite: true
-    },
-    {
-      id: 8,
-      title: "Villas by the Bay",
-      address: "Hikkaduwa, Sri Lanka",
-      beds: 4,
-      baths: 3,
-      sqft: 2400,
-      price: "Rs. 115,000",
-      image: "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 130,
-      lng: 250,
-      rating: 4.88,
-      guestFavorite: false
-    },
-    {
-      id: 9,
-      title: "Mirissa Beach House",
-      address: "Mirissa, Sri Lanka",
-      beds: 3,
-      baths: 2,
-      sqft: 1950,
-      price: "Rs. 75,000",
-      image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 170,
-      lng: 270,
-      rating: 4.95,
-      guestFavorite: true
-    },
-    {
-      id: 10,
-      title: "Weligama Surf Lodge",
-      address: "Weligama, Sri Lanka",
-      beds: 5,
-      baths: 4,
-      sqft: 3100,
-      price: "Rs. 130,000",
-      image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 180,
-      lng: 240,
-      rating: 4.86,
-      guestFavorite: false
-    },
-    {
-      id: 11,
-      title: "Kandy Mountain Haven",
-      address: "Kandy, Sri Lanka",
-      beds: 4,
-      baths: 4,
-      sqft: 2800,
-      price: "Rs. 95,000",
-      image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 200,
-      lng: 220,
-      rating: 4.91,
-      guestFavorite: true
-    },
-    {
-      id: 12,
-      title: "Colombo Sky Villa",
-      address: "Colombo, Sri Lanka",
-      beds: 3,
-      baths: 3,
-      sqft: 2200,
-      price: "Rs. 210,000",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      lat: 110,
-      lng: 210,
-      rating: 4.94,
-      guestFavorite: true
-    }
-  ];
+  useEffect(() => {
+    fetch('http://localhost:3001/api/properties')
+      .then(res => res.json())
+      .then(data => {
+        const mapped = data.map((item: any, index: number) => ({
+          ...item,
+          // Generate mock map coordinates for the frontend demo based on index
+          lat: 100 + ((index * 40) % 200),
+          lng: 150 + ((index * 30) % 200),
+          rating: 4.8 + (Math.random() * 0.2),
+          guestFavorite: index % 3 === 0,
+          image: item.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
+          beds: item.bedrooms || 1,
+          baths: item.bathrooms || 1,
+          sqft: item.sqft || 1000,
+          price: `$${item.price}`,
+          address: `${item.city || 'Anytown'}, ${item.state || 'ST'}`
+        }));
+        setListings(mapped);
+        if (mapped.length > 0) setActivePropertyId(mapped[0].id);
+      })
+      .catch(console.error);
+  }, []);
 
-  const handleBookmarkToggle = (id: number, e: React.MouseEvent) => {
+  const handleBookmarkToggle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if (bookmarkedIds.includes(id)) {
@@ -407,56 +261,69 @@ export default function SearchResultsPage() {
 
           {/* Cards Grid (Square shape) */}
           <div className={`grid ${gridColsClass} gap-6`}>
-            {listings.map((listing) => (
-              <Link 
-                key={listing.id}
-                href={`/properties/${listing.id}`}
-                onMouseEnter={() => setActivePropertyId(listing.id)}
-                className="flex flex-col group no-underline"
-              >
-                {/* Image Container */}
-                <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden shrink-0 relative bg-gray-100 mb-2">
-                  <img 
-                    src={listing.image} 
-                    alt={listing.title} 
-                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                  />
-                  
-                  {/* Guest favorite Badge */}
-                  {listing.guestFavorite && (
-                    <div className="absolute top-2.5 left-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-bold text-gray-900 shadow-sm uppercase tracking-wide">
-                      Guest favorite
-                    </div>
-                  )}
+            {listings.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-gray-500 font-semibold">
+                No properties found matching your search.
+              </div>
+            ) : (
+              listings.map((listing) => (
+                <Link 
+                  key={listing.id}
+                  href={`/properties/${listing.id}`}
+                  onMouseEnter={() => setActivePropertyId(listing.id)}
+                  className="flex flex-col group no-underline"
+                >
+                  {/* Image Container */}
+                  <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden shrink-0 relative bg-gray-100 mb-2">
+                    <img 
+                      src={listing.image} 
+                      alt={listing.title} 
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                    />
+                    
+                    {/* Guest favorite Badge */}
+                    {listing.guestFavorite && (
+                      <div className="absolute top-2.5 left-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-bold text-gray-900 shadow-sm uppercase tracking-wide">
+                        Guest favorite
+                      </div>
+                    )}
+                    
+                    {/* 360 Badge */}
+                    {listing.panoramaImage && (
+                      <div className="absolute bottom-2.5 left-2.5 z-10 bg-purple-600/90 backdrop-blur-xs px-2 py-0.5 rounded text-[9px] font-black text-white shadow-sm uppercase tracking-wider">
+                        360° Tour
+                      </div>
+                    )}
 
-                  {/* Bookmark Heart Button */}
-                  <button 
-                    onClick={(e) => handleBookmarkToggle(listing.id, e)}
-                    className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/10 hover:bg-black/25 backdrop-blur-xs transition"
-                  >
-                    <Heart className={`w-4 h-4 transition-colors ${bookmarkedIds.includes(listing.id) ? 'fill-[#1A1A1A] stroke-white' : 'fill-transparent stroke-white'}`} />
-                  </button>
-                </div>
+                    {/* Bookmark Heart Button */}
+                    <button 
+                      onClick={(e) => handleBookmarkToggle(listing.id, e)}
+                      className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/10 hover:bg-black/25 backdrop-blur-xs transition"
+                    >
+                      <Heart className={`w-4 h-4 transition-colors ${bookmarkedIds.includes(listing.id) ? 'fill-[#1A1A1A] stroke-white' : 'fill-transparent stroke-white'}`} />
+                    </button>
+                  </div>
 
-                {/* Details (Airbnb Simple Style) */}
-                <div className="flex-1 flex flex-col justify-between pt-1">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-sm md:text-base leading-snug group-hover:text-black transition-colors">{listing.title}</h3>
-                    <div className="flex items-center text-sm text-gray-500 mt-1 font-normal flex-wrap">
-                      <span>{listing.price} <span className="text-xs text-gray-400 font-normal">/ mo</span></span>
-                      <span className="mx-1.5">•</span>
-                      <span className="flex items-center text-gray-700 font-medium">
-                        <Star className="w-3.5 h-3.5 fill-gray-900 stroke-none mr-0.5" />
-                        {listing.rating.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5 font-medium">
-                      {listing.beds} beds • {listing.baths} baths • {listing.sqft.toLocaleString()} sqft
+                  {/* Details (Airbnb Simple Style) */}
+                  <div className="flex-1 flex flex-col justify-between pt-1">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm md:text-base leading-snug group-hover:text-black transition-colors">{listing.title}</h3>
+                      <div className="flex items-center text-sm text-gray-500 mt-1 font-normal flex-wrap">
+                        <span>{listing.price} <span className="text-xs text-gray-400 font-normal">/ mo</span></span>
+                        <span className="mx-1.5">•</span>
+                        <span className="flex items-center text-gray-700 font-medium">
+                          <Star className="w-3.5 h-3.5 fill-gray-900 stroke-none mr-0.5" />
+                          {listing.rating.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5 font-medium">
+                        {listing.beds} beds • {listing.baths} baths • {listing.sqft.toLocaleString()} sqft
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
         </main>
 
@@ -506,21 +373,23 @@ export default function SearchResultsPage() {
             ))}
 
             {/* Overlapping Hover/Popup details block from the image */}
-            <Link 
-              href={`/properties/${selectedProperty.id}`}
-              className="absolute bg-white rounded-2xl p-3 shadow-2xl flex flex-col max-w-[240px] z-30 transition-all duration-500 border border-gray-150 hover:border-gray-300 no-underline cursor-pointer"
-              style={{ top: `${selectedProperty.lng - 100}px`, left: `${selectedProperty.lat + 30}px` }}
-            >
-              <div className="w-full h-[100px] rounded-xl overflow-hidden mb-2 bg-gray-50">
-                <img 
-                  src={selectedProperty.image} 
-                  alt={selectedProperty.title} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h4 className="font-extrabold text-[#1A1A1A] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
-              <p className="text-[10px] font-semibold text-gray-500 line-clamp-1">{selectedProperty.address}</p>
-            </Link>
+            {selectedProperty && (
+              <Link 
+                href={`/properties/${selectedProperty.id}`}
+                className="absolute bg-white rounded-2xl p-3 shadow-2xl flex flex-col max-w-[240px] z-30 transition-all duration-500 border border-gray-150 hover:border-gray-300 no-underline cursor-pointer"
+                style={{ top: `${selectedProperty.lng - 100}px`, left: `${selectedProperty.lat + 30}px` }}
+              >
+                <div className="w-full h-[100px] rounded-xl overflow-hidden mb-2 bg-gray-50">
+                  <img 
+                    src={selectedProperty.image} 
+                    alt={selectedProperty.title} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h4 className="font-extrabold text-[#1A1A1A] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
+                <p className="text-[10px] font-semibold text-gray-500 line-clamp-1">{selectedProperty.address}</p>
+              </Link>
+            )}
           </div>
 
           {/* Bottom Zoom Tools */}
