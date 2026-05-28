@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import Footer from '@/components/Footer';
+import { io, Socket } from 'socket.io-client';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface TemplateField {
@@ -375,31 +376,70 @@ export default function OwnerAgreementPage() {
   const [showSigModal, setShowSigModal] = useState<'landlord' | 'tenant' | null>(null);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
+  const [customIp, setCustomIp] = useState<string>('');
+  const [socket, setSocket] = useState<Socket | null>(null);
+  
+  // Use a unique draft ID (timestamp-based) for the socket room
+  const [activeDraftId] = useState<string>(`draft_${Date.now()}`);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Set mobile URL for QR code
+  // Set mobile URL for QR code and init Socket.io
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Clear out localStorage signature cache on initialization so clean slates are guaranteed
       localStorage.removeItem('stayzo_landlord_sig');
       localStorage.removeItem('stayzo_tenant_sig');
       setMobileBaseUrl(`${window.location.origin}/dashboard/owners/agreement/sign`);
-    }
-  }, []);
 
-  // Listen to Storage events (from phone signature pads)
+      // Initialize Socket connection to backend
+      const backendUrl = `http://${window.location.hostname}:3001`;
+      const newSocket = io(backendUrl);
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        newSocket.emit('join_draft', activeDraftId);
+      });
+
+      newSocket.on('signature_received', (data: { role: 'landlord' | 'tenant', signatureDataUrl: string }) => {
+        if (data.role === 'landlord') {
+          setLandlordSig(data.signatureDataUrl);
+          showToast("Landlord signature received from mobile!");
+        } else {
+          setTenantSig(data.signatureDataUrl);
+          showToast("Tenant signature received from mobile!");
+        }
+        setShowSigModal(null);
+      });
+
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [activeDraftId]);
+
+  // Compute final QR code URL (append draftId)
+  const getQrCodeUrl = () => {
+    if (customIp.trim()) {
+      // Clean custom IP input from protocols or trailing slashes
+      const cleanIp = customIp.trim().replace(/^(https?:\/\/)?/, '').replace(/\/$/, '');
+      const port = window.location.port ? `:${window.location.port}` : '';
+      return `http://${cleanIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}`;
+    }
+    return `${mobileBaseUrl}?role=${showSigModal}&draftId=${activeDraftId}`;
+  };
+
+  // Listen to Storage events (fallback from phone signature pads on same device)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'stayzo_landlord_sig' && e.newValue) {
         setLandlordSig(e.newValue);
-        showToast("Landlord signature received from mobile!");
+        showToast("Landlord signature received locally!");
         setShowSigModal(null);
         localStorage.removeItem('stayzo_landlord_sig'); // clean up
       }
       if (e.key === 'stayzo_tenant_sig' && e.newValue) {
         setTenantSig(e.newValue);
-        showToast("Tenant signature received from mobile!");
+        showToast("Tenant signature received locally!");
         setShowSigModal(null);
         localStorage.removeItem('stayzo_tenant_sig'); // clean up
       }
@@ -1211,12 +1251,29 @@ export default function OwnerAgreementPage() {
                     <p className="text-[11px] text-gray-500 font-medium">
                       Scan this QR code with your mobile phone camera to open the secure signing pad. Draw your signature on your phone screen, and it will update here in real-time.
                     </p>
+
+                    {/* Local Network IP Input */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left space-y-1.5">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                        🔌 Scanning with a real phone?
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter computer Local IP (e.g. 192.168.1.15)"
+                        value={customIp}
+                        onChange={(e) => setCustomIp(e.target.value)}
+                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded bg-white text-[11px] font-semibold text-slate-700 outline-none focus:border-slate-400"
+                      />
+                      <p className="text-[8px] text-slate-450 font-medium leading-normal">
+                        Tip: Open terminal on your computer and run <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-slate-800">ipconfig</code> to find your IPv4 Address. Ensure both devices are on the same Wi-Fi network.
+                      </p>
+                    </div>
                     
                     {/* QR Code Container */}
                     <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
                       {mobileBaseUrl ? (
                         <img 
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(mobileBaseUrl + '?role=' + showSigModal)}`}
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
                           alt="Signature QR Code" 
                           className="w-full h-full object-contain"
                         />
@@ -1233,7 +1290,7 @@ export default function OwnerAgreementPage() {
                       
                       {/* Desktop Sandbox Test Link */}
                       <a
-                        href={`${mobileBaseUrl}?role=${showSigModal}`}
+                        href={getQrCodeUrl()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] font-black text-purple-700 hover:underline uppercase tracking-wider pt-2"

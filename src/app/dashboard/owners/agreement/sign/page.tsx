@@ -4,14 +4,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, RotateCcw, Check, ArrowLeft, PenTool } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
 
 export default function MobileSignPage() {
   const router = useRouter();
   
   // Read query params manually to support standard React hydration
   const [role, setRole] = useState<'landlord' | 'tenant'>('landlord');
+  const [draftId, setDraftId] = useState<string>('default-draft');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -22,6 +25,19 @@ export default function MobileSignPage() {
       if (roleParam === 'tenant') {
         setRole('tenant');
       }
+      const draftIdParam = params.get('draftId');
+      if (draftIdParam) {
+        setDraftId(draftIdParam);
+      }
+
+      // Connect to backend socket server using the current hostname to handle local IPs dynamically
+      const backendUrl = `http://${window.location.hostname}:3001`;
+      const newSocket = io(backendUrl);
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
     }
   }, []);
 
@@ -127,9 +143,18 @@ export default function MobileSignPage() {
     // Convert canvas drawing to base64 Data URL
     const signatureDataUrl = canvas.toDataURL('image/png');
     
-    // Save to localStorage so that desktop listener picks it up in real-time
+    // Save to localStorage (fallback for same-device testing)
     const storageKey = role === 'landlord' ? 'stayzo_landlord_sig' : 'stayzo_tenant_sig';
     localStorage.setItem(storageKey, signatureDataUrl);
+
+    // Socket.io transmission (for separate devices)
+    if (socket) {
+      socket.emit('signature_drawn', {
+        draftId,
+        role,
+        signatureDataUrl
+      });
+    }
 
     setIsSubmitted(true);
   };
