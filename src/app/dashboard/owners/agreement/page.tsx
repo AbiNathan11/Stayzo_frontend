@@ -19,7 +19,11 @@ import {
   ArrowLeft,
   Layout,
   BookOpen,
-  Scale
+  Scale,
+  QrCode,
+  Smartphone,
+  MousePointerClick,
+  X
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 
@@ -51,6 +55,8 @@ interface SavedAgreement {
   dateCreated: string;
   visualTheme: string;
   values: Record<string, string>;
+  landlordSig?: string;
+  tenantSig?: string;
 }
 
 // ─── NAV LINKS ──────────────────────────────────────────────────────────────
@@ -63,7 +69,7 @@ const navLinks = [
   { label: 'Profile',      href: '/dashboard/owners/profile' },
 ];
 
-// ─── TEMPLATES DATA (SIMPLE -> STANDARD -> DETAILED) ─────────────────────────
+// ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
 const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
   {
     id: 'simple-agreement',
@@ -210,7 +216,7 @@ Signature                                Signature`
   }
 ];
 
-// ─── VISUAL DESIGN THEMES (LIKE CV TEMPLATES) ────────────────────────────────
+// ─── VISUAL DESIGN THEMES ────────────────────────────────────────────────────
 type VisualTheme = 'classic-legal' | 'modern-clean' | 'executive-elite';
 
 const VISUAL_THEMES = [
@@ -219,6 +225,133 @@ const VISUAL_THEMES = [
   { id: 'executive-elite' as VisualTheme, label: '💎 Executive Elite', description: 'Premium corporate layout with structured tables and dark accents.' }
 ];
 
+// ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────
+function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Setup initial canvas styles
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Draw a grey dotted guide line
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(15, canvas.height - 30);
+    ctx.lineTo(canvas.width - 15, canvas.height - 30);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+  }, []);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Redraw guide line
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(15, canvas.height - 30);
+    ctx.lineTo(canvas.width - 15, canvas.height - 30);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+  };
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    onSave(canvas.toDataURL('image/png'));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 flex flex-col items-center">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          width={360}
+          height={180}
+          className="bg-white cursor-crosshair border-b border-slate-100"
+        />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={handleClear}
+          className="px-4 py-2 border border-slate-200 text-slate-700 hover:border-slate-400 text-[10px] font-black uppercase rounded-lg transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          onClick={handleSave}
+          className="px-4 py-2 bg-[#1A1A1A] hover:bg-black text-white text-[10px] font-black uppercase rounded-lg transition-colors shadow-sm"
+        >
+          Apply Signature
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
   
@@ -236,7 +369,44 @@ export default function OwnerAgreementPage() {
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
 
+  // Signatures State
+  const [landlordSig, setLandlordSig] = useState<string | null>(null);
+  const [tenantSig, setTenantSig] = useState<string | null>(null);
+  const [showSigModal, setShowSigModal] = useState<'landlord' | 'tenant' | null>(null);
+  const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
+  const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Set mobile URL for QR code
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clear out localStorage signature cache on initialization so clean slates are guaranteed
+      localStorage.removeItem('stayzo_landlord_sig');
+      localStorage.removeItem('stayzo_tenant_sig');
+      setMobileBaseUrl(`${window.location.origin}/dashboard/owners/agreement/sign`);
+    }
+  }, []);
+
+  // Listen to Storage events (from phone signature pads)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'stayzo_landlord_sig' && e.newValue) {
+        setLandlordSig(e.newValue);
+        showToast("Landlord signature received from mobile!");
+        setShowSigModal(null);
+        localStorage.removeItem('stayzo_landlord_sig'); // clean up
+      }
+      if (e.key === 'stayzo_tenant_sig' && e.newValue) {
+        setTenantSig(e.newValue);
+        showToast("Tenant signature received from mobile!");
+        setShowSigModal(null);
+        localStorage.removeItem('stayzo_tenant_sig'); // clean up
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Load saved agreements from localStorage
   useEffect(() => {
@@ -281,6 +451,8 @@ export default function OwnerAgreementPage() {
   const handleStartDraft = (template: AgreementTemplate) => {
     setSelectedTemplate(template);
     setCurrentFieldIdx(0);
+    setLandlordSig(null);
+    setTenantSig(null);
     
     // Reset values
     const initialValues: Record<string, string> = {};
@@ -308,6 +480,8 @@ export default function OwnerAgreementPage() {
       setSelectedTemplate(null);
       setChatHistory([]);
       setFieldValues({});
+      setLandlordSig(null);
+      setTenantSig(null);
     }
   };
 
@@ -324,7 +498,7 @@ export default function OwnerAgreementPage() {
       let botText = '';
       
       if (isFinished) {
-        botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes (**Classic**, **Modern**, or **Executive** style) on the right preview pane, and click **"Save to Vault"** or **"Print PDF"** to complete.`;
+        botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes on the right preview pane, click on the **Landlord Sign** or **Tenant Sign** buttons at the bottom of the document to sign, and click **"Save"** or **"Print PDF"** to complete.`;
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
         botText = `Got it. Registered **${prevFieldName}** as **"${previousAnswer}"**.\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: **${nextField.question}**`;
@@ -438,7 +612,7 @@ export default function OwnerAgreementPage() {
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `✨ I have successfully auto-filled the **${selectedTemplate.title}** with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or save it.`,
+        text: `✨ I have successfully auto-filled the **${selectedTemplate.title}** with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or sign it at the bottom.`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -491,7 +665,9 @@ export default function OwnerAgreementPage() {
       rentAmount,
       dateCreated: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
       visualTheme: selectedTheme,
-      values: fieldValues
+      values: fieldValues,
+      landlordSig: landlordSig || undefined,
+      tenantSig: tenantSig || undefined
     };
 
     const updated = [newAgreement, ...savedAgreements];
@@ -615,6 +791,8 @@ export default function OwnerAgreementPage() {
             <style>
               ${themeStyles}
               .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
+              .sig-img-print { max-height: 45px; object-fit: contain; }
+              .hide-on-print { display: none !important; }
               span {
                 font-family: inherit !important;
                 font-size: inherit !important;
@@ -671,9 +849,52 @@ export default function OwnerAgreementPage() {
     );
   };
 
-  // Dynamic Live Document Preview based on Chosen Complexity AND Selected Visual Theme
+  // Helper to render signature UI block inside the document preview
+  const renderSignatureBlock = (roleType: 'landlord' | 'tenant', defaultName: string) => {
+    const signature = roleType === 'landlord' ? landlordSig : tenantSig;
+    const setSig = roleType === 'landlord' ? setLandlordSig : setTenantSig;
+    const title = roleType === 'landlord' ? 'Landlord Representative' : 'Tenant Signature';
+
+    return (
+      <div>
+        <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">{title}</p>
+        
+        {signature ? (
+          <div className="flex flex-col items-start space-y-1">
+            <img 
+              src={signature} 
+              alt={`${roleType} Signature`} 
+              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print" 
+            />
+            <button 
+              onClick={(e) => { e.stopPropagation(); setSig(null); }} 
+              className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowSigModal(roleType); setSigModalTab('qr'); }}
+            className="text-[10px] border border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold px-3 py-2 rounded-lg flex items-center gap-1.5 mt-2 transition-all hover:scale-[1.01] hide-on-print"
+          >
+            <FileSignature className="w-3.5 h-3.5" />
+            <span>Sign Contract</span>
+          </button>
+        )}
+        
+        <div className="signature-line border-b border-gray-400 w-full h-1 mt-1" />
+        <p className="font-bold mt-1 text-[#1A1A1A]">{defaultName}</p>
+      </div>
+    );
+  };
+
+  // Interactive HTML document structure
   const renderInteractiveDocument = () => {
     if (!selectedTemplate) return null;
+
+    const landlordName = "Stayzo Premier Properties";
+    const tenantName = fieldValues.tenantName || 'Tenant Full Name';
 
     // 1. SIMPLE TEMPLATE LAYOUT
     if (selectedTemplate.id === 'simple-agreement') {
@@ -713,16 +934,8 @@ export default function OwnerAgreementPage() {
           </p>
 
           <div className="signature-section border-t border-gray-100 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Representative</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">Stayzo Properties</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
-            </div>
+            {renderSignatureBlock('landlord', 'Stayzo Properties')}
+            {renderSignatureBlock('tenant', tenantName)}
           </div>
         </div>
       );
@@ -737,7 +950,7 @@ export default function OwnerAgreementPage() {
           </div>
 
           <p className="text-[13px] md:text-[14px]">
-            THIS LEASE AGREEMENT (hereinafter referred to as the <strong>"Agreement"</strong>) is entered into on this{' '}
+            THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into on this{' '}
             <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Premier Properties</strong>, and the Tenant:
           </p>
 
@@ -773,16 +986,8 @@ export default function OwnerAgreementPage() {
           </p>
 
           <div className="signature-section border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Authorized Agent</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">Stayzo Premier Properties</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
-            </div>
+            {renderSignatureBlock('landlord', landlordName)}
+            {renderSignatureBlock('tenant', tenantName)}
           </div>
         </div>
       );
@@ -797,7 +1002,7 @@ export default function OwnerAgreementPage() {
           </div>
 
           <p className="text-[13px] md:text-[14px]">
-            THIS COMPREHENSIVE LEASE AGREEMENT (hereinafter referred to as the <strong>"Agreement"</strong>) is entered into on this{' '}
+            THIS COMPREHENSIVE LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into on this{' '}
             <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Executive Properties</strong>, and the Tenant:
           </p>
 
@@ -857,16 +1062,8 @@ export default function OwnerAgreementPage() {
           </p>
 
           <div className="signature-section border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Representative</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">Stayzo Executive Properties</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
-              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
-              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
-            </div>
+            {renderSignatureBlock('landlord', 'Stayzo Executive Properties')}
+            {renderSignatureBlock('tenant', tenantName)}
           </div>
         </div>
       );
@@ -956,6 +1153,112 @@ export default function OwnerAgreementPage() {
           <div className="fixed top-20 right-6 bg-[#1A1A1A] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
             <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
             <span className="text-[11px] font-black uppercase tracking-widest leading-none">{successToast}</span>
+          </div>
+        )}
+
+        {/* ── SIGNATURE METHOD MODAL ── */}
+        {showSigModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-[430px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-tight">
+                    Add {showSigModal === 'landlord' ? 'Landlord' : 'Tenant'} Signature
+                  </h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Choose your signature method</p>
+                </div>
+                <button 
+                  onClick={() => setShowSigModal(null)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+
+              {/* Tab Selector */}
+              <div className="flex border-b border-slate-100">
+                <button
+                  onClick={() => setSigModalTab('qr')}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
+                    sigModalTab === 'qr'
+                      ? 'bg-white border-b-2 border-b-black text-black'
+                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Scan QR Code</span>
+                </button>
+                <button
+                  onClick={() => setSigModalTab('draw')}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
+                    sigModalTab === 'draw'
+                      ? 'bg-white border-b-2 border-b-black text-black'
+                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <MousePointerClick className="w-4 h-4" />
+                  <span>Draw on Screen</span>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                {sigModalTab === 'qr' ? (
+                  /* METHOD A: QR CODE FOR MOBILE SIGNING */
+                  <div className="text-center space-y-5">
+                    <p className="text-[11px] text-gray-500 font-medium">
+                      Scan this QR code with your mobile phone camera to open the secure signing pad. Draw your signature on your phone screen, and it will update here in real-time.
+                    </p>
+                    
+                    {/* QR Code Container */}
+                    <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
+                      {mobileBaseUrl ? (
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(mobileBaseUrl + '?role=' + showSigModal)}`}
+                          alt="Signature QR Code" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="flex items-center gap-1.5 justify-center text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+                        <Smartphone className="w-4 h-4 text-purple-600" />
+                        <span>Awaiting mobile signature...</span>
+                      </div>
+                      
+                      {/* Desktop Sandbox Test Link */}
+                      <a
+                        href={`${mobileBaseUrl}?role=${showSigModal}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-black text-purple-700 hover:underline uppercase tracking-wider pt-2"
+                      >
+                        [Open mobile tab in new window for testing]
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  /* METHOD B: DESKTOP DRAWING BOARD */
+                  <DesktopCanvasPad 
+                    onSave={(dataUrl) => {
+                      if (showSigModal === 'landlord') {
+                        setLandlordSig(dataUrl);
+                        showToast("Landlord signature applied!");
+                      } else {
+                        setTenantSig(dataUrl);
+                        showToast("Tenant signature applied!");
+                      }
+                      setShowSigModal(null);
+                    }} 
+                  />
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1088,6 +1391,10 @@ export default function OwnerAgreementPage() {
                           <div>
                             <span className="font-bold text-gray-400">Rent:</span> {ag.rentAmount}
                           </div>
+                          <div className="flex gap-4 pt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <span>Landlord: {ag.landlordSig ? '✍️ Signed' : '❌ Unsigned'}</span>
+                            <span>Tenant: {ag.tenantSig ? '✍️ Signed' : '❌ Unsigned'}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -1099,12 +1406,14 @@ export default function OwnerAgreementPage() {
                               setSelectedTemplate(tmpl);
                               setFieldValues(ag.values);
                               setCurrentFieldIdx(tmpl.fields.length);
+                              setLandlordSig(ag.landlordSig || null);
+                              setTenantSig(ag.tenantSig || null);
                               if (ag.visualTheme) setSelectedTheme(ag.visualTheme as VisualTheme);
                               setChatHistory([
                                 {
                                   id: 'reopen',
                                   sender: 'bot',
-                                  text: `Loaded saved **${ag.complexity}** agreement for **${ag.tenantName}**. You can preview, edit details, or export the document in different designs.`,
+                                  text: `Loaded saved **${ag.complexity}** agreement for **${ag.tenantName}**. You can preview, edit details, and add or clear signatures.`,
                                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 }
                               ]);
@@ -1189,8 +1498,8 @@ export default function OwnerAgreementPage() {
                   onClick={() => setActiveTab('chat')}
                   className={`flex-1 py-4 text-center text-[11px] font-black tracking-widest uppercase transition-all ${
                     activeTab === 'chat'
-                      ? 'bg-white border-b-2 border-b-[#1A1A1A] text-[#1A1A1A]'
-                      : 'text-gray-400 hover:text-[#1A1A1A] hover:bg-white/50'
+                      ? 'bg-white border-b-2 border-b-black text-black'
+                      : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
                   }`}
                 >
                   🤖 Chatbot Assistant
@@ -1199,8 +1508,8 @@ export default function OwnerAgreementPage() {
                   onClick={() => setActiveTab('fields')}
                   className={`flex-1 py-4 text-center text-[11px] font-black tracking-widest uppercase transition-all ${
                     activeTab === 'fields'
-                      ? 'bg-white border-b-2 border-b-[#1A1A1A] text-[#1A1A1A]'
-                      : 'text-gray-400 hover:text-[#1A1A1A] hover:bg-white/50'
+                      ? 'bg-white border-b-2 border-b-black text-black'
+                      : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
                   }`}
                 >
                   📝 Manual Form
@@ -1329,10 +1638,10 @@ export default function OwnerAgreementPage() {
               )}
             </div>
 
-            {/* Right side: Live Agreement Preview with Design Layout/Theme Switcher (7 Columns) */}
+            {/* Right side: Live Agreement Preview with Theme Selector */}
             <div className="lg:col-span-7 flex flex-col h-[650px] overflow-hidden">
               
-              {/* Layout Switcher Toolbar (Like CV Templates) */}
+              {/* Layout Switcher Toolbar */}
               <div className="bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm space-y-3">
                 
                 {/* Visual Theme Selector Header */}
