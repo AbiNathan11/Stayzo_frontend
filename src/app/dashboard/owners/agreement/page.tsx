@@ -10,19 +10,16 @@ import {
   FileText, 
   Download, 
   Check, 
-  RotateCcw, 
   Sparkles, 
   CheckCircle2, 
   Trash2, 
   Copy, 
   FileSignature,
-  FileSpreadsheet,
-  RefreshCw,
   Info,
-  Calendar,
-  Layers,
   ArrowLeft,
-  ChevronRight
+  Layout,
+  BookOpen,
+  Scale
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 
@@ -32,16 +29,13 @@ interface TemplateField {
   label: string;
   question: string;
   placeholder: string;
-  defaultValue?: string;
-  validationRule?: (val: string) => string | null;
 }
 
 interface AgreementTemplate {
   id: string;
   title: string;
+  complexity: 'Simple' | 'Standard' | 'Detailed';
   description: string;
-  category: string;
-  icon: string;
   fields: TemplateField[];
   generateText: (values: Record<string, string>) => string;
 }
@@ -50,10 +44,12 @@ interface SavedAgreement {
   id: string;
   templateId: string;
   templateTitle: string;
+  complexity: string;
   tenantName: string;
   propertyAddress: string;
   rentAmount: string;
   dateCreated: string;
+  visualTheme: string;
   values: Record<string, string>;
 }
 
@@ -67,43 +63,81 @@ const navLinks = [
   { label: 'Profile',      href: '/dashboard/owners/profile' },
 ];
 
-// ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
+// ─── TEMPLATES DATA (SIMPLE -> STANDARD -> DETAILED) ─────────────────────────
 const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
   {
-    id: 'residential-lease',
-    title: 'Residential Lease Agreement',
-    description: 'Standard contract for renting residential apartments, homes, or individual rooms to tenants.',
-    category: 'Long-Term Residential',
-    icon: 'Home',
+    id: 'simple-agreement',
+    title: 'Simple Tenancy Agreement',
+    complexity: 'Simple',
+    description: 'A basic, short tenancy agreement covering only the absolute essentials (parties, address, rent, start date). Ideal for quick sub-leases or informal setups.',
     fields: [
       { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
-      { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Suite 402, Harbor Side' },
-      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $1,800' },
+      { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $1,200 / month' },
+      { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' }
+    ],
+    generateText: (values) => `SIMPLE TENANCY AGREEMENT
+
+Date: ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+
+1. PARTIES:
+This Agreement is made between Stayzo Properties (Landlord) and the Tenant:
+TENANT Name: ${values.tenantName || '___________________________'}
+
+2. PROPERTY PREMISES:
+The Landlord agrees to rent to the Tenant the property located at:
+ADDRESS: ${values.propertyAddress || '___________________________'}
+
+3. RENT & PAYMENT:
+The Tenant agrees to pay a Monthly Rent of:
+RENT: ${values.rentAmount || '___________________________'}
+payable on the first day of each calendar month.
+
+4. START DATE:
+The tenancy commences on the following start date:
+START DATE: ${values.startDate || '___________________________'}
+
+5. AGREEMENT TERMS:
+The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.
+
+LANDLORD:                                TENANT:
+Stayzo Properties
+
+_________________________                _________________________
+Signature                                Signature`
+  },
+  {
+    id: 'standard-agreement',
+    title: 'Standard Lease Agreement',
+    complexity: 'Standard',
+    description: 'Our most popular template. Extends the simple template by including security deposits, advanced rent, lease duration, and standard covenants.',
+    fields: [
+      { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
+      { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $1,800 / month' },
       { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. $3,000' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the start date of the lease?', placeholder: 'e.g. June 1, 2026' },
-      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 months' },
-      { id: 'advancePayment', label: 'Advanced Payment', question: 'What is the required advanced payment details?', placeholder: 'e.g. 2 months rent ($3,600)' },
+      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease term?', placeholder: 'e.g. 12 months' },
+      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 2 months rent ($3,600)' }
     ],
-    generateText: (values) => `RESIDENTIAL LEASE AGREEMENT
+    generateText: (values) => `STANDARD LEASE AGREEMENT
 
-THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is made and entered into on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between the Landlord, Stayzo Premier Properties, and the Tenant:
+THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between Stayzo Premier Properties (Landlord) and:
 
 TENANT: ${values.tenantName || '___________________________'}
 
-1. PREMISES. Landlord hereby leases to Tenant, and Tenant hereby leases from Landlord, the real property located at:
+1. PREMISES: Landlord hereby leases to Tenant the real property located at:
 PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
 
-2. TERM. The lease shall commence on ${values.startDate || '___________'} and shall remain in effect for a period of ${values.duration || '___________'}.
+2. LEASE TERM: The lease shall commence on ${values.startDate || '___________'} and shall remain in effect for a period of ${values.duration || '___________'}.
 
-3. PAYMENT OF RENT. Tenant agrees to pay monthly rent in the amount of ${values.rentAmount || '___________'} on the first day of each calendar month. 
+3. PAYMENT OF RENT: Tenant agrees to pay monthly rent in the amount of ${values.rentAmount || '___________'} on or before the first day of each calendar month.
 
-4. ADVANCED PAYMENT. Tenant agrees to make an advanced payment of ${values.advancePayment || '___________'} upon the execution of this Agreement. This advanced payment shall be applied to the initial months of the lease term.
+4. ADVANCED PAYMENT: Tenant agrees to make an advanced payment of ${values.advancePayment || '___________'} upon signing, to be applied towards the rental term.
 
-5. SECURITY DEPOSIT. Tenant shall deposit the sum of ${values.depositAmount || '___________'} with Landlord as a security deposit for any damage caused to the premises or default under this Agreement. This deposit shall be refunded within 30 days of lease termination, less any lawful deductions.
+5. SECURITY DEPOSIT: Tenant shall deposit the sum of ${values.depositAmount || '___________'} with Landlord as a security deposit for damages or default under this Agreement.
 
-6. USE OF PREMISES. The premises shall be used and occupied by Tenant exclusively as a private residential dwelling. Tenant shall keep the premises in a clean, sanitary, and good condition.
-
-7. BINDING EFFECT. The covenants and conditions herein contained shall apply to and bind the heirs, legal representatives, and assigns of the parties hereto.
+6. CONDITION & COVENANTS: Tenant agrees to keep the premises in a sanitary and good condition and comply with all housing regulations.
 
 IN WITNESS WHEREOF, the Landlord and Tenant have executed this Agreement on the day and year first above written.
 
@@ -114,110 +148,81 @@ _________________________                _________________________
 Signature                                Signature`
   },
   {
-    id: 'commercial-lease',
-    title: 'Commercial Lease Agreement',
-    description: 'Contract for renting commercial office spaces, retail shops, or business hubs.',
-    category: 'Commercial Property',
-    icon: 'Building',
+    id: 'detailed-agreement',
+    title: 'Comprehensive Lease Agreement',
+    complexity: 'Detailed',
+    description: 'A comprehensive, strict legal agreement. Adds sections for utilities responsibility, pet rules, late payment fees, and property maintenance terms to minimize disputes.',
     fields: [
-      { id: 'tenantBusiness', label: 'Business Name', question: "What is the Tenant's Registered Business Name?", placeholder: 'e.g. Vector Solutions LLC' },
-      { id: 'repName', label: 'Representative Name', question: "Who is the business's signing representative?", placeholder: 'e.g. Marcus Thorne' },
-      { id: 'propertyAddress', label: 'Commercial Address', question: 'What is the address of the commercial property?', placeholder: 'e.g. Vector Plaza, Suite 801, Financial Hub' },
-      { id: 'rentAmount', label: 'Base Monthly Rent', question: 'What is the base monthly rent amount?', placeholder: 'e.g. $4,500' },
-      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. $9,000' },
-      { id: 'permittedUse', label: 'Permitted Use', question: 'What is the permitted business use of the premises?', placeholder: 'e.g. Corporate tech offices' },
-      { id: 'escalationRate', label: 'Escalation Rate', question: 'What is the annual rent escalation rate?', placeholder: 'e.g. 5% annually' },
-      { id: 'advancePayment', label: 'Advanced Payment', question: 'What is the required advanced payment details?', placeholder: 'e.g. 3 months rent ($13,500)' },
+      { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
+      { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $2,200 / month' },
+      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. $4,450' },
+      { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' },
+      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 months' },
+      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 3 months rent ($6,600)' },
+      { id: 'utilities', label: 'Utilities Terms', question: 'Who is responsible for utility payments (water, electricity, gas, internet)?', placeholder: 'e.g. Tenant pays electricity and water; Landlord pays gas and internet.' },
+      { id: 'petPolicy', label: 'Pet Policy', question: 'What is the policy regarding pets in the property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a $300 pet fee; no aggressive breeds.' },
+      { id: 'lateFee', label: 'Late Rent Penalty', question: 'What is the penalty for late rent payments?', placeholder: 'e.g. A late fee of $50 plus 1% daily for payments made after the 5th of the month.' },
+      { id: 'maintenance', label: 'Maintenance Rules', question: 'Who handles property maintenance and minor repairs?', placeholder: 'e.g. Tenant handles repairs under $50; Landlord handles structural and appliance failures.' }
     ],
-    generateText: (values) => `COMMERCIAL LEASE AGREEMENT
+    generateText: (values) => `COMPREHENSIVE LEASE AGREEMENT
 
-THIS COMMERCIAL LEASE AGREEMENT is made on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between the Landlord, Stayzo Premier Properties, and the Tenant:
+THIS LEASE AGREEMENT is executed on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between Stayzo Executive Properties (Landlord) and:
 
-TENANT: ${values.tenantBusiness || '___________________________'}
-REPRESENTED BY: ${values.repName || '___________________________'}
+TENANT: ${values.tenantName || '___________________________'}
 
-1. PREMISES. Landlord leases to Tenant, and Tenant leases from Landlord, the commercial property located at:
+1. DESCRIPTION OF PREMISES:
+Landlord leases to Tenant the premises located at:
 PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
 
-2. TERM. The lease shall commence on ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} and shall remain in effect for a term of 36 months, subject to renewal.
+2. DURATION & TERM:
+The lease commences on ${values.startDate || '___________'} and runs for a term of ${values.duration || '___________'}.
 
-3. BASE RENT. Tenant agrees to pay base monthly rent of ${values.rentAmount || '___________'} on the first day of each calendar month. 
+3. MONTHLY RENT:
+Rent is set at ${values.rentAmount || '___________'} per month, due in advance on the 1st day of the month.
 
-4. RENT ESCALATION. The base monthly rent shall escalate at a rate of ${values.escalationRate || '___________'} on each anniversary of the lease commencement date.
+4. ADVANCED RENT PAYMENT:
+Tenant shall pay an advanced sum of ${values.advancePayment || '___________'} to be credited towards the initial months.
 
-5. ADVANCED PAYMENT. Tenant shall pay an advanced payment of ${values.advancePayment || '___________'} upon signing, which shall be applied to the first rent periods.
+5. SECURITY DEPOSIT:
+Tenant shall pay a security deposit of ${values.depositAmount || '___________'} held as security for damages.
 
-6. SECURITY DEPOSIT. Tenant shall deposit the sum of ${values.depositAmount || '___________'} as security for the full and faithful performance of every provision of this lease.
+6. UTILITIES PAYMENT:
+${values.utilities || '___________________________'}
 
-7. PERMITTED USE. The premises shall be used solely for the purpose of:
-USE: ${values.permittedUse || '___________________________'}
-and for no other business or purpose without the prior written consent of the Landlord.
+7. PET POLICY:
+${values.petPolicy || '___________________________'}
 
-8. MAINTENANCE & REPAIRS. Tenant shall, at its sole cost, maintain the interior of the premises and keep it in a good state of repair.
+8. LATE FEE PENALTIES:
+${values.lateFee || '___________________________'}
 
-IN WITNESS WHEREOF, the parties hereto have executed this lease.
+9. PROPERTY MAINTENANCE & REPAIRS:
+${values.maintenance || '___________________________'}
+
+10. SEVERABILITY & GOVERNING LAW:
+If any provision of this lease is declared invalid, the remainder shall continue in effect. This lease is governed by local jurisdiction laws.
 
 LANDLORD:                                TENANT:
-Stayzo Premier Properties                For: ${values.tenantBusiness || 'Tenant Business'}
-
-_________________________                _________________________
-Signature                                Signature (Representative)`
-  },
-  {
-    id: 'vacation-rental',
-    title: 'Vacation Rental Agreement',
-    description: 'Short-term contract for holiday bookings, guest houses, or weekend stays.',
-    category: 'Short-Term / Vacation',
-    icon: 'Tent',
-    fields: [
-      { id: 'guestName', label: 'Guest Name', question: "What is the Guest's Full Name?", placeholder: 'e.g. Robert Smith' },
-      { id: 'propertyAddress', label: 'Property Address', question: 'What is the address of the vacation property?', placeholder: 'e.g. Skyline Pavilion, Penthouse A' },
-      { id: 'checkInDate', label: 'Check-in Date', question: 'What is the check-in date and check-in time?', placeholder: 'e.g. July 10, 2026 at 3:00 PM' },
-      { id: 'checkOutDate', label: 'Check-out Date', question: 'What is the check-out date and check-out time?', placeholder: 'e.g. July 17, 2026 at 11:00 AM' },
-      { id: 'rentalFee', label: 'Total Rental Fee', question: 'What is the total rental fee for the entire stay?', placeholder: 'e.g. $2,100' },
-      { id: 'cleaningFee', label: 'Cleaning Fee', question: 'What is the one-time cleaning fee amount?', placeholder: 'e.g. $150' },
-      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the refundable security deposit amount?', placeholder: 'e.g. $500' },
-      { id: 'advancePayment', label: 'Advanced Payment', question: 'What is the required booking prepayment details?', placeholder: 'e.g. Full prepayment of $2,250' },
-    ],
-    generateText: (values) => `SHORT-TERM VACATION RENTAL AGREEMENT
-
-THIS VACATION RENTAL AGREEMENT is entered into on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between Stayzo Host Services (Landlord) and the Primary Guest:
-
-GUEST: ${values.guestName || '___________________________'}
-
-1. PROPERTY. The rental property is located at:
-PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
-
-2. TERM OF OCCUPANCY. 
-CHECK-IN: ${values.checkInDate || '___________________________'}
-CHECK-OUT: ${values.checkOutDate || '___________________________'}
-
-3. RENTAL FEES & CHARGES. Guest agrees to the following booking breakdown:
-TOTAL RENTAL FEE: ${values.rentalFee || '___________'}
-CLEANING FEE: ${values.cleaningFee || '___________'}
-REFUNDABLE DAMAGE DEPOSIT: ${values.depositAmount || '___________'}
-
-4. PREPAYMENT & RESERVATION. Guest has paid an Advanced Booking Payment of ${values.advancePayment || '___________'} to secure this reservation. 
-
-5. CANCELLATION POLICY. Cancellations made more than 14 days prior to check-in will receive a full refund. Cancellations within 14 days of check-in are non-refundable.
-
-6. HOUSE RULES. Guest agrees to abide by all house rules, including: no smoking, no unauthorized parties, and respect for neighborhood quiet hours (10 PM - 8 AM). Any violations may result in immediate eviction without refund.
-
-IN WITNESS WHEREOF, the Host and Guest have agreed to the terms above.
-
-HOST:                                    GUEST:
-Stayzo Host Services
+Stayzo Executive Properties
 
 _________________________                _________________________
 Signature                                Signature`
   }
 ];
 
-// ─── COMPONENT ──────────────────────────────────────────────────────────────
+// ─── VISUAL DESIGN THEMES (LIKE CV TEMPLATES) ────────────────────────────────
+type VisualTheme = 'classic-legal' | 'modern-clean' | 'executive-elite';
+
+const VISUAL_THEMES = [
+  { id: 'classic-legal' as VisualTheme, label: '📜 Classic Legal', description: 'Traditional legal serif layout with double-page borders.' },
+  { id: 'modern-clean' as VisualTheme, label: '📱 Modern Clean', description: 'Spacious sans-serif style with vertical accent line quotes.' },
+  { id: 'executive-elite' as VisualTheme, label: '💎 Executive Elite', description: 'Premium corporate layout with structured tables and dark accents.' }
+];
+
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
   
-  // States
+  // App States
   const [selectedTemplate, setSelectedTemplate] = useState<AgreementTemplate | null>(null);
   const [currentFieldIdx, setCurrentFieldIdx] = useState<number>(0);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -225,6 +230,8 @@ export default function OwnerAgreementPage() {
   const [chatInput, setChatInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'fields'>('chat');
+  const [selectedTheme, setSelectedTheme] = useState<VisualTheme>('classic-legal');
+  
   const [savedAgreements, setSavedAgreements] = useState<SavedAgreement[]>([]);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
@@ -234,7 +241,7 @@ export default function OwnerAgreementPage() {
   // Load saved agreements from localStorage
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('stayzo_agreements');
+      const stored = localStorage.getItem('stayzo_agreements_v2');
       if (stored) {
         setSavedAgreements(JSON.parse(stored));
       }
@@ -246,7 +253,7 @@ export default function OwnerAgreementPage() {
   // Save agreements to localStorage helper
   const saveAgreementsToLocalStorage = (agreements: SavedAgreement[]) => {
     try {
-      localStorage.setItem('stayzo_agreements', JSON.stringify(agreements));
+      localStorage.setItem('stayzo_agreements_v2', JSON.stringify(agreements));
       setSavedAgreements(agreements);
     } catch (e) {
       console.error("Failed to save agreements", e);
@@ -287,7 +294,7 @@ export default function OwnerAgreementPage() {
     const initialMessage = {
       id: 'welcome',
       sender: 'bot' as const,
-      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your **${template.title}**! I will ask you a few simple questions. \n\nTo start: **${firstField.question}**`,
+      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your **${template.title}** (${template.complexity} version). \n\nI will ask you a few simple questions one by one. \n\nTo start: **${firstField.question}**`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setChatHistory([initialMessage]);
@@ -295,7 +302,7 @@ export default function OwnerAgreementPage() {
     setActiveTab('chat');
   };
 
-  // Switch template confirmation
+  // Exit current drafting
   const handleExitDraft = () => {
     if (window.confirm("Are you sure you want to exit the current draft? Your unsaved progress will be lost.")) {
       setSelectedTemplate(null);
@@ -304,7 +311,7 @@ export default function OwnerAgreementPage() {
     }
   };
 
-  // Add bot message with delay for a natural chat feel
+  // Simulate bot typing delay
   const askNextQuestion = (nextIdx: number, currentVals: Record<string, string>, previousAnswer: string, prevFieldName: string) => {
     if (!selectedTemplate) return;
     
@@ -317,10 +324,10 @@ export default function OwnerAgreementPage() {
       let botText = '';
       
       if (isFinished) {
-        botText = `Superb! I've updated the **${prevFieldName}** to **"${previousAnswer}"**.\n\n🎉 **All details have been successfully gathered!** You can review the fully generated contract on the right. \n\nClick **"Save to Vault"** to store it digitally, or **"Download PDF / Print"** to export.`;
+        botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes (**Classic**, **Modern**, or **Executive** style) on the right preview pane, and click **"Save to Vault"** or **"Print PDF"** to complete.`;
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
-        botText = `Got it! Updated **${prevFieldName}** to **"${previousAnswer}"**.\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: **${nextField.question}**`;
+        botText = `Got it. Registered **${prevFieldName}** as **"${previousAnswer}"**.\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: **${nextField.question}**`;
       }
 
       setChatHistory(prev => [
@@ -341,29 +348,25 @@ export default function OwnerAgreementPage() {
     }, 900);
   };
 
-  // Handle Send Chat message
+  // Handle Send Chat
   const handleSendChat = (textToSend?: string) => {
     const text = (textToSend !== undefined ? textToSend : chatInput).trim();
     if (!text || !selectedTemplate) return;
 
     if (currentFieldIdx >= selectedTemplate.fields.length) {
-      // Completed, handle random chat inputs or help
       setChatHistory(prev => [
         ...prev,
         { id: Math.random().toString(), sender: 'user', text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-        { id: Math.random().toString(), sender: 'bot', text: "The agreement is fully completed! You can review or edit any field in the 'Manual Form' tab, click on the highlighted fields in the document itself to edit them, or save the document.", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { id: Math.random().toString(), sender: 'bot', text: "The agreement is fully completed! You can review or edit any field in the 'Manual Form' tab, or click the fields in the document preview itself.", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
       ]);
       if (textToSend === undefined) setChatInput('');
       return;
     }
 
     const currentField = selectedTemplate.fields[currentFieldIdx];
-    
-    // Update local values
     const nextVals = { ...fieldValues, [currentField.id]: text };
     setFieldValues(nextVals);
 
-    // Add user response to history
     const userMessage = {
       id: Math.random().toString(),
       sender: 'user' as const,
@@ -374,23 +377,28 @@ export default function OwnerAgreementPage() {
     setChatHistory(prev => [...prev, userMessage]);
     if (textToSend === undefined) setChatInput('');
 
-    // Trigger chatbot transition to next question
     askNextQuestion(currentFieldIdx + 1, nextVals, text, currentField.label);
   };
 
-  // Handle pressing Enter
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSendChat();
     }
   };
 
-  // Quick fill sample data for quick demonstration
+  // Autofill sample data based on selected complexity
   const handleQuickFill = () => {
     if (!selectedTemplate) return;
 
     let sampleVals: Record<string, string> = {};
-    if (selectedTemplate.id === 'residential-lease') {
+    if (selectedTemplate.id === 'simple-agreement') {
+      sampleVals = {
+        tenantName: 'Julianne Voss',
+        propertyAddress: 'Sunset Apartments, Apt 402, Harbor Side, Zone 4',
+        rentAmount: '$1,200 / month',
+        startDate: 'June 1, 2026'
+      };
+    } else if (selectedTemplate.id === 'standard-agreement') {
       sampleVals = {
         tenantName: 'Julianne Voss',
         propertyAddress: 'Sunset Apartments, Apt 402, Harbor Side, Zone 4',
@@ -400,52 +408,43 @@ export default function OwnerAgreementPage() {
         duration: '12 Months',
         advancePayment: '2 Months Rent ($3,600)'
       };
-    } else if (selectedTemplate.id === 'commercial-lease') {
+    } else if (selectedTemplate.id === 'detailed-agreement') {
       sampleVals = {
-        tenantBusiness: 'Vector Solutions LLC',
-        repName: 'Marcus Thorne',
-        propertyAddress: 'Vector Plaza, Suite 801, Financial Hub, Zone 1',
-        rentAmount: '$4,500 / month',
-        depositAmount: '$9,000',
-        permittedUse: 'Corporate software engineering and product sales offices',
-        escalationRate: '5% annually',
-        advancePayment: '3 Months Rent ($13,500)'
-      };
-    } else if (selectedTemplate.id === 'vacation-rental') {
-      sampleVals = {
-        guestName: 'Robert Smith',
-        propertyAddress: 'Skyline Pavilion, Penthouse A, Central District',
-        checkInDate: 'July 10, 2026 at 3:00 PM',
-        checkOutDate: 'July 17, 2026 at 11:00 AM',
-        rentalFee: '$2,100 total',
-        cleaningFee: '$150',
-        depositAmount: '$500 refundable',
-        advancePayment: 'Full Booking Prepayment ($2,250)'
+        tenantName: 'Julianne Voss',
+        propertyAddress: 'Sunset Apartments, Apt 402, Harbor Side, Zone 4',
+        rentAmount: '$2,200 / month',
+        depositAmount: '$4,400',
+        startDate: 'June 1, 2026',
+        duration: '12 Months',
+        advancePayment: '3 Months Rent ($6,600)',
+        utilities: 'Tenant is responsible for water, electric, and waste disposal. Landlord pays for fiber internet.',
+        petPolicy: 'One small dog or cat allowed (under 25 lbs) with an additional $300 pet damage deposit.',
+        lateFee: 'Rent is due on the 1st. A grace period is given until the 5th, after which a flat late fee of $100 applies.',
+        maintenance: 'Tenant handles light bulbs and minor repairs under $75. Landlord handles plumbing, HVAC, and structural faults.'
       };
     }
 
     setFieldValues(sampleVals);
     setCurrentFieldIdx(selectedTemplate.fields.length);
     
-    // Add chatbot message confirming autofill
     setChatHistory(prev => [
       ...prev,
       {
         id: Math.random().toString(),
         sender: 'user',
-        text: '✨ [Auto-fill sample demo data]',
+        text: '✨ [Auto-fill template sample data]',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       },
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `✨ I have successfully auto-filled the template with realistic sample data! \n\nYou can inspect the filled contract on the right, make any adjustments directly, or proceed to save/export!`,
+        text: `✨ I have successfully auto-filled the **${selectedTemplate.title}** with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or save it.`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
   };
 
-  // Jump to specific field for editing when clicking in document or sidebar
+  // Jump to specific field for editing when clicking in document
   const handleJumpToField = (fieldId: string) => {
     if (!selectedTemplate) return;
     const idx = selectedTemplate.fields.findIndex(f => f.id === fieldId);
@@ -455,20 +454,18 @@ export default function OwnerAgreementPage() {
     setActiveTab('chat');
     setActivePreviewField(fieldId);
 
-    // Bot asks to update the field
     const field = selectedTemplate.fields[idx];
     setChatHistory(prev => [
       ...prev,
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `Let's update the **${field.label}** (current: "${fieldValues[fieldId] || 'Not set'}"). \n\nWhat is the new value?`,
+        text: `Let's edit the **${field.label}** (currently: "${fieldValues[fieldId] || 'Not set'}"). \n\nPlease provide the new value:`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
   };
 
-  // Handle manual field changes from the input form
   const handleManualFieldChange = (fieldId: string, val: string) => {
     setFieldValues(prev => ({
       ...prev,
@@ -476,12 +473,11 @@ export default function OwnerAgreementPage() {
     }));
   };
 
-  // Save completed agreement to the vault (localStorage)
+  // Save to vault (localStorage)
   const handleSaveToVault = () => {
     if (!selectedTemplate) return;
     
-    // Validate if at least tenantName/guestName or propertyAddress is entered
-    const tenantName = fieldValues.tenantName || fieldValues.tenantBusiness || fieldValues.guestName || 'Unnamed Tenant';
+    const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
     const propertyAddress = fieldValues.propertyAddress || 'No Address Specified';
     const rentAmount = fieldValues.rentAmount || 'N/A';
 
@@ -489,10 +485,12 @@ export default function OwnerAgreementPage() {
       id: 'agree_' + Date.now(),
       templateId: selectedTemplate.id,
       templateTitle: selectedTemplate.title,
+      complexity: selectedTemplate.complexity,
       tenantName,
       propertyAddress,
       rentAmount,
       dateCreated: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      visualTheme: selectedTheme,
       values: fieldValues
     };
 
@@ -502,7 +500,6 @@ export default function OwnerAgreementPage() {
     showToast("Agreement successfully saved to Stayzo Document Vault!");
   };
 
-  // Delete saved agreement
   const handleDeleteAgreement = (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete the agreement for "${name}"?`)) {
       const filtered = savedAgreements.filter(a => a.id !== id);
@@ -511,7 +508,6 @@ export default function OwnerAgreementPage() {
     }
   };
 
-  // Trigger toast notification
   const showToast = (message: string) => {
     setSuccessToast(message);
     setTimeout(() => {
@@ -519,7 +515,6 @@ export default function OwnerAgreementPage() {
     }, 4000);
   };
 
-  // Copy raw contract text to clipboard
   const handleCopyText = () => {
     if (!selectedTemplate) return;
     const text = selectedTemplate.generateText(fieldValues);
@@ -527,76 +522,114 @@ export default function OwnerAgreementPage() {
     showToast("Contract text copied to clipboard!");
   };
 
-  // Trigger browser print of the document
+  // Print function
   const handlePrint = () => {
     const printContent = document.getElementById('contract-printable-area');
     if (!printContent) return;
 
-    const originalContent = document.body.innerHTML;
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       const templateTitle = selectedTemplate?.title || "Rental Agreement";
       const textHtml = printContent.innerHTML;
       
+      let themeStyles = '';
+      if (selectedTheme === 'classic-legal') {
+        themeStyles = `
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.8;
+            padding: 50px;
+            color: #000;
+            background-color: #fff;
+          }
+          .printable-paper {
+            border: 4px double #000;
+            padding: 40px;
+          }
+          h1, h2, h3, .doc-title {
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+          }
+          p { margin-bottom: 1.2rem; text-align: justify; }
+          .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+        `;
+      } else if (selectedTheme === 'modern-clean') {
+        themeStyles = `
+          body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            padding: 40px;
+            color: #2D3748;
+            background-color: #fff;
+          }
+          .doc-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1A1A1A;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            border-left: 5px solid #1A1A1A;
+            padding-left: 15px;
+          }
+          p { margin-bottom: 1rem; }
+          .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+          .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
+          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+        `;
+      } else { // executive-elite
+        themeStyles = `
+          body {
+            font-family: 'Georgia', serif;
+            line-height: 1.7;
+            padding: 45px;
+            color: #1A202C;
+            background-color: #fff;
+          }
+          .doc-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: 0.05em;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px double #0F172A;
+          }
+          p { margin-bottom: 1.1rem; text-align: justify; }
+          .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
+          .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
+          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+        `;
+      }
+
       printWindow.document.write(`
         <html>
           <head>
             <title>${templateTitle} - Stayzo</title>
             <style>
-              body {
-                font-family: 'Times New Roman', Times, serif;
-                line-height: 1.8;
-                padding: 40px;
-                color: #000;
-                background-color: #fff;
-              }
-              .space-y-6 > * + * {
-                margin-top: 1.5rem;
-              }
-              p {
-                margin-bottom: 1rem;
-                text-align: justify;
-              }
-              .text-center { text-align: center; }
-              .font-black { font-weight: 900; }
-              .text-lg { font-size: 1.25rem; }
-              .uppercase { text-transform: uppercase; }
-              .border-b-2 { border-bottom: 2px solid #000; }
-              .pb-3 { padding-bottom: 0.75rem; }
-              .mb-8 { margin-bottom: 2rem; }
-              .mt-12 { margin-top: 3rem; }
-              .pt-8 { padding-top: 2rem; }
-              .border-t { border-top: 1px solid #ccc; }
-              .grid { display: grid; }
-              .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-              .gap-12 { gap: 3rem; }
-              .bg-gray-50 {
-                background-color: #f9fafb;
-                border: 1px solid #f3f4f6;
-                padding: 1rem;
-                border-radius: 0.375rem;
-                margin-top: 1rem;
-                margin-bottom: 1rem;
-              }
-              .font-bold { font-weight: 700; }
-              .text-[11px] { font-size: 11px; }
-              .text-gray-500 { color: #6b7280; }
-              .block { display: block; }
-              .tracking-wider { letter-spacing: 0.05em; }
-              /* Remove interactive styled spans back to standard inline prints */
+              ${themeStyles}
+              .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
               span {
-                font-family: inherit;
-                font-size: inherit;
-                font-weight: bold;
+                font-family: inherit !important;
+                font-size: inherit !important;
+                font-weight: bold !important;
                 background: none !important;
                 border: none !important;
                 padding: 0 !important;
-                color: #000 !important;
+                color: inherit !important;
               }
             </style>
           </head>
           <body>
-            ${textHtml}
+            <div class="printable-paper">
+              ${textHtml}
+            </div>
             <script>
               window.onload = function() {
                 window.print();
@@ -610,242 +643,229 @@ export default function OwnerAgreementPage() {
     }
   };
 
-  // Helper to calculate progress percentage
   const getProgressPercentage = () => {
     if (!selectedTemplate) return 0;
-    const totalFields = selectedTemplate.fields.length;
-    const filledFields = selectedTemplate.fields.filter(f => fieldValues[f.id] && fieldValues[f.id].trim() !== '').length;
-    return Math.round((filledFields / totalFields) * 100);
+    const total = selectedTemplate.fields.length;
+    const filled = selectedTemplate.fields.filter(f => fieldValues[f.id] && fieldValues[f.id].trim() !== '').length;
+    return Math.round((filled / total) * 100);
   };
 
-  // JSX Renderers for each Template document
-  const renderDocumentJSX = () => {
+  // Dynamic Highlight Field Span
+  const getFieldSpan = (fieldId: string, label: string) => {
+    const val = fieldValues[fieldId];
+    const isActive = activePreviewField === fieldId;
+    return (
+      <span
+        onClick={() => handleJumpToField(fieldId)}
+        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${
+          isActive
+            ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
+            : val
+            ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
+            : 'bg-[#EDE9FE] text-[#7C3AED] border-b-2 border-dashed border-[#8B5CF6] font-bold animate-pulse hover:bg-[#DDD6FE]'
+        }`}
+        title={`Click to edit ${label}`}
+      >
+        {val || `[Enter ${label}]`}
+      </span>
+    );
+  };
+
+  // Dynamic Live Document Preview based on Chosen Complexity AND Selected Visual Theme
+  const renderInteractiveDocument = () => {
     if (!selectedTemplate) return null;
 
-    const getFieldSpan = (fieldId: string, label: string) => {
-      const value = fieldValues[fieldId];
-      const isActive = activePreviewField === fieldId;
+    // 1. SIMPLE TEMPLATE LAYOUT
+    if (selectedTemplate.id === 'simple-agreement') {
       return (
-        <span
-          onClick={() => handleJumpToField(fieldId)}
-          className={`inline-block cursor-pointer px-2 py-0.5 mx-1 rounded font-mono text-[13px] transition-all duration-200 ${
-            isActive
-              ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
-              : value
-              ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
-              : 'bg-[#EDE9FE] text-[#7C3AED] border-b-2 border-dashed border-[#8B5CF6] font-bold animate-pulse hover:bg-[#DDD6FE]'
-          }`}
-          title={`Click to edit ${label}`}
-        >
-          {value || `[Enter ${label}]`}
-        </span>
-      );
-    };
+        <div className="space-y-5">
+          <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
+            SIMPLE TENANCY AGREEMENT
+          </div>
+          
+          <p className="text-[13px] md:text-[14px]">
+            This Tenancy Agreement is created on this <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Properties</strong>, and the Tenant:
+          </p>
 
-    if (selectedTemplate.id === 'residential-lease') {
-      return (
-        <div className="space-y-6 text-[#1A1A1A] leading-relaxed text-[13px] md:text-[14px]">
-          <div className="text-center font-black text-[16px] md:text-[18px] tracking-tight uppercase mb-8 border-b-2 border-[#1A1A1A] pb-3">
-            RESIDENTIAL LEASE AGREEMENT
+          <div className="highlight-card bg-gray-50 border border-gray-100 p-4 rounded-xl">
+            <span className="block text-[9px] font-black text-gray-400 tracking-wider uppercase mb-1">TENANT INFORMATION</span>
+            <strong>TENANT NAME:</strong> {getFieldSpan('tenantName', 'Tenant Name')}
           </div>
 
-          <p>
+          <p className="text-[13px] md:text-[14px]">
+            <strong>1. RENTAL PREMISES:</strong> <br />
+            The Landlord agrees to lease to the Tenant, and the Tenant agrees to lease, the property located at: <br />
+            {getFieldSpan('propertyAddress', 'Property Address')}
+          </p>
+
+          <p className="text-[13px] md:text-[14px]">
+            <strong>2. RENT AMOUNT:</strong> <br />
+            The Monthly Rent for the premises is set at {getFieldSpan('rentAmount', 'Monthly Rent')}, payable in advance on the 1st of each month.
+          </p>
+
+          <p className="text-[13px] md:text-[14px]">
+            <strong>3. COMMENCEMENT DATE:</strong> <br />
+            This tenancy will officially begin on {getFieldSpan('startDate', 'Start Date')}.
+          </p>
+
+          <p className="text-[13px] md:text-[14px] italic text-gray-500">
+            * The Tenant agrees to maintain the premises in a clean and safe condition and restore it to its original status at checkout, normal wear and tear excepted.
+          </p>
+
+          <div className="signature-section border-t border-gray-100 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Representative</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">Stayzo Properties</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. STANDARD TEMPLATE LAYOUT
+    if (selectedTemplate.id === 'standard-agreement') {
+      return (
+        <div className="space-y-6">
+          <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
+            STANDARD LEASE AGREEMENT
+          </div>
+
+          <p className="text-[13px] md:text-[14px]">
             THIS LEASE AGREEMENT (hereinafter referred to as the <strong>"Agreement"</strong>) is entered into on this{' '}
             <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Premier Properties</strong>, and the Tenant:
           </p>
 
-          <div className="bg-gray-50 p-4 border border-gray-100 rounded-lg my-4">
-            <span className="font-bold text-gray-400 text-[10px] block tracking-wider uppercase mb-1">TENANT DESIGNATION</span>
-            <strong>TENANT:</strong> {getFieldSpan('tenantName', 'Tenant Name')}
+          <div className="highlight-card bg-gray-50 border border-gray-100 p-4 rounded-xl">
+            <span className="block text-[9px] font-black text-gray-400 tracking-wider uppercase mb-1">CONTRACT PARTIES</span>
+            <strong>TENANT NAME:</strong> {getFieldSpan('tenantName', 'Tenant Name')}
           </div>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">1. PREMISES</p>
-          <p>
-            The Landlord hereby leases to the Tenant, and the Tenant hereby leases from the Landlord, the real property located at: <br />
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">1. LEASED PREMISES</p>
+          <p className="text-[13px] md:text-[14px]">
+            Landlord hereby rents to Tenant the residential property located at: <br />
             <strong>PROPERTY ADDRESS:</strong> {getFieldSpan('propertyAddress', 'Property Address')}
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">2. TERM</p>
-          <p>
-            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')} and shall remain in full force and effect for a period of {getFieldSpan('duration', 'Lease Duration')}.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">2. LEASE DURATION</p>
+          <p className="text-[13px] md:text-[14px]">
+            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')} and shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">3. PAYMENT OF RENT</p>
-          <p>
-            Tenant agrees to pay monthly rent in the amount of {getFieldSpan('rentAmount', 'Monthly Rent')} on the first day of each calendar month. Payment shall be made via electronic transfer to the Landlord's designated bank account.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">3. MONTHLY RENT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant agrees to pay monthly rent in the amount of {getFieldSpan('rentAmount', 'Monthly Rent')} on the first day of each calendar month. Payments shall be made online via the Stayzo payment gateway.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">4. ADVANCED PAYMENT</p>
-          <p>
-            The Tenant agrees to pay an Advanced Rent Payment of {getFieldSpan('advancePayment', 'Advanced Payment')} upon the execution of this Agreement. This advance shall be credited toward the initial lease periods.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">4. ADVANCED PAYMENT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant agrees to pay an Advanced Rental Payment of {getFieldSpan('advancePayment', 'Advanced Rent')} upon execution of this Agreement, to be applied to the initial months.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">5. SECURITY DEPOSIT</p>
-          <p>
-            The Tenant shall deposit the sum of {getFieldSpan('depositAmount', 'Security Deposit')} with the Landlord as security for any damages caused to the premises or defaults under this Agreement. This deposit shall be returned within 30 days of the expiration of the lease term, less any lawful deductions.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">5. SECURITY DEPOSIT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant shall deposit the sum of {getFieldSpan('depositAmount', 'Security Deposit')} as security for any damage caused to the premises or defaults under this Agreement. This deposit shall be returned within 30 days of lease expiration, less any lawful deductions.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">6. USE OF PREMISES</p>
-          <p>
-            The premises shall be occupied exclusively as a private residential dwelling. The Tenant shall not use the premises for any business purpose or illegal activity and shall maintain the property in a clean, sanitary condition.
-          </p>
-
-          <div className="border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
+          <div className="signature-section border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
             <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Landlord Representative</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">Stayzo Premier Properties</p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Authorized Agent</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">Stayzo Premier Properties</p>
             </div>
             <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Tenant Signature</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
             </div>
           </div>
         </div>
       );
     }
 
-    if (selectedTemplate.id === 'commercial-lease') {
+    // 3. COMPREHENSIVE/DETAILED TEMPLATE LAYOUT
+    if (selectedTemplate.id === 'detailed-agreement') {
       return (
-        <div className="space-y-6 text-[#1A1A1A] leading-relaxed text-[13px] md:text-[14px]">
-          <div className="text-center font-black text-[16px] md:text-[18px] tracking-tight uppercase mb-8 border-b-2 border-[#1A1A1A] pb-3">
-            COMMERCIAL LEASE AGREEMENT
+        <div className="space-y-6">
+          <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
+            COMPREHENSIVE LEASE AGREEMENT
           </div>
 
-          <p>
-            THIS COMMERCIAL LEASE AGREEMENT is made and entered into on this{' '}
-            <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Premier Properties</strong>, and the Tenant:
+          <p className="text-[13px] md:text-[14px]">
+            THIS COMPREHENSIVE LEASE AGREEMENT (hereinafter referred to as the <strong>"Agreement"</strong>) is entered into on this{' '}
+            <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Executive Properties</strong>, and the Tenant:
           </p>
 
-          <div className="bg-gray-50 p-4 border border-gray-100 rounded-lg my-4 space-y-2">
-            <div>
-              <span className="font-bold text-gray-400 text-[10px] block tracking-wider uppercase mb-0.5">REGISTERED TENANT ENTITY</span>
-              <strong>BUSINESS NAME:</strong> {getFieldSpan('tenantBusiness', 'Business Name')}
-            </div>
-            <div className="border-t border-gray-200 pt-2">
-              <span className="font-bold text-gray-400 text-[10px] block tracking-wider uppercase mb-0.5">SIGNING AUTHORITY</span>
-              <strong>REPRESENTATIVE:</strong> {getFieldSpan('repName', 'Representative Name')}
-            </div>
+          <div className="highlight-card bg-gray-50 border border-gray-100 p-4 rounded-xl">
+            <span className="block text-[9px] font-black text-gray-400 tracking-wider uppercase mb-1">TENANT DESIGNATION</span>
+            <strong>TENANT NAME:</strong> {getFieldSpan('tenantName', 'Tenant Name')}
           </div>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">1. DESCRIPTION OF PREMISES</p>
-          <p>
-            Landlord hereby leases to Tenant, and Tenant leases from Landlord, the commercial space located at: <br />
-            <strong>PROPERTY ADDRESS:</strong> {getFieldSpan('propertyAddress', 'Commercial Address')}
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">1. LEASED PREMISES & PROPERTY</p>
+          <p className="text-[13px] md:text-[14px]">
+            Landlord hereby rents to Tenant the residential property located at: <br />
+            <strong>PROPERTY ADDRESS:</strong> {getFieldSpan('propertyAddress', 'Property Address')}
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">2. TERM OF LEASE</p>
-          <p>
-            The commercial lease shall commence on the first day of next calendar month and shall remain in effect for a period of <strong>36 Months</strong>, subject to renewal options defined herein.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">2. DURATION & TERM</p>
+          <p className="text-[13px] md:text-[14px]">
+            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')} and shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">3. BASE MONTHLY RENT</p>
-          <p>
-            Tenant agrees to pay base monthly rent in the amount of {getFieldSpan('rentAmount', 'Base Monthly Rent')} on the first day of each calendar month. Payments made after the 5th day shall incur a 5% late fee penalty.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">3. PAYMENT OF MONTHLY RENT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant agrees to pay monthly rent in the amount of {getFieldSpan('rentAmount', 'Monthly Rent')} on the first day of each calendar month. Payments shall be made online via the Stayzo payment gateway.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">4. ANNUAL RENT ESCALATION</p>
-          <p>
-            The base monthly rent shall escalate at a rate of {getFieldSpan('escalationRate', 'Escalation Rate')} on each anniversary of the lease commencement date.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">4. ADVANCED RENT PAYMENT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant agrees to pay an Advanced Rental Payment of {getFieldSpan('advancePayment', 'Advanced Rent')} upon execution of this Agreement, to be applied to the initial months.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">5. ADVANCED PAYMENT</p>
-          <p>
-            Tenant shall pay an advanced payment of {getFieldSpan('advancePayment', 'Advanced Payment')} upon execution of this Agreement, to be applied to the first lease payments.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">5. SECURITY DEPOSIT</p>
+          <p className="text-[13px] md:text-[14px]">
+            Tenant shall deposit the sum of {getFieldSpan('depositAmount', 'Security Deposit')} as security for any damage caused to the premises or defaults under this Agreement. This deposit shall be returned within 30 days of lease expiration, less any lawful deductions.
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">6. SECURITY DEPOSIT</p>
-          <p>
-            Tenant shall deposit the sum of {getFieldSpan('depositAmount', 'Security Deposit')} as security for the full performance of all covenants under this lease.
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">6. UTILITIES PAYMENT & RESPONSIBILITIES</p>
+          <p className="text-[13px] md:text-[14px]">
+            The parties agree to split utilities expenses as follows: <br />
+            {getFieldSpan('utilities', 'Utilities Terms')}
           </p>
 
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">7. PERMITTED USE OF PREMISES</p>
-          <p>
-            The premises shall be used solely for the following commercial activity: <br />
-            <strong>PERMITTED USE:</strong> {getFieldSpan('permittedUse', 'Permitted Use')}
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">7. PET RULES & REGULATIONS</p>
+          <p className="text-[13px] md:text-[14px]">
+            The animal/pet policy for the premises is defined as follows: <br />
+            {getFieldSpan('petPolicy', 'Pet Policy')}
           </p>
 
-          <div className="border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">8. LATE FEE PENALTY CLAUSE</p>
+          <p className="text-[13px] md:text-[14px]">
+            Late payments received after the grace period shall incur the following late fee charges: <br />
+            {getFieldSpan('lateFee', 'Late Rent Penalty')}
+          </p>
+
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">9. PROPERTY MAINTENANCE & MINOR REPAIRS</p>
+          <p className="text-[13px] md:text-[14px]">
+            Maintenance duties are distributed as follows: <br />
+            {getFieldSpan('maintenance', 'Maintenance Rules')}
+          </p>
+
+          <div className="signature-section border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
             <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Landlord Representative</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">Stayzo Premier Properties</p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Landlord Representative</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">Stayzo Executive Properties</p>
             </div>
             <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Tenant Authorized Representative</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">{fieldValues.repName || 'Representative Name'}</p>
-              <p className="text-gray-500 text-[11px]">{fieldValues.tenantBusiness || 'Business Name'}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (selectedTemplate.id === 'vacation-rental') {
-      return (
-        <div className="space-y-6 text-[#1A1A1A] leading-relaxed text-[13px] md:text-[14px]">
-          <div className="text-center font-black text-[16px] md:text-[18px] tracking-tight uppercase mb-8 border-b-2 border-[#1A1A1A] pb-3">
-            SHORT-TERM VACATION RENTAL AGREEMENT
-          </div>
-
-          <p>
-            THIS VACATION RENTAL AGREEMENT is entered into on this{' '}
-            <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between Stayzo Host Services, and the Primary Guest:
-          </p>
-
-          <div className="bg-gray-50 p-4 border border-gray-100 rounded-lg my-4">
-            <span className="font-bold text-gray-400 text-[10px] block tracking-wider uppercase mb-1">PRIMARY GUEST DETAILS</span>
-            <strong>PRIMARY GUEST:</strong> {getFieldSpan('guestName', 'Guest Name')}
-          </div>
-
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">1. RENTAL PROPERTY</p>
-          <p>
-            The host hereby rents to the guest for vacation rental purposes, the furnished property located at: <br />
-            <strong>VACATION ADDRESS:</strong> {getFieldSpan('propertyAddress', 'Property Address')}
-          </p>
-
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">2. RENTAL PERIOD</p>
-          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100 text-[12px]">
-            <div>
-              <strong>CHECK-IN DATE/TIME:</strong> <br />
-              {getFieldSpan('checkInDate', 'Check-in Date')}
-            </div>
-            <div>
-              <strong>CHECK-OUT DATE/TIME:</strong> <br />
-              {getFieldSpan('checkOutDate', 'Check-out Date')}
-            </div>
-          </div>
-
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">3. PAYMENT BREAKDOWN</p>
-          <p>
-            The rental fees for this booking are structured as follows: <br />
-            - <strong>TOTAL RENTAL FEE:</strong> {getFieldSpan('rentalFee', 'Total Rental Fee')} <br />
-            - <strong>ONE-TIME CLEANING FEE:</strong> {getFieldSpan('cleaningFee', 'Cleaning Fee')} <br />
-            - <strong>REFUNDABLE SECURITY DEPOSIT:</strong> {getFieldSpan('depositAmount', 'Security Deposit')}
-          </p>
-
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">4. BOOKING PREPAYMENT</p>
-          <p>
-            Guest has paid a reservation prepayment of {getFieldSpan('advancePayment', 'Advanced Payment')} upon booking. This reservation is confirmed only upon successful clearance of this prepayment.
-          </p>
-
-          <p className="font-black text-[12px] mt-6 mb-2 text-[#1A1A1A] uppercase tracking-wide">5. HOUSE RULES & GUEST COVENANTS</p>
-          <p>
-            Guest agrees to follow all posted house rules, including quiet hours from 10:00 PM to 8:00 AM, maximum occupancy limits, and a strict no-smoking policy. Any violations will result in immediate termination of tenancy and forfeiture of all fees.
-          </p>
-
-          <div className="border-t border-gray-200 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Host Agent Signature</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">Stayzo Host Services</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-8">Primary Guest Signature</p>
-              <div className="border-b border-gray-400 w-full h-8" />
-              <p className="font-bold mt-1 text-[#1A1A1A]">{fieldValues.guestName || 'Guest Full Name'}</p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-6">Tenant Signature</p>
+              <div className="signature-line border-b border-gray-400 w-full h-8 mb-1" />
+              <p className="font-bold text-[#1A1A1A]">{fieldValues.tenantName || 'Tenant Full Name'}</p>
             </div>
           </div>
         </div>
@@ -853,8 +873,22 @@ export default function OwnerAgreementPage() {
     }
   };
 
+  // Get active visual theme css class
+  const getThemeClass = () => {
+    switch (selectedTheme) {
+      case 'classic-legal':
+        return 'font-serif border-4 border-double border-gray-800 p-8 md:p-12 text-justify bg-white leading-relaxed text-gray-900';
+      case 'modern-clean':
+        return 'font-sans p-8 md:p-10 text-left bg-white text-gray-700 leading-loose';
+      case 'executive-elite':
+        return 'font-serif border-l-8 border-gray-900 p-8 md:p-11 text-justify bg-[#FAFAFA] text-slate-800 leading-normal';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0EEF8] font-sans">
+    <div className="min-h-screen flex flex-col bg-[#F0EEF8] font-sans pb-10">
       
       {/* ── Navbar ── */}
       <header className="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -893,7 +927,7 @@ export default function OwnerAgreementPage() {
             })}
           </nav>
 
-          {/* Right side */}
+          {/* Right Actions */}
           <div className="flex items-center space-x-3">
             <Link
               href="/"
@@ -914,20 +948,20 @@ export default function OwnerAgreementPage() {
         </div>
       </header>
 
-      {/* ── Page Layout ── */}
+      {/* ── Page Content ── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-10 py-8">
         
         {/* Toast Notification */}
         {successToast && (
           <div className="fixed top-20 right-6 bg-[#1A1A1A] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
             <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-            <span className="text-[12px] font-bold uppercase tracking-widest leading-none">{successToast}</span>
+            <span className="text-[11px] font-black uppercase tracking-widest leading-none">{successToast}</span>
           </div>
         )}
 
         {!selectedTemplate ? (
           /* ──────────────────────────────────────────────────────────────────
-             1. TEMPLATE SELECTION PAGE
+             1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
              ────────────────────────────────────────────────────────────────── */
           <div className="space-y-10 animate-in fade-in duration-300">
             
@@ -937,7 +971,7 @@ export default function OwnerAgreementPage() {
                 Smart Agreement Hub
               </h1>
               <p className="text-[14px] text-gray-500 font-medium mt-2 max-w-2xl">
-                Draft binding tenancy, commercial, or vacation rental contracts in minutes. Select a template and our chatbot will guide you through the details to build the contract automatically.
+                Draft binding lease agreements. Select a template based on the complexity you need, and the chatbot assistant will walk you through the details to build the contract.
               </p>
               <div className="w-8 h-[3px] bg-[#1A1A1A] mt-4" />
             </div>
@@ -950,11 +984,23 @@ export default function OwnerAgreementPage() {
                   className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between hover:border-[#1A1A1A] hover:shadow-lg transition-all duration-300 group"
                 >
                   <div>
-                    {/* Category tag */}
-                    <span className="text-[9px] font-black text-gray-400 tracking-widest uppercase border border-gray-200 px-2 py-0.5 rounded">
-                      {tmpl.category}
-                    </span>
-                    <h3 className="text-[18px] font-black text-[#1A1A1A] mt-3 group-hover:text-black">
+                    {/* Complexity badge */}
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[9px] font-black tracking-widest uppercase border px-2.5 py-1 rounded ${
+                        tmpl.complexity === 'Simple'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                          : tmpl.complexity === 'Standard'
+                          ? 'bg-blue-50 border-blue-200 text-blue-600'
+                          : 'bg-purple-50 border-purple-200 text-purple-600'
+                      }`}>
+                        {tmpl.complexity} Version
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold font-mono">
+                        {tmpl.fields.length} Questions
+                      </span>
+                    </div>
+
+                    <h3 className="text-[18px] font-black text-[#1A1A1A] mt-4 group-hover:text-black">
                       {tmpl.title}
                     </h3>
                     <p className="text-[12px] text-gray-500 mt-2 leading-relaxed">
@@ -963,8 +1009,9 @@ export default function OwnerAgreementPage() {
 
                     {/* Fields List details */}
                     <div className="mt-5 space-y-2">
-                      <div className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest">
-                        Required Parameters ({tmpl.fields.length}):
+                      <div className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-gray-400" />
+                        Variables asked by Assistant:
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {tmpl.fields.map(f => (
@@ -987,25 +1034,26 @@ export default function OwnerAgreementPage() {
               ))}
             </div>
 
-            {/* Drafted Agreements (Saved in Vault) list */}
+            {/* Saved Agreements (Vault) list */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-5">
                 <div>
-                  <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wider">
-                    Digital Vault: Generated Agreements
+                  <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wider flex items-center gap-2">
+                    <Scale className="w-5 h-5 text-gray-500" />
+                    Digital Vault: Saved Agreements
                   </h3>
-                  <p className="text-[12px] text-gray-400 font-medium">Your generated legal documents are saved securely below in local session storage.</p>
+                  <p className="text-[12px] text-gray-400 font-medium">Drafted legal documents stored in local session storage.</p>
                 </div>
                 <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                  {savedAgreements.length} Active Contracts
+                  {savedAgreements.length} SAVED CONTRACTS
                 </span>
               </div>
 
               {savedAgreements.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-xl">
                   <FileSignature className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-widest">No generated agreements found</p>
-                  <p className="text-[12px] text-gray-400 mt-1 max-w-sm mx-auto">Select a template above to generate your first rental contract and save it here.</p>
+                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-widest">No saved contracts found</p>
+                  <p className="text-[12px] text-gray-400 mt-1 max-w-sm mx-auto">Select a template above to generate your first agreement.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1017,10 +1065,16 @@ export default function OwnerAgreementPage() {
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-white border border-gray-200 px-2 py-0.5 rounded">
-                              {ag.templateTitle}
+                            <span className={`text-[9px] font-bold uppercase tracking-widest border px-2 py-0.5 rounded ${
+                              ag.complexity === 'Simple'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                                : ag.complexity === 'Standard'
+                                ? 'bg-blue-50 border-blue-200 text-blue-600'
+                                : 'bg-purple-50 border-purple-200 text-purple-600'
+                            }`}>
+                              {ag.complexity} Version
                             </span>
-                            <h4 className="text-[14px] font-black text-[#1A1A1A] mt-1.5 truncate max-w-[220px]">
+                            <h4 className="text-[14px] font-black text-[#1A1A1A] mt-2.5 truncate max-w-[220px]">
                               {ag.tenantName}
                             </h4>
                           </div>
@@ -1040,17 +1094,17 @@ export default function OwnerAgreementPage() {
                       <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5">
                         <button
                           onClick={() => {
-                            // Re-open/Load the draft
                             const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === ag.templateId);
                             if (tmpl) {
                               setSelectedTemplate(tmpl);
                               setFieldValues(ag.values);
                               setCurrentFieldIdx(tmpl.fields.length);
+                              if (ag.visualTheme) setSelectedTheme(ag.visualTheme as VisualTheme);
                               setChatHistory([
                                 {
                                   id: 'reopen',
                                   sender: 'bot',
-                                  text: `Loaded existing signed agreement for **${ag.tenantName}**. You can preview, edit details, or export the document.`,
+                                  text: `Loaded saved **${ag.complexity}** agreement for **${ag.tenantName}**. You can preview, edit details, or export the document in different designs.`,
                                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 }
                               ]);
@@ -1059,7 +1113,7 @@ export default function OwnerAgreementPage() {
                           className="flex items-center gap-1 text-[11px] font-black text-[#1A1A1A] hover:underline"
                         >
                           <Info className="w-3.5 h-3.5" />
-                          <span>View & Edit</span>
+                          <span>Open in Workspace</span>
                         </button>
 
                         <button
@@ -1094,14 +1148,15 @@ export default function OwnerAgreementPage() {
                   <ArrowLeft className="w-4 h-4 text-[#1A1A1A]" />
                 </button>
                 <div>
-                  <div className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Drafting Wizard</div>
+                  <div className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
+                    Template: {selectedTemplate.complexity} Lease
+                  </div>
                   <h2 className="text-[20px] font-black text-[#1A1A1A] tracking-tight">{selectedTemplate.title}</h2>
                 </div>
               </div>
 
               {/* Progress and Autofill */}
               <div className="flex items-center gap-4 flex-wrap">
-                {/* Autofill Demo Button */}
                 <button
                   onClick={handleQuickFill}
                   className="bg-white border border-gray-200 hover:border-[#1A1A1A] text-[#1A1A1A] text-[10px] font-extrabold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 hover:scale-[1.01]"
@@ -1111,7 +1166,6 @@ export default function OwnerAgreementPage() {
                   <span>Autofill Sample</span>
                 </button>
 
-                {/* Progress bar info */}
                 <div className="flex items-center gap-2.5">
                   <div className="w-[100px] bg-gray-200 h-2 rounded-full overflow-hidden">
                     <div 
@@ -1119,14 +1173,14 @@ export default function OwnerAgreementPage() {
                       style={{ width: `${getProgressPercentage()}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-wider whitespace-nowrap">
+                  <span className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-wider whitespace-nowrap font-mono">
                     {getProgressPercentage()}% Done
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Left side: Interactive Chatbot or Forms (5 Columns) */}
+            {/* Left side: Interactive Chatbot / Manual Form */}
             <div className="lg:col-span-5 flex flex-col h-[650px] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               
               {/* Tab Header */}
@@ -1157,16 +1211,21 @@ export default function OwnerAgreementPage() {
                 /* CHATBOT VIEW */
                 <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                   
-                  {/* Chat Assistant Bio Info */}
-                  <div className="bg-[#EDE9FE]/50 border-b border-[#DDD6FE] p-3 px-4 flex items-center gap-2.5 flex-shrink-0">
-                    <div className="relative w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm text-white">
-                      <Sparkles className="w-4 h-4" />
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                  {/* Chat Assistant Header Info */}
+                  <div className="bg-[#EDE9FE]/50 border-b border-[#DDD6FE] p-3 px-4 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm text-white">
+                        <Sparkles className="w-4 h-4" />
+                        <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-black text-purple-950 uppercase tracking-wider">Stayzo Assistant</div>
+                        <div className="text-[9px] text-purple-600 font-bold uppercase tracking-widest">Active Drafting Process</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[11px] font-black text-purple-950 uppercase tracking-wider">Stayzo Assistant</div>
-                      <div className="text-[9px] text-purple-600 font-bold uppercase tracking-widest">Active & Ready to Draft</div>
-                    </div>
+                    <span className="text-[9px] font-mono text-purple-700 bg-white border border-purple-200 px-2 py-0.5 rounded">
+                      Step {Math.min(currentFieldIdx + 1, selectedTemplate.fields.length)} of {selectedTemplate.fields.length}
+                    </span>
                   </div>
 
                   {/* Message Bubble Log */}
@@ -1200,7 +1259,7 @@ export default function OwnerAgreementPage() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Input form */}
+                  {/* Input Form Area */}
                   <div className="p-4 border-t border-gray-100 flex-shrink-0">
                     <div className="flex items-center gap-2 border border-gray-200 focus-within:border-gray-400 rounded-xl p-1 bg-white transition-colors">
                       <input
@@ -1225,10 +1284,10 @@ export default function OwnerAgreementPage() {
                       </button>
                     </div>
 
-                    {/* Helper Prompt Chips */}
+                    {/* Helper Suggestions */}
                     {currentFieldIdx < selectedTemplate.fields.length && (
                       <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
-                        <span>Answer the prompt to fill in the contract blanks.</span>
+                        <span>Answer assistant prompts to compile agreement clauses.</span>
                         {selectedTemplate.fields[currentFieldIdx].placeholder && (
                           <button 
                             onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
@@ -1244,8 +1303,8 @@ export default function OwnerAgreementPage() {
               ) : (
                 /* MANUAL FIELDS VIEW */
                 <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                  <div className="text-[12px] font-medium text-gray-400 pb-3 border-b border-gray-100">
-                    You can edit the parameters directly below. The contract preview on the right will update in real-time.
+                  <div className="text-[11px] font-semibold text-gray-400 pb-3 border-b border-gray-100">
+                    Adjust specific parameters manually. Updates render live in the selected design theme.
                   </div>
                   {selectedTemplate.fields.map((field, index) => (
                     <div key={field.id} className="space-y-1.5">
@@ -1270,54 +1329,88 @@ export default function OwnerAgreementPage() {
               )}
             </div>
 
-            {/* Right side: Live Agreement Preview (7 Columns) */}
+            {/* Right side: Live Agreement Preview with Design Layout/Theme Switcher (7 Columns) */}
             <div className="lg:col-span-7 flex flex-col h-[650px] overflow-hidden">
               
-              {/* Toolbar Actions */}
-              <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm gap-4">
-                <span className="flex items-center gap-2 text-[10px] font-black text-[#1A1A1A] uppercase tracking-wider">
-                  <FileText className="w-4 h-4 text-gray-500" />
-                  Live Contract Preview
-                </span>
+              {/* Layout Switcher Toolbar (Like CV Templates) */}
+              <div className="bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm space-y-3">
+                
+                {/* Visual Theme Selector Header */}
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <span className="flex items-center gap-2 text-[10px] font-black text-[#1A1A1A] uppercase tracking-wider">
+                    <Layout className="w-4 h-4 text-gray-500" />
+                    Select Layout Design Style (CV-Style Templates):
+                  </span>
+                  
+                  {/* Action Group */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleCopyText}
+                      className="p-1.5 border border-gray-200 hover:border-gray-400 text-gray-600 rounded-md transition-colors bg-white"
+                      title="Copy Raw Text"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className="px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#1A1A1A] text-gray-700 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1"
+                      title="Print / Save PDF"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Print PDF</span>
+                    </button>
+                    <button
+                      onClick={handleSaveToVault}
+                      className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1 shadow-sm"
+                      title="Save to Vault"
+                    >
+                      <Check className="w-3 h-3" />
+                      <span>Save</span>
+                    </button>
+                  </div>
+                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyText}
-                    className="p-2 border border-gray-200 hover:border-gray-400 text-gray-600 rounded-lg transition-colors flex items-center justify-center bg-white"
-                    title="Copy to Clipboard"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    className="px-3.5 py-2 bg-white border border-gray-200 hover:border-[#1A1A1A] text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1.5"
-                    title="Print / Save PDF"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Print PDF</span>
-                  </button>
-                  <button
-                    onClick={handleSaveToVault}
-                    className="px-4 py-2 bg-[#1A1A1A] hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
-                    title="Save to Document Vault"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Save to Vault</span>
-                  </button>
+                {/* Switcher Buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  {VISUAL_THEMES.map((theme) => {
+                    const isActive = selectedTheme === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        onClick={() => setSelectedTheme(theme.id)}
+                        className={`p-2.5 rounded-lg border text-left transition-all ${
+                          isActive
+                            ? 'border-black bg-black text-white ring-2 ring-black/10'
+                            : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        <div className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-gray-900'}`}>
+                          {theme.label}
+                        </div>
+                        <div className={`text-[8px] font-medium leading-normal mt-0.5 ${isActive ? 'text-gray-300' : 'text-gray-400'}`}>
+                          {theme.description}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* A4 Paper Container */}
-              <div className="flex-1 bg-white border border-gray-200 shadow-md rounded-xl overflow-y-auto p-8 md:p-12 font-serif relative no-scrollbar">
-                {/* Clean print wrapper */}
-                <div id="contract-printable-area" className="mx-auto max-w-[620px]">
-                  {renderDocumentJSX()}
+              {/* Document Paper Canvas */}
+              <div className="flex-1 bg-white border border-gray-200 shadow-md rounded-xl overflow-y-auto p-8 md:p-12 relative no-scrollbar">
+                
+                {/* Printable Paper Wrapper with Theme classes applied */}
+                <div 
+                  id="contract-printable-area" 
+                  className={`mx-auto max-w-[620px] transition-all duration-300 ${getThemeClass()}`}
+                >
+                  {renderInteractiveDocument()}
                 </div>
 
-                {/* Info Guide Overlay Badge */}
-                <div className="absolute top-4 right-4 bg-gray-50/80 backdrop-blur-sm border border-gray-200 text-[9px] font-extrabold uppercase text-gray-400 px-2.5 py-1 rounded-full tracking-widest pointer-events-none select-none flex items-center gap-1">
+                {/* Click-to-edit guide watermark */}
+                <div className="absolute top-4 right-4 bg-gray-100/80 backdrop-blur-sm border border-gray-200 text-[8px] font-black uppercase text-gray-400 px-2.5 py-1 rounded-full tracking-widest pointer-events-none select-none flex items-center gap-1">
                   <Info className="w-3 h-3 text-gray-400" />
-                  <span>Click items to edit</span>
+                  <span>Interactive document</span>
                 </div>
               </div>
 
