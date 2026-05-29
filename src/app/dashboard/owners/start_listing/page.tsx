@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -52,6 +52,25 @@ export default function StartListingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const draft = localStorage.getItem('stayzo_listing_draft');
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+      } catch (err) {
+        console.error('Error loading draft:', err);
+      }
+    }
+  }, []);
+
+  const handleSaveAndExit = () => {
+    localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData, currentStep }));
+    router.push("/dashboard/owners/listings");
+  };
 
   // --- Form State ---
   const [formData, setFormData] = useState({
@@ -217,6 +236,7 @@ export default function StartListingPage() {
         });
 
         if (res.ok) {
+          localStorage.removeItem('stayzo_listing_draft');
           alert("Listing submitted successfully! Images have been saved to Cloudinary.");
           router.push("/dashboard/owners/listings");
         } else {
@@ -246,18 +266,21 @@ export default function StartListingPage() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
-        <div className="flex items-center space-x-2.5">
-          <div className="flex items-end space-x-[3px] h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
+        <Link href="/" className="flex items-center space-x-2 group">
+          <div className="flex items-end space-x-1 h-5">
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
           </div>
-          <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">Stayzo</span>
-        </div>
-        <Link href="/dashboard/owners" className="text-sm font-semibold text-gray-800 hover:text-black hover:underline underline-offset-4 transition-all">
-          Exit to Dashboard
+          <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
+        <button 
+          onClick={handleSaveAndExit}
+          className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer"
+        >
+          Save and Exit
+        </button>
       </header>
 
       {/* ── Main Content Area ── */}
