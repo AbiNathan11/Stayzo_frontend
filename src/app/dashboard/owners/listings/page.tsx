@@ -365,60 +365,39 @@ export default function OwnerListings() {
                     </div>
                   </div>
 
-                  {/* 360 Panorama Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-blue-50/50 p-5 border-2 border-blue-200 border-dashed rounded-xl overflow-hidden hover:bg-blue-50 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'panoramaImage')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 flex items-center gap-1.5 mb-3">
-                        360° Panorama Image Upload
-                      </div>
-                      {formData.panoramaImage ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Panorama attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-blue-600 font-semibold flex items-center gap-3">
-                           <span className="bg-blue-600 group-hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-blue-600 mt-3 font-medium">Upload a high-resolution equirectangular panorama image to automatically enable the 360° Virtual Tour for this listing.</p>
-                    </div>
+                  {/* 360 Panorama */}
+                  <div className="space-y-1 md:col-span-2 bg-blue-50/50 p-4 border border-blue-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 flex items-center gap-1.5 mb-2">
+                      360° Panorama Image Upload
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'panoramaImage')} className="w-full text-[13px] text-blue-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                    <p className="text-[10px] text-blue-600 mt-2">Upload a high-resolution equirectangular panorama image to automatically enable the 360° Virtual Tour for this listing.</p>
+                    {formData.panoramaImage && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Panorama Attached Successfully</p>
+                    )}
                   </div>
 
-                  {/* Main Image Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-gray-50/50 p-5 border-2 border-gray-200 border-dashed rounded-xl overflow-hidden hover:bg-gray-100 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'image')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-600 flex items-center gap-1.5 mb-3">
-                        Property Main Image Upload
-                      </div>
-                      {formData.image ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Main image attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-gray-600 font-semibold flex items-center gap-3">
-                           <span className="bg-gray-800 group-hover:bg-black transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Main Image */}
+                  <div className="space-y-1 md:col-span-2 bg-gray-50/50 p-4 border border-gray-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-700 flex items-center gap-1.5 mb-2">
+                      Property Main Image Upload
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'image')} className="w-full text-[13px] text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-black cursor-pointer" />
+                    {formData.image && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Main Image Attached Successfully</p>
+                    )}
                   </div>
 
-                  {/* Water Bill Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-emerald-50/50 p-5 border-2 border-emerald-200 border-dashed rounded-xl overflow-hidden hover:bg-emerald-50 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'waterBillImage')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5 mb-3">
-                        Water Bill Image (Verification)
-                      </div>
-                      {formData.waterBillImage ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Water bill attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-emerald-700 font-semibold flex items-center gap-3">
-                           <span className="bg-emerald-600 group-hover:bg-emerald-700 transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-emerald-600 mt-3 font-medium">Upload a recent water bill for address verification by the Admin.</p>
-                    </div>
+                  {/* Water Bill */}
+                  <div className="space-y-1 md:col-span-2 bg-emerald-50/50 p-4 border border-emerald-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5 mb-2">
+                      Water Bill Image (Verification)
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'waterBillImage')} className="w-full text-[13px] text-emerald-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer" />
+                    <p className="text-[10px] text-emerald-600 mt-2">Upload a recent water bill for address verification by the Admin.</p>
+                    {formData.waterBillImage && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Water Bill Attached Successfully</p>
+                    )}
                   </div>
 
                   <div className="space-y-1 md:col-span-2">
