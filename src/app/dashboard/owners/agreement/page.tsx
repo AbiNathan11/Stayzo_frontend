@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Bell, 
-  ArrowRight, 
   Send, 
   FileText, 
   Download, 
@@ -17,6 +15,7 @@ import {
   FileSignature,
   Info,
   ArrowLeft,
+  ArrowRight,
   Layout,
   BookOpen,
   Scale,
@@ -25,7 +24,6 @@ import {
   MousePointerClick,
   X
 } from 'lucide-react';
-import Footer from '@/components/Footer';
 import { io, Socket } from 'socket.io-client';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -59,16 +57,6 @@ interface SavedAgreement {
   landlordSig?: string;
   tenantSig?: string;
 }
-
-// ─── NAV LINKS ──────────────────────────────────────────────────────────────
-const navLinks = [
-  { label: 'Home',         href: '/dashboard/owners' },
-  { label: 'Listings',     href: '/dashboard/owners/listings' },
-  { label: 'Appointments', href: '/dashboard/owners/appointments' },
-  { label: 'Chat',         href: '/dashboard/owners/chat' },
-  { label: 'Agreement',    href: '/dashboard/owners/agreement' },
-  { label: 'Profile',      href: '/dashboard/owners/profile' },
-];
 
 // ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
 const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
@@ -1125,68 +1113,10 @@ export default function OwnerAgreementPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0EEF8] font-sans pb-10">
+    <div className="animate-in fade-in duration-300">
       
-      {/* ── Navbar ── */}
-      <header className="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 h-[60px] flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2.5 group">
-            <div className="flex items-end space-x-[3px] h-5">
-              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
-            </div>
-            <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">Stayzo</span>
-          </Link>
-
-          {/* Center Nav */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`relative px-4 py-2 text-[13px] font-semibold transition-colors ${
-                    isActive
-                      ? 'text-[#1A1A1A]'
-                      : 'text-gray-500 hover:text-[#1A1A1A]'
-                  }`}
-                >
-                  {link.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#1A1A1A] rounded-full" />
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Right Actions */}
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/"
-              className="flex items-center space-x-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-extrabold tracking-wider uppercase px-4 py-2.5 rounded-full transition-colors shadow-md"
-            >
-              <span>I AM A TENANT</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-            <button
-              id="agreement-notifications-btn"
-              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5 text-[#1A1A1A]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#1A1A1A] rounded-full" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* ── Page Content ── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-10 py-8">
+      <div className="w-full">
         
         {/* Toast Notification */}
         {successToast && (
@@ -1785,9 +1715,7 @@ export default function OwnerAgreementPage() {
           </div>
         )}
 
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

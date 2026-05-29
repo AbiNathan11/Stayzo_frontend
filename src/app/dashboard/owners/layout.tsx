@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LogOut, LayoutDashboard, KeyRound, Heart, 
-  CalendarCheck, MessageSquare, FileText, Compass
+  LayoutDashboard, KeyRound, MessageSquare, 
+  CalendarCheck, FileSignature 
 } from 'lucide-react';
 
-export default function TenantDashboardLayout({
+export default function OwnerDashboardLayout({
   children,
 }: {
   children: React.ReactNode
@@ -42,15 +42,19 @@ export default function TenantDashboardLayout({
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 
   const navItems = [
-    { name: 'Overview', href: '/dashboard/tenant', icon: LayoutDashboard },
-    { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
-    { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
-    { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
-    { name: 'Relocation Services', href: '/dashboard/tenant/services', icon: Compass },
+    { name: 'Overview', href: '/dashboard/owners', icon: LayoutDashboard },
+    { name: 'Properties', href: '/dashboard/owners/listings', icon: KeyRound },
+    { name: 'Inquiries', href: '/dashboard/owners/appointments', icon: CalendarCheck },
+    { name: 'Messages', href: '/dashboard/owners/chat', icon: MessageSquare },
+    { name: 'Contracts', href: '/dashboard/owners/agreement', icon: FileSignature },
   ];
 
+  if (pathname.includes('/start_listing')) {
+    return <>{children}</>;
+  }
+
   return (
-    <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
+    <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col animate-in fade-in duration-300">
       
       {/* Top Header with Navigation */}
       <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex items-center justify-between z-50 shrink-0 select-none sticky top-0">
@@ -59,10 +63,10 @@ export default function TenantDashboardLayout({
         <div className="flex-1 flex justify-start">
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="flex items-end space-x-1 h-5">
-              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
             </div>
             <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
           </Link>
@@ -72,12 +76,11 @@ export default function TenantDashboardLayout({
         <nav className="hidden lg:flex items-center space-x-1 flex-none">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
-            const Icon = item.icon;
             return (
               <Link 
                 key={item.href}
                 href={item.href}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap select-none ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap select-none ${
                   isActive 
                     ? 'bg-[#1A1A1A] text-white' 
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -92,10 +95,10 @@ export default function TenantDashboardLayout({
         {/* Right utility options */}
         <div className="flex-1 flex justify-end items-center space-x-4">
           <Link 
-            href="/dashboard/owners"
+            href="/dashboard/tenant"
             className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-gray-50 px-4 py-2 rounded-full transition"
           >
-            Switch to owner
+            Switch to tenant
           </Link>
           <button 
             onClick={handleLogout} 

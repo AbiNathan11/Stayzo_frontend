@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
-  ArrowRight,
   Search,
   MoreVertical,
   Paperclip,
@@ -13,17 +11,6 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-import Footer from "@/components/Footer";
-
-// ─── Nav Links ──────────────────────────────────────────────────────────────
-const navLinks = [
-  { label: "Home", href: "/dashboard/owners" },
-  { label: "Listings", href: "/dashboard/owners/listings" },
-  { label: "Appointments", href: "/dashboard/owners/appointments" },
-  { label: "Chat", href: "/dashboard/owners/chat" },
-  { label: "Agreement", href: "/dashboard/owners/agreement" },
-  { label: "Profile", href: "/dashboard/owners/profile" },
-];
 
 // ─── Conversation List ───────────────────────────────────────────────────────
 const conversations = [
@@ -133,66 +120,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0EEF8]">
-      {/* ── Navbar ── */}
-      <header className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-[60px] flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2.5 group">
-            <div className="flex items-end space-x-[3px] h-5">
-              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
-              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
-            </div>
-            <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">
-              Stayzo
-            </span>
-          </Link>
-
-          {/* Center Nav */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
-                    isActive
-                      ? "text-[#1A1A1A] border-b-2 border-[#1A1A1A] rounded-none pb-1"
-                      : "text-gray-500 hover:text-[#1A1A1A] hover:bg-gray-50"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Right Side */}
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/"
-              className="flex items-center space-x-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[12px] font-extrabold tracking-wider uppercase px-5 py-2.5 rounded-full transition-colors shadow-md"
-            >
-              <span>I am a Tenant</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-            <button
-              id="chat-notifications-btn"
-              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5 text-[#1A1A1A]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#1A1A1A] rounded-full" />
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <div className="w-full bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm animate-in fade-in duration-300">
       {/* ── Body: 3-Column Layout ── */}
-      <main className="flex h-[calc(100vh-60px)] overflow-hidden w-full">
+      <div className="flex h-[600px] overflow-hidden w-full">
         {/* ── Left Sidebar: Conversation List ── */}
         <aside className="w-[210px] min-w-[210px] bg-white border-r border-gray-100 flex flex-col overflow-hidden h-full">
           {/* Fixed: Title + Search */}
@@ -451,9 +381,7 @@ export default function ChatPage() {
             Schedule Site Visit
           </button>
         </aside>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }
