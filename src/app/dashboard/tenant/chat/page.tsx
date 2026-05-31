@@ -27,7 +27,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex h-[700px] overflow-hidden animate-in fade-in duration-300">
+    <div className="bg-white flex h-[calc(100vh-77px)] w-full overflow-hidden animate-in fade-in duration-300">
       
       {/* Left Sidebar - Contacts List */}
       <div className="w-1/3 min-w-[280px] border-r border-gray-200 flex flex-col bg-[#F8FAFB]">
@@ -45,7 +45,7 @@ export default function ChatPage() {
         
         <div className="flex-1 overflow-y-auto">
           {/* Active Contact */}
-          <div className="flex items-center gap-3 p-4 bg-white border-l-4 border-[#1A1A1A] cursor-pointer">
+          <div className="flex items-center gap-3 p-4 bg-[#EEF2FF] border-l-4 border-[#1A1A1A] cursor-pointer">
             <div className="w-12 h-12 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-lg shrink-0">
               N
             </div>
@@ -118,10 +118,10 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
           {messages.map((message) => (
             <div key={message.id} className={`flex flex-col ${message.sender === 'tenant' ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[70%] px-5 py-3 rounded-2xl text-sm font-medium shadow-sm ${
+              <div className={`max-w-[70%] px-5 py-3 rounded-2xl text-sm font-semibold shadow-sm ${
                 message.sender === 'tenant'
-                  ? 'bg-[#1A1A1A] text-white rounded-tr-sm'
-                  : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
+                  ? 'bg-[#EEF2FF] text-[#1A1A1A] border border-indigo-100 rounded-tr-sm'
+                  : 'bg-[#EEF2FF] text-[#1A1A1A] border border-indigo-100/70 rounded-tl-sm'
               }`}>
                 {message.text}
               </div>

@@ -66,7 +66,7 @@ export default function TenantAuth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB] text-[#1A1A1A] font-sans selection:bg-[#4F46E5] selection:text-white flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFB] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
 
       {/* Simple Header matching the navbar branding */}
       <header className="w-full bg-white border-b border-gray-100 py-4 px-6 sm:px-8 flex justify-between items-center z-50 shrink-0">
@@ -93,7 +93,7 @@ export default function TenantAuth() {
           </svg>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
-        <Link href="/" className="text-xs font-extrabold text-gray-500 hover:text-[#4F46E5] transition uppercase tracking-wider">
+        <Link href="/" className="text-xs font-extrabold text-gray-500 hover:text-[#1A1A1A] transition uppercase tracking-wider">
           Back to Home
         </Link>
       </header>
@@ -124,7 +124,7 @@ export default function TenantAuth() {
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition text-sm text-gray-800 font-semibold"
+                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
                         placeholder="Jane"
                       />
                     </div>
@@ -135,7 +135,7 @@ export default function TenantAuth() {
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition text-sm text-gray-800 font-semibold"
+                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
                         placeholder="Doe"
                       />
                     </div>
@@ -151,7 +151,7 @@ export default function TenantAuth() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition text-sm text-gray-800 font-semibold"
+                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
                     placeholder="jane@example.com"
                   />
                 </div>
@@ -175,7 +175,7 @@ export default function TenantAuth() {
                       setLastName('');
                       setError('');
                     }}
-                    className="text-[#4F46E5] hover:underline font-extrabold cursor-pointer"
+                    className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
                   >
                     {mode === 'login' ? 'Sign up' : 'Log in'}
                   </button>
@@ -187,13 +187,13 @@ export default function TenantAuth() {
             <div className="w-full animate-in fade-in slide-in-from-right-8 duration-500">
               <button
                 onClick={() => { setStep('form'); setError(''); setOtp(''); }}
-                className="flex items-center text-gray-400 hover:text-[#4F46E5] transition text-[10px] font-extrabold tracking-wider uppercase mb-8"
+                className="flex items-center text-gray-400 hover:text-[#1A1A1A] transition text-[10px] font-extrabold tracking-wider uppercase mb-8"
               >
                 <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Back
               </button>
 
               <h2 className="text-3xl font-extrabold text-[#1A1A1A] mb-3 tracking-tight">Check your email</h2>
-              <div className="flex items-center space-x-2 text-[#4F46E5] mb-8">
+              <div className="flex items-center space-x-2 text-[#1A1A1A] mb-8">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <p className="text-xs font-semibold text-gray-400">
                   We've sent a 6-digit code to <span className="font-extrabold text-[#1A1A1A] break-all">{email || 'your email'}</span>
@@ -211,7 +211,7 @@ export default function TenantAuth() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
                     maxLength={6}
-                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition text-2xl tracking-[0.5em] text-center text-[#4F46E5] font-extrabold"
+                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-2xl tracking-[0.5em] text-center text-[#1A1A1A] font-extrabold"
                     placeholder="••••••"
                   />
                 </div>
@@ -226,7 +226,7 @@ export default function TenantAuth() {
               </form>
 
               <p className="text-center text-xs text-gray-400 font-semibold mt-8">
-                Didn't receive it? <button className="text-[#4F46E5] hover:underline font-extrabold cursor-pointer">Resend code</button>
+                Didn't receive it? <button className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer">Resend code</button>
               </p>
             </div>
           )}

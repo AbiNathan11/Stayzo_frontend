@@ -124,7 +124,11 @@ export default function TenantDashboardLayout({
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-10">
+      <div className={`flex-1 w-full mx-auto ${
+        pathname === '/dashboard/tenant/chat'
+          ? 'max-w-none px-0 py-0'
+          : 'max-w-[1200px] px-6 sm:px-10 py-10'
+      }`}>
         <main className="w-full min-w-0">
           {children}
         </main>
