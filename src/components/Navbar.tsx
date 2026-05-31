@@ -12,6 +12,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userInitial, setUserInitial] = useState('U');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -20,11 +21,24 @@ export default function Navbar() {
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          setUserEmail(payload.email || '');
+          const email = payload.email || '';
+          setUserEmail(email);
           if (payload.firstName) {
             setUserInitial(payload.firstName.charAt(0).toUpperCase());
           } else if (payload.email) {
             setUserInitial(payload.email.charAt(0).toUpperCase());
+          }
+
+          // Live fetch profile image
+          if (email) {
+            fetch(`http://localhost:3001/api/auth/profile/${email}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.user && data.user.profileImage) {
+                  setProfileImage(data.user.profileImage);
+                }
+              })
+              .catch(err => console.warn("Landing navbar profile fetch issue:", err));
           }
         } catch (e) {
           console.error('Failed to parse token', e);
@@ -110,11 +124,17 @@ export default function Navbar() {
 
             <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
               <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80"
-                  alt="User Profile"
-                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
-                />
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="User Profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105 shrink-0">
+                    {userInitial}
+                  </div>
+                )}
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
               </div>
             </Link>
@@ -124,11 +144,17 @@ export default function Navbar() {
             {isLoggedIn ? (
               <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80"
-                    alt="User Profile"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
-                  />
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="User Profile"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105 shrink-0">
+                      {userInitial}
+                    </div>
+                  )}
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
                 </div>
               </Link>

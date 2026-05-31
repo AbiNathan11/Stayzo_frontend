@@ -15,6 +15,7 @@ export default function TenantDashboardLayout({
 }) {
   const pathname = usePathname();
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('stayzo_token');
@@ -127,28 +128,57 @@ export default function TenantDashboardLayout({
           >
             Switch to owner
           </Link>
-          <button 
-            onClick={handleLogout} 
-            className="flex items-center space-x-3 bg-white border border-gray-200 hover:shadow-md transition rounded-full p-2 pr-4 cursor-pointer"
-          >
-            {user?.profileImage ? (
-              <img src={user.profileImage} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                {userInitial}
-              </div>
+          <div className="relative">
+            <button 
+              onClick={() => setShowDropdown(!showDropdown)} 
+              className="flex items-center justify-center hover:scale-105 active:scale-95 transition-all rounded-full cursor-pointer shrink-0"
+            >
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt="User Avatar" className="w-8 h-8 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {userInitial}
+                </div>
+              )}
+            </button>
+
+            {showDropdown && (
+              <>
+                {/* Backdrop overlay for close-on-click */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)}></div>
+                
+                <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="px-4 py-2 border-b border-gray-50">
+                    <p className="text-xs font-bold text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-[10px] text-gray-400 font-semibold truncate mt-0.5">{user?.email}</p>
+                  </div>
+                  
+                  <Link 
+                    href="/dashboard/tenant?edit=true" 
+                    onClick={() => setShowDropdown(false)}
+                    className="flex w-full px-4 py-2.5 text-left text-xs font-bold text-[#4F46E5] hover:bg-[#EEF2FF] transition duration-150"
+                  >
+                    Edit Profile
+                  </Link>
+                  
+                  <button 
+                    onClick={() => {
+                      setShowDropdown(false);
+                      handleLogout();
+                    }}
+                    className="flex w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition duration-150 pointer-events-auto"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
             )}
-            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">Logout</span>
-          </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className={`flex-1 w-full mx-auto ${
-        pathname === '/dashboard/tenant/chat'
-          ? 'max-w-none px-0 py-0'
-          : 'max-w-none px-6 sm:px-10 py-10'
-      }`}>
+      <div className="flex-1 w-full mx-auto max-w-[1400px] px-8 sm:px-16 md:px-24 py-10">
         <main className="w-full min-w-0">
           {children}
         </main>
