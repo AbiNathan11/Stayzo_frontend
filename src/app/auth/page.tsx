@@ -51,7 +51,7 @@ export default function TenantAuth() {
       if (data.token) localStorage.setItem('stayzo_token', data.token);
 
       const lowerEmail = email.toLowerCase();
-      if (lowerEmail === 'adminstayzo@gmail.com' || lowerEmail.startsWith('admin@')) {
+      if (lowerEmail === 'stayzoavp@gmail.com' || lowerEmail.startsWith('admin@')) {
         window.location.href = '/dashboard/admin';
       } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
         window.location.href = '/dashboard/owners';
