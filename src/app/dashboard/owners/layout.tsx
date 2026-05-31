@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, KeyRound, MessageSquare, 
-  CalendarCheck, FileSignature 
+  CalendarCheck, FileSignature, User, Bell, ArrowRight
 } from 'lucide-react';
 
 export default function OwnerDashboardLayout({
@@ -42,16 +42,19 @@ export default function OwnerDashboardLayout({
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 
   const navItems = [
-    { name: 'Overview', href: '/dashboard/owners', icon: LayoutDashboard },
-    { name: 'Properties', href: '/dashboard/owners/listings', icon: KeyRound },
-    { name: 'Inquiries', href: '/dashboard/owners/appointments', icon: CalendarCheck },
-    { name: 'Messages', href: '/dashboard/owners/chat', icon: MessageSquare },
-    { name: 'Contracts', href: '/dashboard/owners/agreement', icon: FileSignature },
+    { name: 'Home', href: '/dashboard/owners', icon: LayoutDashboard },
+    { name: 'Listings', href: '/dashboard/owners/listings', icon: KeyRound },
+    { name: 'Appointments', href: '/dashboard/owners/appointments', icon: CalendarCheck },
+    { name: 'Chat', href: '/dashboard/owners/chat', icon: MessageSquare },
+    { name: 'Agreement', href: '/dashboard/owners/agreement', icon: FileSignature },
+    { name: 'Profile', href: '/dashboard/owners/profile', icon: User },
   ];
 
   if (pathname.includes('/start_listing')) {
     return <>{children}</>;
   }
+
+  const isChat = pathname.includes('/chat');
 
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col animate-in fade-in duration-300">
@@ -73,48 +76,44 @@ export default function OwnerDashboardLayout({
         </div>
 
         {/* Center Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-1 flex-none">
+        <nav className="hidden lg:flex items-center space-x-8 flex-none">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link 
                 key={item.href}
                 href={item.href}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap select-none ${
+                className={`text-xs font-bold transition whitespace-nowrap select-none ${
                   isActive 
-                    ? 'bg-[#1A1A1A] text-white' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'text-[#1A1A1A]' 
+                    : 'text-gray-500 hover:text-[#1A1A1A]'
                 }`}
               >
-                <span>{item.name}</span>
+                {item.name}
               </Link>
             )
           })}
         </nav>
 
         {/* Right utility options */}
-        <div className="flex-1 flex justify-end items-center space-x-4">
+        <div className="flex-1 flex justify-end items-center space-x-6">
           <Link 
             href="/dashboard/tenant"
-            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-gray-50 px-4 py-2 rounded-full transition"
+            className="hidden sm:flex items-center space-x-2 bg-[#1A1A1A] text-white px-5 py-2.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest hover:bg-black transition shadow-sm"
           >
-            Switch to tenant
+            <span>I am a tenant</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-          <button 
-            onClick={handleLogout} 
-            className="flex items-center space-x-3 bg-white border border-gray-200 hover:shadow-md transition rounded-full p-2 pr-4 cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
-              {userInitial}
-            </div>
-            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">Logout</span>
-          </button>
+          <div className="relative cursor-pointer hover:opacity-80 transition">
+            <Bell className="w-5 h-5 text-[#1A1A1A]" />
+            <span className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full border border-white"></span>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-10">
-        <main className="w-full min-w-0">
+      <div className={`flex-1 w-full mx-auto flex flex-col ${isChat ? 'max-w-none px-4 py-4' : 'max-w-[1200px] px-6 sm:px-10 py-10'}`}>
+        <main className="w-full min-w-0 flex-1 min-h-0 flex flex-col">
           {children}
         </main>
       </div>
