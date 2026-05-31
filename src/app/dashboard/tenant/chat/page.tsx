@@ -27,7 +27,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="bg-white flex h-[calc(100vh-77px)] w-full overflow-hidden animate-in fade-in duration-300">
+    <div className="bg-white border border-gray-200 rounded-3xl flex h-[calc(100vh-150px)] min-h-[550px] w-full overflow-hidden shadow-xs animate-in fade-in duration-300">
       
       {/* Left Sidebar - Contacts List */}
       <div className="w-1/3 min-w-[280px] border-r border-gray-200 flex flex-col bg-[#F8FAFB]">
