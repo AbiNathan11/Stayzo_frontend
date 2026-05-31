@@ -11,6 +11,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [userInitial, setUserInitial] = useState('U');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -20,6 +21,11 @@ export default function Navbar() {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setUserEmail(payload.email || '');
+          if (payload.firstName) {
+            setUserInitial(payload.firstName.charAt(0).toUpperCase());
+          } else if (payload.email) {
+            setUserInitial(payload.email.charAt(0).toUpperCase());
+          }
         } catch (e) {
           console.error('Failed to parse token', e);
         }
@@ -102,19 +108,29 @@ export default function Navbar() {
 
             <div className="w-px h-5 bg-gray-200"></div>
 
-            <div className="flex items-center cursor-pointer">
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover border border-gray-100 shadow-sm"
-              />
-            </div>
+            <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
+              <div className="relative">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80"
+                  alt="User Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
+                />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+              </div>
+            </Link>
           </div>
         ) : (
           <div className="hidden md:flex items-center space-x-5">
             {isLoggedIn ? (
-              <Link href={getDashboardLink()} className="text-[#1A1A1A] hover:text-gray-600 transition flex items-center" title="Go to Dashboard">
-                <User className="w-5 h-5" />
+              <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
+                <div className="relative">
+                  <img
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80"
+                    alt="User Profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#4F46E5]/10 group-hover/profile:ring-[#4F46E5]/40 transition-all duration-300 transform group-hover/profile:scale-105"
+                  />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                </div>
               </Link>
             ) : (
               <Link href="/auth" className="text-xs font-extrabold text-gray-700 hover:text-[#1A1A1A] transition uppercase tracking-wide">Login</Link>

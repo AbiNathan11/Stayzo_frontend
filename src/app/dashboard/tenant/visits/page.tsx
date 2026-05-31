@@ -174,7 +174,7 @@ export default function VisitsPage() {
         </div>
         <button
           onClick={() => setShowBookModal(true)}
-          className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+          className="flex items-center gap-2 bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition duration-200"
         >
           <Plus className="w-4 h-4" /> Request New Visit
         </button>
