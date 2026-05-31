@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
-  ArrowRight,
   Search,
   MoreVertical,
   Paperclip,
@@ -13,17 +11,6 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-
-
-// ─── Nav Links ──────────────────────────────────────────────────────────────
-const navLinks = [
-  { label: "Home", href: "/dashboard/owners" },
-  { label: "Listings", href: "/dashboard/owners/listings" },
-  { label: "Appointments", href: "/dashboard/owners/appointments" },
-  { label: "Chat", href: "/dashboard/owners/chat" },
-  { label: "Agreement", href: "/dashboard/owners/agreement" },
-  { label: "Profile", href: "/dashboard/owners/profile" },
-];
 
 // ─── Conversation List ───────────────────────────────────────────────────────
 const conversations = [
@@ -133,9 +120,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0EEF8]">
+    <div className="w-full bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm animate-in fade-in duration-300">
       {/* ── Body: 3-Column Layout ── */}
-      <main className="flex h-[calc(100vh-60px)] overflow-hidden w-full">
+      <div className="flex h-[600px] overflow-hidden w-full">
         {/* ── Left Sidebar: Conversation List ── */}
         <aside className="w-[210px] min-w-[210px] bg-white border-r border-gray-100 flex flex-col overflow-hidden h-full">
           {/* Fixed: Title + Search */}
@@ -394,7 +381,7 @@ export default function ChatPage() {
             Schedule Site Visit
           </button>
         </aside>
-      </main>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, ArrowRight, AlertTriangle, Pencil, ChevronRight } from 'lucide-react';
-
+import { 
+  Pencil, 
+  Trash2, 
+  Play, 
+  Building, 
+  MapPin, 
+  Home, 
+  BedDouble, 
+  Bath, 
+  Maximize, 
+  AlertCircle, 
+  Clock,
+  CheckCircle2
+} from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Listing {
@@ -71,12 +83,33 @@ export default function OwnerListings() {
   const pathname = usePathname();
   const [currentPage, setCurrentPage] = useState(1);
   const [listings, setListings] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'active' | 'processing'>('active');
+  const [draft, setDraft] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', address: '', city: '', 
     type: 'Apartment', bedrooms: '', bathrooms: '', sqft: '', 
     panoramaImage: '', waterBillImage: '', image: ''
   });
+
+  // Load draft on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('stayzo_listing_draft');
+    if (savedDraft) {
+      try {
+        setDraft(JSON.parse(savedDraft));
+      } catch (e) {
+        console.error('Error loading draft:', e);
+      }
+    }
+  }, []);
+
+  const handleDeleteDraft = () => {
+    if (window.confirm("Are you sure you want to discard this in-progress listing draft?")) {
+      localStorage.removeItem('stayzo_listing_draft');
+      setDraft(null);
+    }
+  };
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -94,7 +127,7 @@ export default function OwnerListings() {
     fetchListings();
   }, []);
 
-  const totalPages = Math.ceil(listings.length / 4) || 1;
+  const totalPages = Math.ceil(listings.length / 6) || 1;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
@@ -132,10 +165,10 @@ export default function OwnerListings() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans">
+    <div className="animate-in fade-in duration-300">
 
       {/* ── Page Content ── */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-10 py-10">
+      <div className="w-full">
 
         {/* Page Title & Action */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -145,88 +178,219 @@ export default function OwnerListings() {
             </h1>
             <div className="w-8 h-[3px] bg-[#1A1A1A] mt-2" />
           </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
+          <Link 
+            href="/dashboard/owners/start_listing"
             className="bg-[#1A1A1A] text-white px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-black transition-colors"
           >
             + Create New Listing
+          </Link>
+        </div>
+
+        <div className="flex border-b border-gray-200 mb-8 select-none">
+          <button 
+            onClick={() => setActiveTab('active')}
+            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
+              activeTab === 'active' 
+                ? 'border-black text-[#1A1A1A]' 
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Active Listings ({listings.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('processing')}
+            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+              activeTab === 'processing' 
+                ? 'border-black text-[#1A1A1A]' 
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            In Progress & Drafts ({draft ? 1 : 0})
+            {draft && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
           </button>
         </div>
 
-        {/* ── Regular Listing Cards ── */}
-        <div className="flex flex-col gap-4">
-          {listings.length === 0 ? (
-            <div className="py-10 text-center text-gray-500 font-semibold text-[13px]">
-              No properties found. Create your first listing above!
-            </div>
-          ) : (
-            listings.slice((currentPage - 1) * 4, currentPage * 4).map((listing) => (
-              <div
-                key={listing.id}
-                className="border border-gray-200 rounded-sm overflow-hidden flex flex-col sm:flex-row hover:border-gray-400 transition-colors"
-              >
-                {/* Image */}
-                <div className="sm:w-[220px] flex-shrink-0 bg-gray-100">
-                  <img
-                    src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'}
-                    alt={listing.title}
-                    className="w-full h-[140px] sm:h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
-                  />
+        {/* ── Active Listings Tab ── */}
+        {activeTab === 'active' && (
+          <div>
+            {listings.length === 0 ? (
+              <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/55">
+                <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Active Properties Found</p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Deploy a high-fidelity property listing today to start receiving lease applications.</p>
+                <Link 
+                  href="/dashboard/owners/start_listing"
+                  className="mt-5 inline-block bg-[#1A1A1A] hover:bg-black text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full shadow-sm transition"
+                >
+                  Start Listing Wizard
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {listings.slice((currentPage - 1) * 6, currentPage * 6).map((listing) => (
+                  <div 
+                    key={listing.id}
+                    className="group bg-white border border-gray-200 rounded-3xl overflow-hidden hover:border-gray-400 hover:shadow-md transition-all duration-300 flex flex-col"
+                  >
+                    {/* Image Area */}
+                    <div className="h-[180px] bg-gray-100 relative overflow-hidden shrink-0">
+                      <img 
+                        src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'} 
+                        alt={listing.title}
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                      />
+                      <div className="absolute top-4 left-4 bg-black text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
+                        Active
+                      </div>
+                      {listing.panoramaImage && (
+                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-purple-700 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
+                          360° Tour
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate">
+                          {listing.title}
+                        </h3>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          {listing.city || 'Colombo'}, {listing.state || 'Western'}
+                        </p>
+                        
+                        <p className="text-xl font-black text-[#1A1A1A] mt-4 leading-none">
+                          Rs. {parseInt(listing.price || listing.rentPerMonth || '0').toLocaleString()}
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
+                        </p>
+                      </div>
+
+                      {/* Specs */}
+                      <div className="grid grid-cols-3 gap-2 border-t border-b border-gray-100 py-3 my-4">
+                        <div className="text-center">
+                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Bedrooms</p>
+                          <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                            <BedDouble className="w-3 h-3 text-gray-500" />
+                            {listing.bedrooms || 1}
+                          </p>
+                        </div>
+                        <div className="text-center border-x border-gray-100">
+                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Baths</p>
+                          <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                            <Bath className="w-3 h-3 text-gray-500" />
+                            {listing.bathrooms || 1}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Size</p>
+                          <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                            <Maximize className="w-3 h-3 text-gray-500" />
+                            {listing.sqft || 950}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2">
+                        <Link 
+                          href={`/properties/${listing.id}`}
+                          className="flex-1 text-center bg-gray-50 hover:bg-gray-100 text-[#1A1A1A] border border-gray-200 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
+                        >
+                          View Details
+                        </Link>
+                        <button 
+                          className="px-3 border border-gray-200 hover:border-black rounded-xl text-[#1A1A1A] transition flex items-center justify-center animate-pulse"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Processing / Drafts Tab ── */}
+        {activeTab === 'processing' && (
+          <div className="space-y-6">
+            {!draft ? (
+              <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
+                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No In-Progress Drafts Found</p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">When you exit the property creation wizard mid-way using "Save and Exit", your progress will appear here.</p>
+              </div>
+            ) : (
+              <div className="max-w-xl bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:border-gray-400 transition relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 opacity-50 rounded-full blur-xl transform translate-x-1/3 -translate-y-1/3"></div>
+                
+                <div className="flex justify-between items-start relative z-10">
+                  <div>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                      In-Progress Draft
+                    </span>
+                    <h3 className="text-[18px] font-black text-[#1A1A1A] uppercase tracking-wide mt-3">
+                      {draft.formData?.houseNo && draft.formData?.street 
+                        ? `${draft.formData.houseNo} ${draft.formData.street}` 
+                        : "Untitled Draft Property"
+                      }
+                    </h3>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                      {draft.formData?.city || "City Not Set"}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={handleDeleteDraft}
+                    className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition"
+                    title="Delete Draft"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 p-5 flex flex-col justify-between">
-                  {/* Top */}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wide">
-                        {listing.title}
-                      </h3>
-                      <p className="text-[13px] text-gray-500 font-bold mt-1">${listing.price} / month</p>
-                    </div>
-                    {listing.panoramaImage && (
-                      <span className="bg-purple-100 text-purple-700 text-[9px] font-black uppercase px-2 py-1 rounded">360° View Ready</span>
-                    )}
+                {/* Progress Indicators */}
+                <div className="mt-6 pt-5 border-t border-gray-100 relative z-10">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    <span>Draft Completeness</span>
+                    <span className="text-amber-700 font-extrabold">Step {draft.currentStep} of 7</span>
                   </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${((draft.currentStep - 1) / 6) * 100}%` }}
+                    />
+                  </div>
+                </div>
 
-                  {/* Meta */}
-                  <div className="flex gap-10 mt-4">
-                    <div>
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Location</p>
-                      <p className="text-[12px] font-bold text-[#1A1A1A]">{listing.city || 'Anytown'}, {listing.state || 'ST'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Specs</p>
-                      <p className="text-[12px] font-bold text-[#1A1A1A]">{listing.bedrooms} Bed • {listing.bathrooms} Bath</p>
-                    </div>
-                  </div>
+                {/* Quick Resume info */}
+                <p className="text-[11px] text-gray-400 mt-4 leading-relaxed relative z-10">
+                  Category: <strong className="text-gray-700">{draft.formData?.propertyCategory || "None Specified"}</strong> • 
+                  Price Draft: <strong className="text-gray-700">Rs. {draft.formData?.rentPerMonth ? parseInt(draft.formData.rentPerMonth).toLocaleString() : "0"}</strong>
+                </p>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-4 mt-5">
-                    <Link
-                      href={`/properties/${listing.id}`}
-                      className="border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white text-[10px] font-extrabold tracking-widest uppercase px-4 py-2 transition-colors"
-                    >
-                      View Details
-                    </Link>
-                    <button
-                      className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 hover:text-[#1A1A1A] transition-colors"
-                    >
-                      <Pencil className="w-3 h-3" />
-                      Edit
-                    </button>
-                  </div>
+                {/* Continue Actions */}
+                <div className="mt-6 flex gap-3 relative z-10">
+                  <Link 
+                    href="/dashboard/owners/start_listing"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Continue Wizard</span>
+                  </Link>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* ── Pagination ── */}
-        {listings.length > 0 && (
-          <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
+        {activeTab === 'active' && listings.length > 0 && (
+          <div className="flex items-center justify-between mt-12 pt-6 border-t border-gray-100">
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-              Showing {(currentPage - 1) * 4 + 1}-{Math.min(currentPage * 4, listings.length)} of {listings.length} assets
+              Showing {(currentPage - 1) * 6 + 1}-{Math.min(currentPage * 6, listings.length)} of {listings.length} assets
             </p>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -245,7 +409,7 @@ export default function OwnerListings() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* ── Create Listing Modal ── */}
       {isModalOpen && (
@@ -306,60 +470,39 @@ export default function OwnerListings() {
                     </div>
                   </div>
 
-                  {/* 360 Panorama Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-blue-50/50 p-5 border-2 border-blue-200 border-dashed rounded-xl overflow-hidden hover:bg-blue-50 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'panoramaImage')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 flex items-center gap-1.5 mb-3">
-                        360° Panorama Image Upload
-                      </div>
-                      {formData.panoramaImage ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Panorama attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-blue-600 font-semibold flex items-center gap-3">
-                           <span className="bg-blue-600 group-hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-blue-600 mt-3 font-medium">Upload a high-resolution equirectangular panorama image to automatically enable the 360° Virtual Tour for this listing.</p>
-                    </div>
+                  {/* 360 Panorama */}
+                  <div className="space-y-1 md:col-span-2 bg-blue-50/50 p-4 border border-blue-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 flex items-center gap-1.5 mb-2">
+                      360° Panorama Image Upload
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'panoramaImage')} className="w-full text-[13px] text-blue-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                    <p className="text-[10px] text-blue-600 mt-2">Upload a high-resolution equirectangular panorama image to automatically enable the 360° Virtual Tour for this listing.</p>
+                    {formData.panoramaImage && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Panorama Attached Successfully</p>
+                    )}
                   </div>
 
-                  {/* Main Image Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-gray-50/50 p-5 border-2 border-gray-200 border-dashed rounded-xl overflow-hidden hover:bg-gray-100 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'image')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-600 flex items-center gap-1.5 mb-3">
-                        Property Main Image Upload
-                      </div>
-                      {formData.image ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Main image attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-gray-600 font-semibold flex items-center gap-3">
-                           <span className="bg-gray-800 group-hover:bg-black transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Main Image */}
+                  <div className="space-y-1 md:col-span-2 bg-gray-50/50 p-4 border border-gray-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-700 flex items-center gap-1.5 mb-2">
+                      Property Main Image Upload
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'image')} className="w-full text-[13px] text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-black cursor-pointer" />
+                    {formData.image && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Main Image Attached Successfully</p>
+                    )}
                   </div>
 
-                  {/* Water Bill Dropzone */}
-                  <div className="relative space-y-1 md:col-span-2 bg-emerald-50/50 p-5 border-2 border-emerald-200 border-dashed rounded-xl overflow-hidden hover:bg-emerald-50 transition group">
-                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'waterBillImage')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="relative z-0 pointer-events-none">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5 mb-3">
-                        Water Bill Image (Verification)
-                      </div>
-                      {formData.waterBillImage ? (
-                        <p className="text-sm text-green-600 font-black flex items-center gap-2">✓ Water bill attached successfully</p>
-                      ) : (
-                        <div className="text-xs text-emerald-700 font-semibold flex items-center gap-3">
-                           <span className="bg-emerald-600 group-hover:bg-emerald-700 transition text-white px-4 py-2 rounded-lg shadow-sm">Choose File</span>
-                           <span>Click here to browse</span>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-emerald-600 mt-3 font-medium">Upload a recent water bill for address verification by the Admin.</p>
-                    </div>
+                  {/* Water Bill */}
+                  <div className="space-y-1 md:col-span-2 bg-emerald-50/50 p-4 border border-emerald-200 rounded-xl">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5 mb-2">
+                      Water Bill Image (Verification)
+                    </label>
+                    <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'waterBillImage')} className="w-full text-[13px] text-emerald-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer" />
+                    <p className="text-[10px] text-emerald-600 mt-2">Upload a recent water bill for address verification by the Admin.</p>
+                    {formData.waterBillImage && (
+                      <p className="text-[11px] text-green-600 font-black mt-2 bg-green-50 p-2 rounded inline-block">✓ Water Bill Attached Successfully</p>
+                    )}
                   </div>
 
                   <div className="space-y-1 md:col-span-2">

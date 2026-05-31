@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Bell, 
-  ArrowRight, 
   Send, 
   FileText, 
   Download, 
@@ -17,6 +15,7 @@ import {
   FileSignature,
   Info,
   ArrowLeft,
+  ArrowRight,
   Layout,
   BookOpen,
   Scale,
@@ -25,7 +24,6 @@ import {
   MousePointerClick,
   X
 } from 'lucide-react';
-
 import { io, Socket } from 'socket.io-client';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -59,16 +57,6 @@ interface SavedAgreement {
   landlordSig?: string;
   tenantSig?: string;
 }
-
-// ─── NAV LINKS ──────────────────────────────────────────────────────────────
-const navLinks = [
-  { label: 'Home',         href: '/dashboard/owners' },
-  { label: 'Listings',     href: '/dashboard/owners/listings' },
-  { label: 'Appointments', href: '/dashboard/owners/appointments' },
-  { label: 'Chat',         href: '/dashboard/owners/chat' },
-  { label: 'Agreement',    href: '/dashboard/owners/agreement' },
-  { label: 'Profile',      href: '/dashboard/owners/profile' },
-];
 
 // ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
 const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
@@ -1125,10 +1113,10 @@ export default function OwnerAgreementPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0EEF8] font-sans pb-10">
+    <div className="animate-in fade-in duration-300">
       
       {/* ── Page Content ── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-10 py-8">
+      <div className="w-full">
         
         {/* Toast Notification */}
         {successToast && (
@@ -1727,7 +1715,7 @@ export default function OwnerAgreementPage() {
           </div>
         )}
 
-      </main>
+      </div>
     </div>
   );
 }

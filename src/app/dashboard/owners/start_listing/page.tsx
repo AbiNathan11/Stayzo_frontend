@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -51,6 +51,26 @@ const TOTAL_STEPS = 7;
 export default function StartListingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const draft = localStorage.getItem('stayzo_listing_draft');
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+      } catch (err) {
+        console.error('Error loading draft:', err);
+      }
+    }
+  }, []);
+
+  const handleSaveAndExit = () => {
+    localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData, currentStep }));
+    router.push("/dashboard/owners/listings");
+  };
 
   // --- Form State ---
   const [formData, setFormData] = useState({
@@ -75,6 +95,9 @@ export default function StartListingPage() {
     ownershipType: "Owner",
     realOwnerName: "",
     realOwnerEmail: "",
+    images: ["", "", "", "", ""],
+    panoramaImage: "",
+    waterBillImage: "",
   });
 
   // Example handlers for counters
@@ -85,21 +108,147 @@ export default function StartListingPage() {
     }));
   };
 
-  const handleNext = () => {
-    // Validation for Step 2: Broker Fields
-    if (currentStep === 2 && formData.ownershipType === "Broker") {
-      if (!formData.realOwnerName.trim() || !formData.realOwnerEmail.trim()) {
-        alert("Please provide the property owner's full name and email address.");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, [fieldName]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => {
+          const updatedImages = [...prev.images];
+          updatedImages[index] = reader.result as string;
+          return { ...prev, images: updatedImages };
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData((prev) => {
+      const updatedImages = [...prev.images];
+      updatedImages[index] = '';
+      return { ...prev, images: updatedImages };
+    });
+  };
+
+  const handleNext = async () => {
+    // Validation for Step 1: Address Fields
+    if (currentStep === 1) {
+      if (!formData.street.trim() || !formData.city.trim() || !formData.postalCode.trim()) {
+        alert("Please provide at least a Street Name, City, and Postal Code to continue.");
         return;
       }
+    }
+
+    // Validation for Step 2: Broker Fields & KYC Upload
+    if (currentStep === 2) {
+      if (formData.ownershipType === "Broker") {
+        if (!formData.realOwnerName.trim() || !formData.realOwnerEmail.trim()) {
+          alert("Please provide the property owner's full name and email address.");
+          return;
+        }
+      }
+      if (!formData.waterBillImage) {
+        alert("Please upload an electrical or water bill for property verification.");
+        return;
+      }
+    }
+
+    // Validation for Step 4: Category
+    if (currentStep === 4 && !formData.propertyCategory) {
+      alert("Please select a property category that best describes your place.");
+      return;
+    }
+
+    // Validation for Step 5: Rent
+    if (currentStep === 5 && !formData.rentPerMonth) {
+      alert("Please specify a monthly rent amount.");
+      return;
+    }
+
+    // Validation for Step 6: Cover Photo
+    if (currentStep === 6 && !formData.images[0]) {
+      alert("Please upload at least a Cover Photo for your property listing.");
+      return;
     }
 
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep((prev) => prev + 1);
     } else {
       // Submit logic
-      alert("Listing submitted successfully!");
-      router.push("/dashboard/owners/listings");
+      setIsSubmitting(true);
+      try {
+        let ownerId = "owner-123";
+        const token = localStorage.getItem("stayzo_token");
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            if (payload.id) ownerId = payload.id;
+          } catch {
+            // ignore
+          }
+        }
+
+        const title = `${formData.propertyCategory || "Property"} at ${formData.street}`;
+        const description = `Beautiful ${formData.propertyCategory} located in ${formData.city}. Features ${formData.bedrooms} bedrooms, ${formData.kitchens} kitchens, and expected occupancy of ${formData.expectedTenants} tenants. Nearby food options: ${formData.foodFacilities || 'Not specified'}. Part-time job options: ${formData.partTimeJobs || 'Not specified'}.`;
+        const address = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street}${formData.streetLine2 ? ', ' : ''}${formData.streetLine2}`;
+        const price = formData.rentPerMonth ? parseFloat(formData.rentPerMonth) : 0;
+        
+        // Filter out empty strings from images array
+        const filteredImages = formData.images.filter((img) => img !== "");
+
+        const body = {
+          ownerId,
+          title,
+          description,
+          price,
+          address,
+          city: formData.city,
+          state: formData.district || "Western Province",
+          zipCode: formData.postalCode,
+          bedrooms: formData.bedrooms.toString(),
+          bathrooms: (formData.attachedBathrooms + formData.separateBathrooms).toString(),
+          sqft: 1200, // Number or String matching DB requirement
+          type: formData.propertyCategory || "Apartment",
+          images: filteredImages,
+          panoramaImage: formData.panoramaImage || null,
+          waterBillImage: formData.waterBillImage || null,
+          amenities: ["Kitchen", "Bathroom", "Water facilities"]
+        };
+
+        const res = await fetch("http://localhost:3001/api/properties", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          localStorage.removeItem('stayzo_listing_draft');
+          alert("Listing submitted successfully! Images have been saved to Cloudinary.");
+          router.push("/dashboard/owners/listings");
+        } else {
+          const errData = await res.json();
+          alert("Failed to submit listing: " + (errData.error || "Unknown error"));
+        }
+      } catch (err) {
+        console.error("Error submitting listing:", err);
+        alert("An error occurred while submitting. Please check your network and try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -117,17 +266,20 @@ export default function StartListingPage() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
-        <div className="flex items-center space-x-2.5">
-          <div className="flex items-end space-x-[3px] h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
+        <Link href="/" className="flex items-center space-x-2 group">
+          <div className="flex items-end space-x-1 h-5">
+            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
+            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
           </div>
-          <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">Stayzo</span>
-        </div>
-        <button className="text-sm font-semibold text-gray-800 hover:text-black hover:underline underline-offset-4 transition-all">
-          Save & exit
+          <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
+        </Link>
+        <button 
+          onClick={handleSaveAndExit}
+          className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer"
+        >
+          Save and Exit
         </button>
       </header>
 
@@ -163,10 +315,11 @@ export default function StartListingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Street Name (Line 1)
+                    Street Name (Line 1) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
+                    required
                     value={formData.street}
                     onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
@@ -186,9 +339,10 @@ export default function StartListingPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City <span className="text-red-500">*</span></label>
                   <input
                     type="text"
+                    required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
@@ -205,9 +359,10 @@ export default function StartListingPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code <span className="text-red-500">*</span></label>
                     <input
                       type="text"
+                      required
                       value={formData.postalCode}
                       onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
@@ -229,13 +384,44 @@ export default function StartListingPage() {
               </p>
 
               {/* Document Upload Zone */}
-              <div className="mb-10 border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover:scale-105 transition-transform">
-                  <UploadCloud className="w-8 h-8 text-gray-600" />
-                </div>
-                <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-500 mt-2">SVG, PNG, JPG or PDF (max. 5MB)</p>
-              </div>
+              <label className="mb-10 border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative overflow-hidden group">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, 'waterBillImage')}
+                />
+                {formData.waterBillImage ? (
+                  <div className="flex flex-col items-center animate-in fade-in duration-300">
+                    <div className="w-32 h-32 rounded-xl bg-white border shadow-sm overflow-hidden mb-3 relative group/preview">
+                      <img src={formData.waterBillImage} alt="Bill Preview" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-sm font-bold text-green-600 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" /> Document Attached Successfully
+                    </span>
+                    <p className="text-xs text-gray-400 mt-1">Click to replace or select another document</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFormData(prev => ({ ...prev, waterBillImage: '' }));
+                      }}
+                      className="mt-4 bg-white border border-gray-200 hover:bg-red-50 text-gray-600 hover:text-red-600 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      Remove Document
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover:scale-105 transition-transform">
+                      <UploadCloud className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-500 mt-2">SVG, PNG, JPG or PDF (max. 5MB)</p>
+                  </>
+                )}
+              </label>
 
               {/* Ownership Type Section */}
               <div className="mb-10">
@@ -246,6 +432,7 @@ export default function StartListingPage() {
                   {["Owner", "Broker"].map((role) => (
                     <button
                       key={role}
+                      type="button"
                       onClick={() => setFormData({ ...formData, ownershipType: role })}
                       className={`flex-1 py-4 px-6 rounded-xl border-2 font-medium text-sm transition-all ${
                         formData.ownershipType === role
@@ -331,6 +518,7 @@ export default function StartListingPage() {
                 {PROPERTY_CATEGORIES.map((cat) => (
                   <button
                     key={cat.label}
+                    type="button"
                     onClick={() => setFormData({ ...formData, propertyCategory: cat.label as PropertyCategory })}
                     className={`flex flex-col items-start p-4 border rounded-xl transition-all ${
                       formData.propertyCategory === cat.label
@@ -357,6 +545,7 @@ export default function StartListingPage() {
                     <span className="text-lg text-gray-800">{item.label}</span>
                     <div className="flex items-center gap-4">
                       <button
+                        type="button"
                         onClick={() => updateCounter(item.field as any, -1)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors disabled:opacity-30"
                         disabled={(formData as any)[item.field] === 0}
@@ -365,6 +554,7 @@ export default function StartListingPage() {
                       </button>
                       <span className="w-6 text-center text-lg">{String((formData as any)[item.field])}</span>
                       <button
+                        type="button"
                         onClick={() => updateCounter(item.field as any, 1)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors"
                       >
@@ -387,12 +577,13 @@ export default function StartListingPage() {
               <div className="space-y-8 max-w-lg">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rent per month (LKR)
+                    Rent per month (LKR) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rs.</span>
                     <input
                       type="number"
+                      required
                       value={formData.rentPerMonth}
                       onChange={(e) => setFormData({ ...formData, rentPerMonth: e.target.value })}
                       className="w-full pl-12 pr-4 py-4 text-xl font-medium border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
@@ -434,6 +625,7 @@ export default function StartListingPage() {
                   <span className="text-lg text-gray-800">Expected Tenants</span>
                   <div className="flex items-center gap-4">
                     <button
+                      type="button"
                       onClick={() => updateCounter("expectedTenants", -1)}
                       className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors disabled:opacity-30"
                       disabled={formData.expectedTenants === 1}
@@ -442,6 +634,7 @@ export default function StartListingPage() {
                     </button>
                     <span className="w-6 text-center text-lg">{formData.expectedTenants}</span>
                     <button
+                      type="button"
                       onClick={() => updateCounter("expectedTenants", 1)}
                       className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors"
                     >
@@ -460,18 +653,77 @@ export default function StartListingPage() {
                 Add some photos of your place
               </h1>
               <p className="text-gray-500 mb-8">
-                You'll need 5 photos to get started. You can add more or make changes later.
+                You will need a cover photo to get started. You can add up to 5 photos.
               </p>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
-                <div className="col-span-2 row-span-2 aspect-[4/3] border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                   <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                   <span className="text-sm font-medium text-gray-600">Cover Photo</span>
-                </div>
+                {/* Cover Photo Slot (index 0) */}
+                <label className="col-span-2 row-span-2 aspect-[4/3] border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative overflow-hidden group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageChange(e, 0)}
+                  />
+                  {formData.images[0] ? (
+                    <>
+                      <img src={formData.images[0]} alt="Cover" className="w-full h-full object-cover animate-in fade-in duration-300" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-xs font-semibold bg-black/60 px-3 py-1.5 rounded-full">Change Cover Photo</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveImage(0);
+                        }}
+                        className="absolute top-3 right-3 bg-white/90 hover:bg-white text-gray-800 p-1.5 rounded-full shadow-sm hover:scale-105 transition-all z-10"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-8 h-8 text-gray-400 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-600">Cover Photo</span>
+                    </>
+                  )}
+                </label>
+
+                {/* Additional 4 Photos */}
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="aspect-[4/3] border border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <Plus className="w-6 h-6 text-gray-400" />
-                  </div>
+                  <label key={i} className="aspect-[4/3] border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative overflow-hidden group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageChange(e, i)}
+                    />
+                    {formData.images[i] ? (
+                      <>
+                        <img src={formData.images[i]} alt={`Photo ${i}`} className="w-full h-full object-cover animate-in fade-in duration-300" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-[10px] font-semibold bg-black/60 px-2 py-1 rounded-full">Change Photo</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveImage(i);
+                          }}
+                          className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-800 p-1 rounded-full shadow-sm hover:scale-105 transition-all z-10"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-6 h-6 text-gray-400 group-hover:scale-110 transition-transform" />
+                      </>
+                    )}
+                  </label>
                 ))}
               </div>
 
@@ -479,12 +731,43 @@ export default function StartListingPage() {
               <div className="mt-8 pt-8 border-t border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Add a 360° Panorama (Optional)</h3>
                 <p className="text-sm text-gray-500 mb-4">Allow tenants to take a virtual tour of your property.</p>
-                <div className="border border-dashed border-gray-300 rounded-xl p-6 flex items-center justify-center bg-white hover:bg-gray-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <UploadCloud className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Upload Panorama Image</span>
-                  </div>
-                </div>
+                <label className="border border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center bg-white hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, 'panoramaImage')}
+                  />
+                  {formData.panoramaImage ? (
+                    <div className="w-full flex items-center justify-between animate-in fade-in duration-300">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded bg-gray-100 border overflow-hidden">
+                          <img src={formData.panoramaImage} alt="Panorama Preview" className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-bold text-green-600">✓ 360° Panorama Attached</span>
+                          <p className="text-[11px] text-gray-400">Click to replace the image</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setFormData(prev => ({ ...prev, panoramaImage: '' }));
+                        }}
+                        className="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <UploadCloud className="w-5 h-5 text-gray-500 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-700">Upload Panorama Image</span>
+                    </div>
+                  )}
+                </label>
               </div>
             </div>
           )}
@@ -550,17 +833,31 @@ export default function StartListingPage() {
 
         <div className="w-full px-6 lg:px-10 h-20 flex items-center justify-between">
           <button
+            type="button"
             onClick={handleBack}
-            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors"
+            disabled={isSubmitting}
+            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors disabled:opacity-50"
           >
             Back
           </button>
           
           <button
+            type="button"
             onClick={handleNext}
-            className="bg-[#222222] hover:bg-black text-white px-8 py-3.5 rounded-lg text-sm font-semibold transition-colors"
+            disabled={isSubmitting}
+            className="bg-[#222222] hover:bg-black text-white px-8 py-3.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {currentStep === TOTAL_STEPS ? "Submit Listing" : "Next"}
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Uploading...</span>
+              </>
+            ) : (
+              currentStep === TOTAL_STEPS ? "Submit Listing" : "Next"
+            )}
           </button>
         </div>
       </div>

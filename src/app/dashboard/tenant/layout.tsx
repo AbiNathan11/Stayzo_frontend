@@ -91,9 +91,12 @@ export default function TenantDashboardLayout({
 
         {/* Right utility options */}
         <div className="flex-1 flex justify-end items-center space-x-4">
-          <span className="hidden sm:inline text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 px-4 py-2 rounded-full transition">
+          <Link 
+            href="/dashboard/owners"
+            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-gray-50 px-4 py-2 rounded-full transition"
+          >
             Switch to owner
-          </span>
+          </Link>
           <button 
             onClick={handleLogout} 
             className="flex items-center space-x-3 bg-white border border-gray-200 hover:shadow-md transition rounded-full p-2 pr-4 cursor-pointer"
