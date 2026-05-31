@@ -268,7 +268,7 @@ export default function LandingPage() {
         </div>
 
         {/* Content Container */}
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-50 flex flex-col items-center text-center fade-in-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-50 flex flex-col items-center text-center">
           
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl text-[#1A1A1A] mb-3 font-sans">
