@@ -42,29 +42,44 @@ export default function Navbar() {
 
   return (
     <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none ${isSearchPage ? 'top-0' : 'top-6 px-4 md:px-6'}`}>
-      <nav className={`w-full bg-white/95 backdrop-blur-sm flex justify-between items-center pointer-events-auto transition-all ${isSearchPage
-          ? 'relative border-b border-gray-100 py-3 md:py-3.5 px-6 lg:px-8'
-          : 'max-w-5xl border border-gray-100 shadow-lg shadow-gray-200/20 py-3 md:py-3.5 px-6 md:px-8 rounded-full'
+      <nav className={`w-full flex justify-between items-center pointer-events-auto transition-all ${isSearchPage
+          ? 'bg-white/95 backdrop-blur-sm relative border-b border-gray-100 py-3 md:py-3.5 px-6 lg:px-8'
+          : 'max-w-6xl bg-white/95 backdrop-blur-sm shadow-lg py-2.5 px-6 md:px-8 rounded-full'
         }`}>
 
-        {/* Logo with optional icon */}
+        {/* Logo with custom nested house SVG */}
         <Link href="/" className="flex items-center space-x-2.5 group">
-          <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-          </div>
+          <svg 
+            viewBox="0 0 100 100" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="5.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="w-6 h-6 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
+          >
+            {/* Outer gable */}
+            <path d="M 20,90 L 20,40 L 50,15 L 80,40 L 80,90" />
+            {/* Middle gable */}
+            <path d="M 30,90 L 30,46 L 50,28 L 70,46 L 70,90" />
+            {/* High peak */}
+            <path d="M 40,90 L 40,24 L 50,15" />
+            {/* Inner gable */}
+            <path d="M 42,90 L 42,54 L 50,46 L 58,54 L 58,90" />
+            {/* Central Door */}
+            <rect x="46" y="72" width="8" height="18" />
+          </svg>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
 
         {/* Center Links or Search Bar */}
         {!isSearchPage ? (
-          <div className="hidden lg:flex items-center space-x-8 text-xs font-bold text-gray-500 uppercase tracking-wide">
-            <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] bg-gray-100/80 px-4 py-2 rounded-full' : 'hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
-            <a href="/#features" className="hover:text-[#1A1A1A] px-4 py-2 transition">Features</a>
-            <a href="/#testimonials" className="hover:text-[#1A1A1A] px-4 py-2 transition">Testimonials</a>
-            <a href="/#contact" className="hover:text-[#1A1A1A] px-4 py-2 transition">Contact</a>
+          <div className="hidden lg:flex items-center space-x-8 text-xs font-bold uppercase tracking-wide">
+            <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
+            <a href="/#features" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Features</a>
+            <a href="/#how-it-works" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Process</a>
+            <a href="/#testimonials" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Testimonials</a>
+            <a href="/#contact" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Contact</a>
           </div>
         ) : (
           <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
@@ -96,9 +111,9 @@ export default function Navbar() {
             </div>
           </div>
         ) : (
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-5">
             {isLoggedIn ? (
-              <Link href={getDashboardLink()} className="text-[#1A1A1A] hover:text-[#1A1A1A] transition flex items-center" title="Go to Dashboard">
+              <Link href={getDashboardLink()} className="text-[#1A1A1A] hover:text-gray-600 transition flex items-center" title="Go to Dashboard">
                 <User className="w-5 h-5" />
               </Link>
             ) : (
