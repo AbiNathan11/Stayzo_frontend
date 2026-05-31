@@ -23,7 +23,7 @@ interface SubmittedReview {
 }
 
 export default function TenantOverviewPage() {
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
 
   const [activeReviewTab, setActiveReviewTab] = useState<'pending' | 'submitted'>('pending');
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([
@@ -62,16 +62,46 @@ export default function TenantOverviewPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Edit Profile States
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editImage, setEditImage] = useState<string | null>(null);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        const email = payload.email || 'abiramy@example.com';
         setUser({
           firstName: payload.firstName || 'Abiramy',
           lastName: payload.lastName || '',
-          email: payload.email || 'abiramy@example.com'
+          email: email,
+          profileImage: payload.profileImage || null
         });
+        setEditFirstName(payload.firstName || 'Abiramy');
+        setEditLastName(payload.lastName || '');
+
+        // Fetch live profile from DB
+        fetch(`http://localhost:3001/api/auth/profile/${email}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              setUser(prev => ({
+                ...prev!,
+                firstName: data.user.firstName || prev?.firstName || 'Abiramy',
+                lastName: data.user.lastName || prev?.lastName || '',
+                profileImage: data.user.profileImage || null
+              }));
+              setEditFirstName(data.user.firstName || 'Abiramy');
+              setEditLastName(data.user.lastName || '');
+              setEditImage(data.user.profileImage || null);
+            }
+          })
+          .catch(err => console.warn("Live profile fetch issue:", err));
       } catch (e) {
         setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
       }
@@ -79,6 +109,64 @@ export default function TenantOverviewPage() {
       setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
     }
   }, []);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editFirstName.trim()) return;
+
+    setUpdatingProfile(true);
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: user.email,
+          firstName: editFirstName,
+          lastName: editLastName,
+          profileImage: editImage
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const data = await response.json();
+      if (data.user) {
+        setUser(prev => ({
+          ...prev!,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          profileImage: data.user.profileImage
+        }));
+
+        setProfileSuccess(true);
+        setTimeout(() => {
+          setShowEditModal(false);
+          setProfileSuccess(false);
+          window.location.reload();
+        }, 1200);
+      }
+    } catch (err) {
+      console.error("Profile update error:", err);
+      alert("Failed to update profile in database.");
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +213,14 @@ export default function TenantOverviewPage() {
           
           <div className="flex flex-col items-center text-center space-y-4 relative z-10">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gray-100 text-[#1A1A1A] flex items-center justify-center text-4xl font-black shadow-sm">
-                {userInitial}
-              </div>
-              <button className="absolute bottom-0 right-0 bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] p-2 rounded-full shadow-md transition duration-200">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-sm border border-gray-200" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gray-100 text-[#1A1A1A] flex items-center justify-center text-4xl font-black shadow-sm">
+                  {userInitial}
+                </div>
+              )}
+              <button onClick={() => setShowEditModal(true)} className="absolute bottom-0 right-0 bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] p-2 rounded-full shadow-md transition duration-200">
                 <Camera className="w-4 h-4" />
               </button>
             </div>
@@ -141,7 +233,7 @@ export default function TenantOverviewPage() {
             </div>
 
             <div className="w-full flex flex-col gap-2 mt-4">
-              <button className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] rounded-xl px-4 py-2.5 transition duration-200 shadow-sm">
+              <button onClick={() => setShowEditModal(true)} className="w-full flex items-center justify-center space-x-2 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] rounded-xl px-4 py-2.5 transition duration-200 shadow-sm">
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Profile</span>
               </button>
@@ -484,6 +576,123 @@ export default function TenantOverviewPage() {
                     }`}
                   >
                     Submit Review
+                  </button>
+                </div>
+
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal Form overlay */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-[#1A1A1A]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200 rounded-[32px] w-full max-w-md p-6 md:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            <div className="mb-6 flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#1A1A1A]">Edit Profile</h3>
+                <p className="text-xs text-gray-500 font-semibold mt-1">
+                  Update your username and profile picture.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-extrabold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {profileSuccess ? (
+              <div className="py-12 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#EEF2FF] flex items-center justify-center mx-auto shadow-xs">
+                  <CheckCircle2 className="w-8 h-8 text-[#4F46E5]" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-[#1A1A1A]">Profile Saved!</h4>
+                  <p className="text-gray-500 text-xs font-semibold mt-1">
+                    Your profile changes have been successfully committed.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                
+                {/* Photo Upload area */}
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="relative group">
+                    {editImage ? (
+                      <img src={editImage} alt="Preview" className="w-24 h-24 rounded-full object-cover border border-gray-200 shadow-sm" />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold border border-gray-200">
+                        No Photo
+                      </div>
+                    )}
+                    <label className="absolute bottom-0 right-0 bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] p-2 rounded-full shadow-md cursor-pointer transition">
+                      <Camera className="w-4 h-4" />
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handlePhotoChange} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Click camera to upload</span>
+                </div>
+
+                {/* Name Inputs */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      required
+                      placeholder="Jane"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:border-gray-400 focus:bg-white transition duration-200 font-semibold text-gray-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      required
+                      placeholder="Doe"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:border-gray-400 focus:bg-white transition duration-200 font-semibold text-gray-700"
+                    />
+                  </div>
+                </div>
+
+                {/* Save button */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-2xl py-3 text-xs font-bold transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updatingProfile || !editFirstName.trim() || !editLastName.trim()}
+                    className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 ${
+                      updatingProfile || !editFirstName.trim() || !editLastName.trim()
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-[#4F46E5] text-white hover:bg-[#4338CA] active:scale-95"
+                    }`}
+                  >
+                    {updatingProfile ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 

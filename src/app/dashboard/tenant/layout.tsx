@@ -14,18 +14,34 @@ export default function TenantDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        const email = payload.email || 'abiramy@example.com';
         setUser({
           firstName: payload.firstName || 'Abiramy',
           lastName: payload.lastName || '',
-          email: payload.email || 'abiramy@example.com'
+          email: email,
+          profileImage: payload.profileImage || null
         });
+
+        // Live refresh from DB
+        fetch(`http://localhost:3001/api/auth/profile/${email}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              setUser(prev => ({
+                ...prev!,
+                firstName: data.user.firstName || prev?.firstName || 'Abiramy',
+                profileImage: data.user.profileImage || null
+              }));
+            }
+          })
+          .catch(err => console.warn("Live profile fetch issue:", err));
       } catch (e) {
         setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
       }
@@ -57,7 +73,7 @@ export default function TenantDashboardLayout({
         
         {/* Left Brand Logo */}
         <div className="flex-1 flex justify-start">
-          <Link href="/" className="flex items-center space-x-2.5 group">
+          <Link href="/" className="flex items-center space-x-3 group">
             <svg 
               viewBox="0 0 100 100" 
               fill="none" 
@@ -65,7 +81,7 @@ export default function TenantDashboardLayout({
               strokeWidth="5.5" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              className="w-5.5 h-5.5 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
+              className="w-8 h-8 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
             >
               {/* Outer gable */}
               <path d="M 20,90 L 20,40 L 50,15 L 80,40 L 80,90" />
@@ -78,7 +94,7 @@ export default function TenantDashboardLayout({
               {/* Central Door */}
               <rect x="46" y="72" width="8" height="18" />
             </svg>
-            <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
+            <span className="text-2xl font-black tracking-tight text-[#1A1A1A]">Stayzo</span>
           </Link>
         </div>
 
@@ -107,7 +123,7 @@ export default function TenantDashboardLayout({
         <div className="flex-1 flex justify-end items-center space-x-4">
           <Link 
             href="/dashboard/owners"
-            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-gray-50 px-4 py-2 rounded-full transition"
+            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
           >
             Switch to owner
           </Link>
@@ -115,9 +131,13 @@ export default function TenantDashboardLayout({
             onClick={handleLogout} 
             className="flex items-center space-x-3 bg-white border border-gray-200 hover:shadow-md transition rounded-full p-2 pr-4 cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
-              {userInitial}
-            </div>
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                {userInitial}
+              </div>
+            )}
             <span className="text-sm font-semibold text-gray-700 hidden sm:inline">Logout</span>
           </button>
         </div>
