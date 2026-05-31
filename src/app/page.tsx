@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { 
   Search, MapPin, Home, Building2, Menu, 
   ArrowRight, ShieldCheck, Sparkles, Check, User, ChevronDown,
@@ -587,9 +586,6 @@ export default function LandingPage() {
         </div>
         </div>
       </section>
-
-      {/* Footer Component */}
-      <Footer />
 
     </div>
   );

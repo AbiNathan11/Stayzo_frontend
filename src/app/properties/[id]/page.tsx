@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Footer from '../../../components/Footer';
 import { 
   Heart, BedDouble, Bath, Maximize2, 
   ChevronLeft, ChevronRight, Share2, HelpCircle, 
@@ -851,9 +850,6 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
         </div>
 
       </div>
-
-      {/* Footer */}
-      <Footer />
 
       {/* -------------------- HIGH-FIDELITY MEDIA OVERLAYS -------------------- */}
 
