@@ -51,7 +51,7 @@ export default function TenantAuth() {
       if (data.token) localStorage.setItem('stayzo_token', data.token);
 
       const lowerEmail = email.toLowerCase();
-      if (lowerEmail === 'adminstayzo@gmail.com' || lowerEmail.startsWith('admin@')) {
+      if (lowerEmail === 'stayzoavp@gmail.com' || lowerEmail.startsWith('admin@')) {
         window.location.href = '/dashboard/admin';
       } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
         window.location.href = '/dashboard/owners';
@@ -71,12 +71,26 @@ export default function TenantAuth() {
       {/* Simple Header matching the navbar branding */}
       <header className="w-full bg-white border-b border-gray-100 py-4 px-6 sm:px-8 flex justify-between items-center z-50 shrink-0">
         <Link href="/" className="flex items-center space-x-2.5 group">
-          <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-          </div>
+          <svg 
+            viewBox="0 0 100 100" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="5.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="w-5.5 h-5.5 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
+          >
+            {/* Outer gable */}
+            <path d="M 20,90 L 20,40 L 50,15 L 80,40 L 80,90" />
+            {/* Middle gable */}
+            <path d="M 30,90 L 30,46 L 50,28 L 70,46 L 70,90" />
+            {/* High peak */}
+            <path d="M 40,90 L 40,24 L 50,15" />
+            {/* Inner gable */}
+            <path d="M 42,90 L 42,54 L 50,46 L 58,54 L 58,90" />
+            {/* Central Door */}
+            <rect x="46" y="72" width="8" height="18" />
+          </svg>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </Link>
         <Link href="/" className="text-xs font-extrabold text-gray-500 hover:text-[#1A1A1A] transition uppercase tracking-wider">

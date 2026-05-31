@@ -78,7 +78,7 @@ export default function SavedPropertiesPage() {
         </div>
         <Link
           href="/search"
-          className="shrink-0 text-xs font-bold text-[#1A1A1A] border border-gray-200 hover:bg-gray-50 px-5 py-2.5 rounded-xl transition shadow-xs"
+          className="shrink-0 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs"
         >
           Browse more properties
         </Link>
@@ -105,7 +105,7 @@ export default function SavedPropertiesPage() {
         </div>
       ) : (
         /* Property Cards Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {wishlist.map((item) => (
             <div
               key={item.id}
@@ -164,7 +164,7 @@ export default function SavedPropertiesPage() {
                   {/* ✅ View navigates to the same detailed page as search results */}
                   <Link
                     href={`/properties/${item.id}`}
-                    className="bg-[#1A1A1A] hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+                    className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold transition duration-200 shadow-sm"
                   >
                     View
                   </Link>
