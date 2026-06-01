@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link'; // Use simple link or button to redirect
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import { 
   Home, Building2, Landmark, Map, HelpCircle, 
@@ -25,7 +26,7 @@ interface Listing {
   guestFavorite?: boolean;
 }
 
-export default function SearchResultsPage() {
+function SearchContent() {
   // Panel Visibility States
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -42,9 +43,37 @@ export default function SearchResultsPage() {
   const [activePropertyId, setActivePropertyId] = useState<string | number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [listings, setListings] = useState<any[]>([]);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/properties')
+    // Read params
+    const district = searchParams.get('district');
+    const type = searchParams.get('type');
+    const budgetStr = searchParams.get('budget');
+
+    // Build fetch URL
+    let apiUrl = 'http://localhost:3001/api/properties/search';
+    const params = new URLSearchParams();
+    if (district) params.set('district', district);
+    if (type) params.set('type', type);
+    
+    if (budgetStr && budgetStr !== 'Any Budget' && budgetStr !== 'Over Rs.500,000') {
+      let limit = 0;
+      if (budgetStr === 'Under Rs.50,000') limit = 50000;
+      else if (budgetStr === 'Rs.50,000 - Rs.100,000') limit = 100000;
+      else if (budgetStr === 'Rs.100,000 - Rs.200,000') limit = 200000;
+      else if (budgetStr === 'Rs.200,000 - Rs.500,000') limit = 500000;
+      if (limit > 0) {
+        params.set('budget', limit.toString());
+      }
+    }
+
+    const queryString = params.toString();
+    if (queryString) {
+      apiUrl += `?${queryString}`;
+    }
+
+    fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
         const mapped = data.map((item: any, index: number) => ({
@@ -65,7 +94,7 @@ export default function SearchResultsPage() {
         if (mapped.length > 0) setActivePropertyId(mapped[0].id);
       })
       .catch(console.error);
-  }, []);
+  }, [searchParams]);
 
   const handleBookmarkToggle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -401,6 +430,14 @@ export default function SearchResultsPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading Search...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }
 
