@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Heart, BedDouble, Bath, Maximize2,
   ChevronLeft, ChevronRight, Share2, HelpCircle,
   CheckCircle, Calendar, MapPin, Sparkles, Star,
-  Play, Compass, ArrowLeft, X, Check, ExternalLink
+  Play, Compass, ArrowLeft, X, Check, ExternalLink, MessageCircle
 } from 'lucide-react';
 
 // ── DB-aligned interface ──────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const FALLBACK_IMG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a
 
 export default function PropertyDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
+  const router = useRouter();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -83,13 +85,51 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
     triggerToast(isBookmarked ? 'Removed from wishlist.' : 'Saved to your wishlist!');
   };
 
-  const images = property?.images?.length ? property.images : [FALLBACK_IMG];
-  const prev   = () => setActiveImgIndex(i => (i === 0 ? images.length - 1 : i - 1));
-  const next   = () => setActiveImgIndex(i => (i === images.length - 1 ? 0 : i + 1));
-
   const ownerName = property
     ? `${property.owner?.firstName ?? ''} ${property.owner?.lastName ?? ''}`.trim() || property.owner?.email
     : '';
+
+  const handleChatWithOwner = async () => {
+    const token = localStorage.getItem('stayzo_token');
+    if (!token) {
+      triggerToast('Please sign in to chat with the owner.');
+      setTimeout(() => {
+        router.push(`/auth?redirect=/properties/${id}`);
+      }, 1500);
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const tenantId = payload.id;
+
+      if (!tenantId) {
+        throw new Error('Invalid session');
+      }
+
+      triggerToast(`Starting chat with ${ownerName}...`);
+      
+      const res = await fetch('http://localhost:3001/api/chat/thread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, propertyId: id })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to initialize chat');
+      }
+
+      const data = await res.json();
+      router.push(`/dashboard/tenant/chat?threadId=${data.thread.id}`);
+    } catch (error: any) {
+      triggerToast(error.message || 'Failed to start chat.');
+    }
+  };
+
+  const images = property?.images?.length ? property.images : [FALLBACK_IMG];
+  const prev   = () => setActiveImgIndex(i => (i === 0 ? images.length - 1 : i - 1));
+  const next   = () => setActiveImgIndex(i => (i === images.length - 1 ? 0 : i + 1));
 
   const fullAddress = property
     ? [property.address, property.city, property.state, property.zipCode].filter(Boolean).join(', ')
@@ -380,12 +420,21 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                 </div>
               </div>
 
-              <button
-                onClick={() => triggerToast(`Booking request sent to ${ownerName}! They'll reply within 24 hours.`)}
-                className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
-              >
-                Request Booking / Visit
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => triggerToast(`Booking request sent to ${ownerName}! They'll reply within 24 hours.`)}
+                  className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                >
+                  Request Booking / Visit
+                </button>
+                <button
+                  onClick={handleChatWithOwner}
+                  className="w-full bg-white border-2 border-gray-200 hover:border-[#1A1A1A] text-[#1A1A1A] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Chat with owner
+                </button>
+              </div>
             </div>
           </div>
         </div>
