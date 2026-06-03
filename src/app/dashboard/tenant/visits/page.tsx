@@ -73,6 +73,7 @@ export default function VisitsPage() {
       .then(data => {
         if (Array.isArray(data)) {
           setProperties(data.map((p: any) => ({ id: p.id, title: p.title, address: p.address })));
+          // Auto-select the first property so the calendar isn't empty, since we can't fetch all properties at once
           if (data.length > 0) setSelectedPropertyId(data[0].id);
         }
       })
@@ -88,14 +89,30 @@ export default function VisitsPage() {
   const firstDay    = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
+  // Safely extract YYYY-MM-DD from a UTC ISO date string (e.g. "2026-06-01T00:00:00.000Z" → "2026-06-01")
+  const slotDateStr = (isoDate: string | undefined) => (isoDate ?? "").slice(0, 10);
+
   const bookingsOnDate = (dateStr: string) =>
-    bookings.filter(b => b.slot?.date?.startsWith(dateStr));
+    bookings.filter(b => slotDateStr(b.slot?.date) === dateStr);
   const slotsOnDate = (dateStr: string) =>
-    availableSlots.filter(s => !s.isBlocked && s.date.startsWith(dateStr));
+    availableSlots.filter(s => !s.isBlocked && slotDateStr(s.date) === dateStr);
   const blockedOnDate = (dateStr: string) =>
-    availableSlots.some(s => s.isBlocked && s.date.startsWith(dateStr));
+    availableSlots.some(s => s.isBlocked && slotDateStr(s.date) === dateStr);
 
   const slotsForSelectedDate = slotsOnDate(selectedDate).filter(s => {
+    // Prevent booking slots that have already passed today or are completely in the past
+    const now = new Date();
+    const todayStr = formatDate(now);
+
+    if (selectedDate < todayStr) return false;
+
+    if (selectedDate === todayStr) {
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [h, m] = s.startTime.split(":").map(Number);
+      const slotMinutes = h * 60 + m;
+      if (slotMinutes <= currentMinutes) return false;
+    }
+
     const alreadyBooked = s.bookings?.filter(b => ["PENDING", "CONFIRMED"].includes(b.status)).length || 0;
     return alreadyBooked < s.maxBookings;
   });
@@ -223,7 +240,6 @@ export default function VisitsPage() {
               onChange={e => setSelectedPropertyId(e.target.value)}
               className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-[#1A1A1A] w-full sm:w-auto"
             >
-              <option value="">All properties</option>
               {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
             </select>
           </div>
@@ -248,8 +264,9 @@ export default function VisitsPage() {
               const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isSelected   = selectedDate === dateStr;
               const isToday      = dateStr === formatDate(new Date());
+              const isPast       = dateStr < formatDate(new Date());
               const myBookings   = bookingsOnDate(dateStr);
-              const freeSlots    = slotsOnDate(dateStr);
+              const freeSlots    = isPast ? [] : slotsOnDate(dateStr);
               const isBlocked    = blockedOnDate(dateStr);
               const hasConfirmed = myBookings.some(b => b.status === "CONFIRMED");
               const hasPending   = myBookings.some(b => b.status === "PENDING");
@@ -257,13 +274,14 @@ export default function VisitsPage() {
               return (
                 <button
                   key={day}
+                  disabled={isPast}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`aspect-square flex flex-col items-center justify-center rounded-2xl border transition cursor-pointer ${
+                  className={`aspect-square flex flex-col items-center justify-center rounded-2xl border transition ${isPast ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'cursor-pointer'} ${
                     isSelected
                       ? "bg-[#1A1A1A] border-[#1A1A1A] text-white"
-                      : isBlocked
+                      : isBlocked && !isPast
                       ? "bg-red-50 border-red-100 text-red-300"
-                      : "border-transparent hover:bg-gray-50 text-gray-700 font-semibold"
+                      : !isPast ? "border-transparent hover:bg-gray-50 text-gray-700 font-semibold" : ""
                   } ${isToday && !isSelected ? "border-2 border-[#1A1A1A]" : ""}`}
                 >
                   <span className="text-sm font-bold">{day}</span>
@@ -428,10 +446,9 @@ export default function VisitsPage() {
               <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Property</label>
               <select
                 value={selectedPropertyId}
-                onChange={e => { setSelectedPropertyId(e.target.value); setSelectedSlot(null); refreshSlots(); }}
+                onChange={e => { setSelectedPropertyId(e.target.value); setSelectedSlot(null); }}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]"
               >
-                <option value="">Select a property…</option>
                 {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
             </div>

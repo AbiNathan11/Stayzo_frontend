@@ -5,7 +5,7 @@ import {
   Calendar, Clock, Plus, Trash2, Check, X, Settings,
   RefreshCw, CalendarOff, ChevronLeft, ChevronRight,
   Bell, AlertCircle, CheckCircle2, Clock4, Filter,
-  ToggleLeft, ToggleRight, User
+  ToggleLeft, ToggleRight, User, XCircle
 } from "lucide-react";
 import {
   useOwnerBookings, useOwnerSlots, useOwnerSettings,
@@ -46,6 +46,7 @@ export default function OwnerAppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
   const [toast, setToast] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Slot creation
@@ -110,18 +111,34 @@ export default function OwnerAppointmentsPage() {
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
+  // Safely extract YYYY-MM-DD from a UTC ISO date string
+  const slotDateStr = (isoDate: string | undefined) => (isoDate ?? "").slice(0, 10);
+
   const slotsForDate = (dateStr: string) =>
-    slots.filter(s => !s.isBlocked && s.date.startsWith(dateStr));
+    slots.filter(s => !s.isBlocked && slotDateStr(s.date) === dateStr);
   const blockedOnDate = (dateStr: string) =>
-    slots.some(s => s.isBlocked && s.date.startsWith(dateStr));
+    slots.some(s => s.isBlocked && slotDateStr(s.date) === dateStr);
   const hasBookingOnDate = (dateStr: string) =>
-    bookings.some(b => b.slot?.date?.startsWith(dateStr) && b.status === "CONFIRMED");
+    bookings.some(b => slotDateStr(b.slot?.date) === dateStr && b.status === "CONFIRMED");
 
   const selectedSlots = slotsForDate(selectedDate);
+  const isPastSelected = selectedDate < formatDate(new Date());
 
   // ── Actions ──
   const handleCreateSlot = async () => {
     if (!newSlot.propertyId) return showToast("Select a property first");
+
+    // Prevent creating slots in the past
+    const now = new Date();
+    if (newSlot.date === formatDate(now)) {
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [h, m] = newSlot.startTime.split(":").map(Number);
+      if (h * 60 + m <= currentMinutes) {
+        setErrorMessage("Cannot create availability in the past");
+        return;
+      }
+    }
+
     setActionLoading("create");
     try {
       await createSlotApi(newSlot);
@@ -206,7 +223,7 @@ export default function OwnerAppointmentsPage() {
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[#1A1A1A] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#1A1A1A] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
           {toast}
         </div>
       )}
@@ -351,8 +368,9 @@ export default function OwnerAppointmentsPage() {
                   <p className="text-[10px] text-gray-400 font-semibold mt-0.5">{selectedSlots.length} slot(s)</p>
                 </div>
                 <button
+                  disabled={isPastSelected}
                   onClick={() => { setNewSlot(f => ({ ...f, date: selectedDate })); setShowCreateModal(true); setCreateMode("single"); }}
-                  className="w-8 h-8 bg-[#1A1A1A] text-white rounded-xl flex items-center justify-center hover:bg-black transition"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition ${isPastSelected ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1A1A1A] text-white hover:bg-black'}`}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -399,16 +417,18 @@ export default function OwnerAppointmentsPage() {
 
             <div className="flex flex-col gap-2">
               <button
+                disabled={isPastSelected}
                 onClick={() => { setShowCreateModal(true); setCreateMode("recurring"); }}
-                className="flex items-center gap-2 w-full p-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl text-xs font-bold text-gray-700 transition"
+                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
               >
-                <RefreshCw className="w-4 h-4 text-emerald-500" /> Set Recurring Availability
+                <RefreshCw className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-emerald-500'}`} /> Set Recurring Availability
               </button>
               <button
+                disabled={isPastSelected}
                 onClick={() => { setBlockForm(f => ({ ...f, startDate: selectedDate })); setShowCreateModal(true); setCreateMode("block"); }}
-                className="flex items-center gap-2 w-full p-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl text-xs font-bold text-gray-700 transition"
+                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
               >
-                <CalendarOff className="w-4 h-4 text-red-400" /> Block This Date
+                <CalendarOff className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-red-400'}`} /> Block This Date
               </button>
             </div>
           </div>
@@ -617,7 +637,7 @@ export default function OwnerAppointmentsPage() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Date</label>
-                  <input type="date" value={newSlot.date} onChange={e => setNewSlot(f => ({ ...f, date: e.target.value }))}
+                  <input type="date" value={newSlot.date} min={formatDate(new Date())} onChange={e => setNewSlot(f => ({ ...f, date: e.target.value }))}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -738,12 +758,12 @@ export default function OwnerAppointmentsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">From</label>
-                    <input type="date" value={blockForm.startDate} onChange={e => setBlockForm(f => ({ ...f, startDate: e.target.value }))}
+                    <input type="date" value={blockForm.startDate} min={formatDate(new Date())} onChange={e => setBlockForm(f => ({ ...f, startDate: e.target.value }))}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">To (optional)</label>
-                    <input type="date" value={blockForm.endDate} onChange={e => setBlockForm(f => ({ ...f, endDate: e.target.value }))}
+                    <input type="date" value={blockForm.endDate} min={formatDate(new Date())} onChange={e => setBlockForm(f => ({ ...f, endDate: e.target.value }))}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
                   </div>
                 </div>
@@ -774,6 +794,25 @@ export default function OwnerAppointmentsPage() {
               className="w-full py-3.5 bg-[#1A1A1A] text-white rounded-xl text-sm font-bold hover:bg-black transition shadow-md"
             >
               Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ERROR POPUP ── */}
+      {errorMessage && (
+        <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center transform transition-all animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="font-extrabold text-[#1A1A1A] text-xl mb-2">Wait!</h3>
+            <p className="text-sm text-gray-500 font-medium mb-8">{errorMessage}</p>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="w-full py-3.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition shadow-md"
+            >
+              Okay
             </button>
           </div>
         </div>
