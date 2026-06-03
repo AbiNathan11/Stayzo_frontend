@@ -90,6 +90,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const [language, setLanguage] = useState("Eng");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -205,13 +206,24 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <button
-            id="chat-more-options-btn"
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="More options"
-          >
-            <MoreVertical className="w-4 h-4 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="text-[11px] font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <option value="Eng">English</option>
+              <option value="Sin">Sinhala</option>
+              <option value="Tam">Tamil</option>
+            </select>
+            <button
+              id="chat-more-options-btn"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable: Message Bubbles */}

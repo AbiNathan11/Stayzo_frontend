@@ -95,7 +95,7 @@ export default function LandingPage() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (location !== 'All Locations') params.set('location', location);
+    if (location !== 'All Locations') params.set('district', location);
     if (propertyType !== 'All Types') params.set('type', propertyType);
     if (budget !== 'Any Budget') params.set('budget', budget);
     router.push(`/search?${params.toString()}`);
