@@ -12,74 +12,16 @@ import {
   FileText,
 } from "lucide-react";
 
-// ─── Conversation List ───────────────────────────────────────────────────────
-const conversations = [
-  {
-    id: 1,
-    name: "Nimal Bandara",
-    time: "10:12 AM",
-    preview: "Yes, the apartment is av...",
-    active: true,
-    avatar: "NB",
-  },
-  {
-    id: 2,
-    name: "Saman Perera",
-    time: "YESTERDAY",
-    preview: "Thank you for the paymen...",
-    active: false,
-    avatar: "SP",
-  },
-  {
-    id: 3,
-    name: "Lakeview Management",
-    time: "OCT 24",
-    preview: "Your maintenance request...",
-    active: false,
-    avatar: "LM",
-  },
-  {
-    id: 4,
-    name: "Elena Rodriguez",
-    time: "OCT 22",
-    preview: "Please find the updated...",
-    active: false,
-    avatar: "ER",
-  },
-];
-
 // ─── Messages ────────────────────────────────────────────────────────────────
 type Message = {
-  id: number;
+  id: string;
   from: "them" | "me";
-  text: string;
+  originalText: string;
+  translatedText?: string;
+  translatedLanguage?: string;
   time: string;
   status?: string;
 };
-
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    from: "them",
-    text: "Hello Abiramy! Thanks for inquiring about Colombo Heights Apartment.",
-    time: "10:40 AM",
-    status: "DELIVERED",
-  },
-  {
-    id: 2,
-    from: "me",
-    text: "Hi Nimal! Is the property available for a physical walkthrough this week?",
-    time: "10:42 AM",
-    status: "READ",
-  },
-  {
-    id: 3,
-    from: "them",
-    text: "Yes, the apartment is available for viewing tomorrow at 10:00 AM. Does that work for you?",
-    time: "10:45 AM",
-    status: undefined,
-  },
-];
 
 // ─── Shared Documents ────────────────────────────────────────────────────────
 const sharedDocs = ["TENANCY_AGREEMENT.PDF", "HOUSE_RULES_V2.PDF"];
@@ -96,28 +38,86 @@ export default function ChatPage() {
 function ChatPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const threadId = searchParams.get('threadId');
+  const initialThreadId = searchParams.get('threadId');
 
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(initialThreadId);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
-  const [language, setLanguage] = useState("Eng");
+  const [language, setLanguage] = useState("Original");
   const [threadDetails, setThreadDetails] = useState<any>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Decode user from token
   useEffect(() => {
-    if (threadId) {
-      fetch(`http://localhost:3001/api/chat/thread/${threadId}`)
+    const token = localStorage.getItem('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserId(payload.id);
+      } catch (e) {
+        console.error("Failed to parse token:", e);
+      }
+    }
+  }, []);
+
+  // Fetch all threads for this tenant
+  const fetchThreads = () => {
+    if (!userId) return;
+    fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=tenant`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.threads) {
+          const formatted = data.threads.map((t: any) => {
+            const lastMsg = t.messages?.[0];
+            return {
+              id: t.id,
+              name: t.owner?.firstName ? `${t.owner.firstName} ${t.owner.lastName || ''}` : "Owner",
+              time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+              preview: lastMsg?.text || "No messages yet",
+              active: t.id === activeThreadId,
+              avatar: t.owner?.firstName?.charAt(0).toUpperCase() || "O",
+            };
+          });
+          setConversations(formatted);
+          if (!activeThreadId && formatted.length > 0) {
+            setActiveThreadId(formatted[0].id);
+          }
+        }
+      })
+      .catch(err => console.error("Failed to fetch threads:", err));
+  };
+
+  useEffect(() => {
+    fetchThreads();
+  }, [userId, activeThreadId]);
+
+  // Fetch specific thread details and messages
+  useEffect(() => {
+    if (activeThreadId) {
+      fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
         .then(res => res.json())
         .then(data => {
           if (data.thread) {
             setThreadDetails(data.thread);
+            const formattedMsgs = data.thread.messages.map((m: any) => ({
+              id: m.id,
+              from: m.senderId === userId ? "me" : "them",
+              originalText: m.text,
+              translatedText: m.translatedText,
+              translatedLanguage: m.translatedLanguage,
+              time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              status: m.isRead ? "READ" : "DELIVERED"
+            }));
+            setMessages(formattedMsgs);
           }
         })
         .catch(err => console.error("Failed to fetch thread:", err));
     }
-  }, [threadId]);
+  }, [activeThreadId, userId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -125,21 +125,51 @@ function ChatPageContent() {
 
   const sendMessage = () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || !activeThreadId || !userId) return;
+    
+    // Optimistic update
+    const tempId = Date.now().toString();
     setMessages((prev) => [
       ...prev,
       {
-        id: prev.length + 1,
+        id: tempId,
         from: "me",
-        text,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: "DELIVERED",
+        originalText: text,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: "SENDING...",
       },
     ]);
     setInput("");
+
+    fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: userId, text })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message) {
+          // Re-fetch to get correct IDs and status
+          fetchThreads();
+          fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.thread) {
+                const formattedMsgs = data.thread.messages.map((m: any) => ({
+                  id: m.id,
+                  from: m.senderId === userId ? "me" : "them",
+                  originalText: m.text,
+                  translatedText: m.translatedText,
+                  translatedLanguage: m.translatedLanguage,
+                  time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  status: m.isRead ? "READ" : "DELIVERED"
+                }));
+                setMessages(formattedMsgs);
+              }
+            });
+        }
+      })
+      .catch(err => console.error("Failed to send message:", err));
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -181,8 +211,9 @@ function ChatPageContent() {
               <button
                 key={convo.id}
                 id={`chat-convo-${convo.id}`}
+                onClick={() => setActiveThreadId(convo.id)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
-                  convo.active
+                  convo.id === activeThreadId
                     ? "bg-white border-l-[3px] border-l-[#1A1A1A]"
                     : "hover:bg-gray-50"
                 }`}
@@ -198,7 +229,7 @@ function ChatPageContent() {
                 <p className="text-[11px] text-gray-400 truncate leading-tight">
                   {convo.preview}
                 </p>
-                {convo.active && (
+                {convo.id === activeThreadId && (
                   <div className="mt-1.5 flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]" />
                     <span className="text-[9px] font-bold tracking-widest text-[#1A1A1A] uppercase">
@@ -240,6 +271,7 @@ function ChatPageContent() {
               onChange={(e) => setLanguage(e.target.value)}
               className="text-[11px] font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
             >
+              <option value="Original">Original</option>
               <option value="Eng">English</option>
               <option value="Sin">Sinhala</option>
               <option value="Tam">Tamil</option>
@@ -267,33 +299,12 @@ function ChatPageContent() {
 
           {/* Message Bubbles */}
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${
-                msg.from === "me" ? "items-end" : "items-start"
-              }`}
-            >
-              <div
-                className={`max-w-[68%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed font-medium ${
-                  msg.from === "me"
-                    ? "bg-[#1A1A1A] text-white rounded-br-sm"
-                    : "bg-gray-100 text-[#1A1A1A] rounded-bl-sm"
-                }`}
-              >
-                {msg.text}
-              </div>
-              <div className="mt-1 flex items-center gap-1">
-                <span className="text-[10px] text-gray-400">{msg.time}</span>
-                {msg.status && (
-                  <>
-                    <span className="text-[10px] text-gray-300">•</span>
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                      {msg.status}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
+            <MessageBubble 
+              key={msg.id} 
+              msg={msg} 
+              globalLanguage={language} 
+              setMessages={setMessages} 
+            />
           ))}
           <div ref={bottomRef} />
         </div>
@@ -426,6 +437,113 @@ function ChatPageContent() {
           Reschedule Visit
         </button>
       </aside>
+    </div>
+  );
+}
+
+function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, globalLanguage: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>> }) {
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Auto-show translation if dropdown matches stored translation
+  useEffect(() => {
+    if (globalLanguage !== "Original" && msg.translatedLanguage === globalLanguage && msg.translatedText) {
+      setShowTranslation(true);
+    } else {
+      setShowTranslation(false);
+    }
+  }, [globalLanguage, msg.translatedLanguage, msg.translatedText]);
+
+  // Auto-translate if global language changes to a specific language, and we don't have it yet
+  useEffect(() => {
+    if (globalLanguage !== "Original" && msg.translatedLanguage !== globalLanguage && !isTranslating && msg.id.length > 20) {
+      handleTranslate(globalLanguage);
+    }
+  }, [globalLanguage]);
+
+  const handleTranslate = async (targetLang: string) => {
+    if (msg.translatedLanguage === targetLang && msg.translatedText) {
+      setShowTranslation(true);
+      return;
+    }
+    
+    setIsTranslating(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/chat/message/${msg.id}/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetLanguage: targetLang })
+      });
+      const data = await res.json();
+      if (data.message) {
+        setMessages(prev => prev.map(m => m.id === msg.id ? {
+          ...m,
+          translatedText: data.message.translatedText,
+          translatedLanguage: data.message.translatedLanguage
+        } : m));
+        setShowTranslation(true);
+      }
+    } catch (e) {
+      console.error("Translation failed", e);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const toggleTranslation = () => {
+    if (showTranslation) {
+      setShowTranslation(false);
+    } else {
+      if (msg.translatedLanguage === globalLanguage && msg.translatedText) {
+        setShowTranslation(true);
+      } else if (globalLanguage !== "Original") {
+        handleTranslate(globalLanguage);
+      } else {
+        // Fallback if they click "See translation" when global is Original, just translate to English
+        handleTranslate("English");
+      }
+    }
+  };
+
+  const displayedText = showTranslation && msg.translatedText ? msg.translatedText : msg.originalText;
+  
+  // Only show the toggle button if it's not a temp message ID and a target language is selected, or if we already have a translation
+  const canTranslate = msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
+
+  return (
+    <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"}`}>
+      <div
+        className={`max-w-[68%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed font-medium ${
+          msg.from === "me"
+            ? "bg-[#1A1A1A] text-white rounded-br-sm"
+            : "bg-gray-100 text-[#1A1A1A] rounded-bl-sm"
+        }`}
+      >
+        {displayedText}
+      </div>
+      
+      <div className={`mt-1 flex items-center gap-2 ${msg.from === "me" ? "justify-end" : "justify-start"} w-full`}>
+        {canTranslate && (
+          <button 
+            onClick={toggleTranslation}
+            disabled={isTranslating}
+            className="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors"
+          >
+            {isTranslating ? "Translating..." : showTranslation ? "See original" : "See translation"}
+          </button>
+        )}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gray-400">{msg.time}</span>
+          {msg.status && (
+            <>
+              <span className="text-[10px] text-gray-300">•</span>
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                {msg.status}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
