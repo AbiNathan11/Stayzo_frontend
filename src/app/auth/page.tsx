@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Footer from '../../components/Footer';
 
 export default function TenantAuth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -12,9 +13,52 @@ export default function TenantAuth() {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [nicFront, setNicFront] = useState<string | null>(null);
+  const [nicBack, setNicBack] = useState<string | null>(null);
+  const [nicFrontName, setNicFrontName] = useState<string>('');
+  const [nicBackName, setNicBackName] = useState<string>('');
+  const [role, setRole] = useState<'tenant' | 'landlord'>('tenant');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get('role');
+      if (urlRole === 'landlord') {
+        setRole('landlord');
+      } else {
+        setRole('tenant');
+      }
+    }
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Only image files (.jpg, .jpeg, .png, etc.) are allowed for the NIC copy!');
+        e.target.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (side === 'front') {
+          setNicFront(base64String);
+          setNicFrontName(file.name);
+          toast.success('NIC front image uploaded successfully!');
+        } else {
+          setNicBack(base64String);
+          setNicBackName(file.name);
+          toast.success('NIC back image uploaded successfully!');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +78,16 @@ export default function TenantAuth() {
         toast.error('Last name is required.');
         return;
       }
+      if (role === 'landlord') {
+        if (!nicFront) {
+          toast.error('NIC Front Image is required.');
+          return;
+        }
+        if (!nicBack) {
+          toast.error('NIC Back Image is required.');
+          return;
+        }
+      }
     }
 
     setLoading(true);
@@ -42,7 +96,7 @@ export default function TenantAuth() {
       const res = await fetch('http://localhost:3001/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, firstName, lastName, mode }),
+        body: JSON.stringify({ email, firstName, lastName, mode, role, nicFront, nicBack }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
@@ -78,7 +132,7 @@ export default function TenantAuth() {
       const lowerEmail = email.toLowerCase();
       if (lowerEmail === 'stayzoavp@gmail.com' || lowerEmail.startsWith('admin@')) {
         window.location.href = '/dashboard/admin';
-      } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
+      } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord') || role === 'landlord') {
         window.location.href = '/dashboard/owners';
       } else {
         window.location.href = '/';
@@ -133,9 +187,15 @@ export default function TenantAuth() {
                 {mode === 'login' ? 'Welcome back' : 'Create account'}
               </h2>
               <p className="text-gray-400 text-xs font-semibold mb-8 leading-relaxed">
-                {mode === 'login'
-                  ? "Enter your email to log in to your tenant account. We'll send you a secure login code via email."
-                  : "Join Stayzo today to find your perfect stay. We'll verify you via email."}
+                {role === 'landlord' ? (
+                  mode === 'login'
+                    ? "Enter your email to log in to your landlord account. We'll send you a secure login code via email."
+                    : "Join Stayzo today as a landlord to list your premium properties and sign digital agreements."
+                ) : (
+                  mode === 'login'
+                    ? "Enter your email to log in to your tenant account. We'll send you a secure login code via email."
+                    : "Join Stayzo today to find your perfect stay. We'll verify you via email."
+                )}
               </p>
 
               <form onSubmit={handleSendCode} noValidate className="space-y-6">
@@ -167,8 +227,6 @@ export default function TenantAuth() {
                   </div>
                 )}
 
-
-
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">Email Address</label>
                   <input
@@ -180,6 +238,52 @@ export default function TenantAuth() {
                     placeholder="jane@example.com"
                   />
                 </div>
+
+                {mode === 'signup' && role === 'landlord' && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {/* Front of NIC Image Upload */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC FRONT IMAGE *</label>
+                      <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-4 transition text-center cursor-pointer bg-[#F5F7F8]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          required
+                          onChange={(e) => handleFileChange(e, 'front')}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="text-gray-400 text-xs font-semibold py-1">
+                          {nicFrontName ? (
+                            <span className="text-emerald-600 font-bold">✓ {nicFrontName}</span>
+                          ) : (
+                            <>Drag and drop front image or <span className="text-[#1A1A1A] underline">browse</span></>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Back of NIC Image Upload */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC BACK IMAGE *</label>
+                      <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-4 transition text-center cursor-pointer bg-[#F5F7F8]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          required
+                          onChange={(e) => handleFileChange(e, 'back')}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="text-gray-400 text-xs font-semibold py-1">
+                          {nicBackName ? (
+                            <span className="text-emerald-600 font-bold">✓ {nicBackName}</span>
+                          ) : (
+                            <>Drag and drop back image or <span className="text-[#1A1A1A] underline">browse</span></>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -198,6 +302,10 @@ export default function TenantAuth() {
                       setMode(mode === 'login' ? 'signup' : 'login');
                       setFirstName('');
                       setLastName('');
+                      setNicFront(null);
+                      setNicBack(null);
+                      setNicFrontName('');
+                      setNicBackName('');
                       setError('');
                     }}
                     className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
@@ -226,7 +334,6 @@ export default function TenantAuth() {
               </div>
 
               <form onSubmit={handleVerify} className="space-y-6">
-
 
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">Secure Login Code</label>
@@ -258,7 +365,9 @@ export default function TenantAuth() {
 
         </div>
       </div>
+
+      {/* Footer Component */}
+      <Footer />
     </div>
   );
 }
-
