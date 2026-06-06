@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface PendingReview {
   id: number;
@@ -178,7 +179,7 @@ export default function TenantOverviewPage() {
       }
     } catch (err) {
       console.error("Profile update error:", err);
-      alert("Failed to update profile in database.");
+      toast.error("Failed to update profile in database.");
     } finally {
       setUpdatingProfile(false);
     }
@@ -213,6 +214,7 @@ export default function TenantOverviewPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      <Toaster position="top-right" />
       
       {/* Dashboard Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">

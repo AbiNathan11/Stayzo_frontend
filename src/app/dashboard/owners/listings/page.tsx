@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 import { 
   Pencil, 
   Trash2, 
@@ -177,7 +178,7 @@ export default function OwnerListings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ownerId) return alert('Could not identify your account. Please log in again.');
+    if (!ownerId) return toast.error('Could not identify your account. Please log in again.');
     try {
       const res = await fetch('http://localhost:3001/api/properties', {
         method: 'POST',
@@ -201,6 +202,7 @@ export default function OwnerListings() {
 
   return (
     <div className="animate-in fade-in duration-300">
+      <Toaster position="top-right" />
 
       {/* ── Page Content ── */}
       <div className="w-full">
