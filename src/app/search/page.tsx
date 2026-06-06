@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link'; // Use simple link or button to redirect
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import { 
   Home, Building2, Landmark, Map, HelpCircle, 
@@ -25,7 +26,7 @@ interface Listing {
   guestFavorite?: boolean;
 }
 
-export default function SearchResultsPage() {
+function SearchContent() {
   // Panel Visibility States
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -42,9 +43,39 @@ export default function SearchResultsPage() {
   const [activePropertyId, setActivePropertyId] = useState<string | number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/properties')
+    // Read params
+    const district = searchParams.get('district');
+    const type = searchParams.get('type');
+    const budgetStr = searchParams.get('budget');
+
+    // Build fetch URL
+    let apiUrl = 'http://localhost:3001/api/properties/search';
+    const params = new URLSearchParams();
+    if (district) params.set('district', district);
+    if (type) params.set('type', type);
+    
+    if (budgetStr && budgetStr !== 'Any Budget' && budgetStr !== 'Over Rs.500,000') {
+      let limit = 0;
+      if (budgetStr === 'Under Rs.50,000') limit = 50000;
+      else if (budgetStr === 'Rs.50,000 - Rs.100,000') limit = 100000;
+      else if (budgetStr === 'Rs.100,000 - Rs.200,000') limit = 200000;
+      else if (budgetStr === 'Rs.200,000 - Rs.500,000') limit = 500000;
+      if (limit > 0) {
+        params.set('budget', limit.toString());
+      }
+    }
+
+    const queryString = params.toString();
+    if (queryString) {
+      apiUrl += `?${queryString}`;
+    }
+
+    setLoading(true);
+    fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
         const mapped = data.map((item: any, index: number) => ({
@@ -63,9 +94,13 @@ export default function SearchResultsPage() {
         }));
         setListings(mapped);
         if (mapped.length > 0) setActivePropertyId(mapped[0].id);
+        setLoading(false);
       })
-      .catch(console.error);
-  }, []);
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [searchParams]);
 
   const handleBookmarkToggle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -261,7 +296,18 @@ export default function SearchResultsPage() {
 
           {/* Cards Grid (Square shape) */}
           <div className={`grid ${gridColsClass} gap-6`}>
-            {listings.length === 0 ? (
+            {loading ? (
+              [...Array(8)].map((_, i) => (
+                <div key={i} className="flex flex-col animate-pulse">
+                  <div className="w-full aspect-[4/3] rounded-2xl bg-gray-200 mb-2 shrink-0" />
+                  <div className="space-y-2 pt-1 flex-1">
+                    <div className="h-4.5 w-3/4 bg-gray-300 rounded-md" />
+                    <div className="h-3.5 w-1/2 bg-gray-250 rounded-md" />
+                    <div className="h-3 w-2/3 bg-gray-205 rounded-md" />
+                  </div>
+                </div>
+              ))
+            ) : listings.length === 0 ? (
               <div className="col-span-full py-12 text-center text-gray-500 font-semibold">
                 No properties found matching your search.
               </div>
@@ -401,6 +447,14 @@ export default function SearchResultsPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading Search...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }
 

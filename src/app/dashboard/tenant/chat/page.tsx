@@ -1,156 +1,548 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Send, Languages, Info, Search, MoreVertical, Phone, Video } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import {
+  Search,
+  MoreVertical,
+  Paperclip,
+  Send,
+  Calendar,
+  FileText,
+} from "lucide-react";
 
-interface Message {
-  id: number;
-  sender: 'tenant' | 'landlord';
-  text: string;
+// ─── Messages ────────────────────────────────────────────────────────────────
+type Message = {
+  id: string;
+  from: "them" | "me";
+  originalText: string;
+  translatedText?: string;
+  translatedLanguage?: string;
   time: string;
+  status?: string;
+};
+
+// ─── Shared Documents ────────────────────────────────────────────────────────
+const sharedDocs = ["TENANCY_AGREEMENT.PDF", "HOUSE_RULES_V2.PDF"];
+
+// ─── Page Component ──────────────────────────────────────────────────────────
+export default function ChatPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-sm font-bold text-gray-500">Loading chat...</div>}>
+      <ChatPageContent />
+    </React.Suspense>
+  );
 }
 
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, sender: 'landlord', text: "Hello Abiramy! Thanks for inquiring about Colombo Heights Apartment.", time: "Yesterday, 3:15 PM" },
-    { id: 2, sender: 'tenant', text: "Hi Nimal! Is the property available for a physical walkthrough this week?", time: "Yesterday, 3:45 PM" },
-    { id: 3, sender: 'landlord', text: "Yes, the apartment is available for viewing tomorrow at 10:00 AM. Does that work for you?", time: "Today, 10:12 AM" }
-  ]);
-  const [newMessage, setNewMessage] = useState('');
-  const [translateOn, setTranslateOn] = useState(false);
+function ChatPageContent() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialThreadId = searchParams.get('threadId');
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    setMessages([...messages, { id: Date.now(), sender: 'tenant', text: newMessage, time: 'Just now' }]);
-    setNewMessage('');
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(initialThreadId);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [language, setLanguage] = useState("Original");
+  const [threadDetails, setThreadDetails] = useState<any>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Decode user from token
+  useEffect(() => {
+    const token = sessionStorage.getItem('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserId(payload.id);
+      } catch (e) {
+        console.error("Failed to parse token:", e);
+      }
+    }
+  }, []);
+
+  // Fetch all threads for this tenant
+  const fetchThreads = () => {
+    if (!userId) return;
+    fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=tenant`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.threads) {
+          const formatted = data.threads.map((t: any) => {
+            const lastMsg = t.messages?.[0];
+            return {
+              id: t.id,
+              name: t.owner?.firstName ? `${t.owner.firstName} ${t.owner.lastName || ''}` : "Owner",
+              time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+              preview: lastMsg?.text || "No messages yet",
+              active: t.id === activeThreadId,
+              avatar: t.owner?.firstName?.charAt(0).toUpperCase() || "O",
+            };
+          });
+          setConversations(formatted);
+          if (!activeThreadId && formatted.length > 0) {
+            setActiveThreadId(formatted[0].id);
+          }
+        }
+      })
+      .catch(err => console.error("Failed to fetch threads:", err));
+  };
+
+  useEffect(() => {
+    fetchThreads();
+  }, [userId, activeThreadId]);
+
+  // Fetch specific thread details and messages
+  useEffect(() => {
+    if (activeThreadId) {
+      fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.thread) {
+            setThreadDetails(data.thread);
+            const formattedMsgs = data.thread.messages.map((m: any) => ({
+              id: m.id,
+              from: m.senderId === userId ? "me" : "them",
+              originalText: m.text,
+              translatedText: m.translatedText,
+              translatedLanguage: m.translatedLanguage,
+              time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              status: m.isRead ? "READ" : "DELIVERED"
+            }));
+            setMessages(formattedMsgs);
+          }
+        })
+        .catch(err => console.error("Failed to fetch thread:", err));
+    }
+  }, [activeThreadId, userId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages]);
+
+  const sendMessage = () => {
+    const text = input.trim();
+    if (!text || !activeThreadId || !userId) return;
+    
+    // Optimistic update
+    const tempId = Date.now().toString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        from: "me",
+        originalText: text,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: "SENDING...",
+      },
+    ]);
+    setInput("");
+
+    fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: userId, text })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message) {
+          // Re-fetch to get correct IDs and status
+          fetchThreads();
+          fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.thread) {
+                const formattedMsgs = data.thread.messages.map((m: any) => ({
+                  id: m.id,
+                  from: m.senderId === userId ? "me" : "them",
+                  originalText: m.text,
+                  translatedText: m.translatedText,
+                  translatedLanguage: m.translatedLanguage,
+                  time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  status: m.isRead ? "READ" : "DELIVERED"
+                }));
+                setMessages(formattedMsgs);
+              }
+            });
+        }
+      })
+      .catch(err => console.error("Failed to send message:", err));
+  };
+
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") sendMessage();
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl flex h-[calc(100vh-150px)] min-h-[550px] w-full overflow-hidden shadow-xs animate-in fade-in duration-300">
-      
-      {/* Left Sidebar - Contacts List */}
-      <div className="w-1/3 min-w-[280px] border-r border-gray-200 flex flex-col bg-[#F8FAFB]">
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search conversations..." 
-              className="w-full bg-gray-100 text-sm pl-9 pr-4 py-2.5 rounded-xl outline-none focus:ring-1 focus:ring-gray-300 transition"
+    <div
+      className="flex w-full max-w-[1200px] mx-auto bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
+      style={{ height: "600px" }}
+    >
+      {/* ── Left Sidebar: Conversation List ── */}
+      <aside className="w-[200px] min-w-[200px] bg-white border-r border-gray-100 flex flex-col overflow-hidden h-full">
+        {/* Title + Search */}
+        <div className="px-4 pt-5 pb-3 flex-shrink-0">
+          <h2 className="text-[15px] font-black text-[#1A1A1A] tracking-tight mb-3">
+            Messages
+          </h2>
+          <div className="flex items-center gap-2 border border-gray-200 rounded-full px-3 py-1.5 bg-white">
+            <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <input
+              id="chat-search-inbox"
+              type="text"
+              placeholder="SEARCH INBOX"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="text-[10px] font-bold tracking-widest text-gray-400 placeholder-gray-400 bg-transparent outline-none w-full"
             />
           </div>
         </div>
-        
-        <div className="flex-1 overflow-y-auto">
-          {/* Active Contact */}
-          <div className="flex items-center gap-3 p-4 bg-[#EEF2FF] border-l-4 border-[#1A1A1A] cursor-pointer">
-            <div className="w-12 h-12 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-lg shrink-0">
-              N
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-[#1A1A1A] truncate">Nimal Bandara</h3>
-                <span className="text-[10px] text-gray-400 font-semibold shrink-0">10:12 AM</span>
-              </div>
-              <p className="text-xs text-gray-500 truncate">Yes, the apartment is available...</p>
-            </div>
-          </div>
 
-          {/* Other Contact */}
-          <div className="flex items-center gap-3 p-4 hover:bg-gray-50 border-l-4 border-transparent cursor-pointer transition">
-            <div className="w-12 h-12 rounded-full bg-gray-100 text-[#1A1A1A] border border-gray-200 flex items-center justify-center font-bold text-lg shrink-0">
-              S
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-[#1A1A1A] truncate">Saman Perera</h3>
-                <span className="text-[10px] text-gray-400 font-semibold shrink-0">Oct 12</span>
-              </div>
-              <p className="text-xs text-gray-500 truncate">Thank you for the payment.</p>
-            </div>
-          </div>
+        {/* Scrollable: Conversation Items */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {conversations
+            .filter((c) =>
+              c.name.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((convo) => (
+              <button
+                key={convo.id}
+                id={`chat-convo-${convo.id}`}
+                onClick={() => setActiveThreadId(convo.id)}
+                className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
+                  convo.id === activeThreadId
+                    ? "bg-white border-l-[3px] border-l-[#1A1A1A]"
+                    : "hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[12px] font-bold truncate text-[#1A1A1A]">
+                    {convo.name}
+                  </span>
+                  <span className="text-[9px] text-gray-400 font-medium ml-1 whitespace-nowrap">
+                    {convo.time}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 truncate leading-tight">
+                  {convo.preview}
+                </p>
+                {convo.id === activeThreadId && (
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]" />
+                    <span className="text-[9px] font-bold tracking-widest text-[#1A1A1A] uppercase">
+                      Active Thread
+                    </span>
+                  </div>
+                )}
+              </button>
+            ))}
         </div>
-      </div>
+      </aside>
 
-      {/* Right Area - Active Chat */}
-      <div className="flex-1 flex flex-col bg-white">
-        
+      {/* ── Center: Chat Area ── */}
+      <section className="flex-1 flex flex-col bg-white overflow-hidden min-w-0 h-full">
         {/* Chat Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-sm shrink-0">
-              N
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-[11px] font-bold">
+                {threadDetails?.owner?.firstName?.charAt(0).toUpperCase() || "O"}
+              </span>
             </div>
             <div>
-              <h3 className="font-bold text-[#1A1A1A]">Nimal Bandara</h3>
-              <p className="text-xs text-gray-500 font-medium">Colombo Heights Apartment</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 text-[#1A1A1A]">
-            <button 
-              onClick={() => setTranslateOn(!translateOn)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                translateOn ? 'bg-[#1A1A1A] text-white' : 'hover:bg-gray-100 text-[#1A1A1A]'
-              }`}
-              title="Bilingual Translation"
-            >
-              <Languages className="w-4 h-4" />
-              <span className="hidden sm:inline">{translateOn ? 'Translate On' : 'Translate'}</span>
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition"><Phone className="w-4 h-4" /></button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition"><Video className="w-4 h-4" /></button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition"><MoreVertical className="w-4 h-4" /></button>
-          </div>
-        </div>
-
-        {/* Translation Alert */}
-        {translateOn && (
-          <div className="bg-gray-100 border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-semibold text-[#1A1A1A] shrink-0">
-            <Info className="w-4 h-4" />
-            Incoming messages are automatically translated to your preferred language.
-          </div>
-        )}
-
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex flex-col ${message.sender === 'tenant' ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[70%] px-5 py-3 rounded-2xl text-sm font-semibold shadow-sm ${
-                message.sender === 'tenant'
-                  ? 'bg-[#EEF2FF] text-[#1A1A1A] border border-indigo-100 rounded-tr-sm'
-                  : 'bg-[#EEF2FF] text-[#1A1A1A] border border-indigo-100/70 rounded-tl-sm'
-              }`}>
-                {message.text}
+              <h3 className="text-[14px] font-black text-[#1A1A1A] leading-tight">
+                {threadDetails?.owner?.firstName ? `${threadDetails.owner.firstName} ${threadDetails.owner.lastName || ''}` : "Owner"}
+              </h3>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <span className="text-[10px] font-bold tracking-widest text-green-600 uppercase">
+                  Available Now
+                </span>
               </div>
-              <span className="text-[10px] font-semibold text-gray-400 mt-2 mx-1">{message.time}</span>
             </div>
-          ))}
-        </div>
-
-        {/* Chat Input */}
-        <div className="p-4 bg-white border-t border-gray-200 shrink-0">
-          <form onSubmit={handleSend} className="flex items-center gap-3">
-            <div className="flex-1 bg-gray-100 rounded-full flex items-center px-4 py-2 border border-transparent focus-within:border-gray-300 focus-within:bg-white transition">
-              <input 
-                type="text" 
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 bg-transparent text-sm py-2 outline-none text-gray-800 placeholder-gray-400"
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="bg-[#1A1A1A] hover:bg-black text-white p-3.5 rounded-full shadow-sm transition active:scale-95 shrink-0"
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="text-[11px] font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              <Send className="w-5 h-5 ml-0.5" />
+              <option value="Original">Original</option>
+              <option value="Eng">English</option>
+              <option value="Sin">Sinhala</option>
+              <option value="Tam">Tamil</option>
+            </select>
+            <button
+              id="chat-more-options-btn"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-500" />
             </button>
-          </form>
+          </div>
         </div>
 
+        {/* Scrollable: Message Bubbles */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4">
+          {/* Date Divider */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase whitespace-nowrap">
+              October 28, 2024
+            </span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Message Bubbles */}
+          {messages.map((msg) => (
+            <MessageBubble 
+              key={msg.id} 
+              msg={msg} 
+              globalLanguage={language} 
+              setMessages={setMessages} 
+            />
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Message Input */}
+        <div className="px-4 py-3 border-t border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-full px-4 py-2.5 bg-white focus-within:border-gray-400 transition-colors">
+            <button
+              id="chat-attach-btn"
+              className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Attach file"
+            >
+              <Paperclip className="w-4 h-4 text-gray-400" />
+            </button>
+            <input
+              id="chat-message-input"
+              type="text"
+              placeholder="TYPE YOUR MESSAGE..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              className="flex-1 text-[12px] font-bold tracking-widest text-[#1A1A1A] placeholder-gray-300 bg-transparent outline-none"
+            />
+            <button
+              id="chat-send-btn"
+              onClick={sendMessage}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#1A1A1A] hover:bg-black rounded-full transition-colors shadow-md"
+              aria-label="Send message"
+            >
+              <Send className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Right Sidebar: Subject Context ── */}
+      <aside className="w-[180px] min-w-[180px] bg-[#F0EEF8] border-l border-gray-100 flex flex-col overflow-y-auto px-3 py-4 gap-4">
+        <h3 className="text-[9px] font-black tracking-widest text-gray-500 uppercase">
+          Subject Context
+        </h3>
+
+        {/* Project Card */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+          <div
+            className="relative w-full h-[80px] bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center"
+          >
+            {threadDetails?.property?.images?.[0] ? (
+              <img src={threadDetails.property.images[0]} alt="Property" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+            ) : (
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)",
+                  backgroundSize: "8px 8px",
+                }}
+              />
+            )}
+            <span className="relative text-[9px] font-black tracking-widest text-white uppercase bg-black/40 px-2 py-1 rounded z-10">
+              Interested Property
+            </span>
+          </div>
+          <div className="p-2.5">
+            <p className="text-[12px] font-black text-[#1A1A1A] leading-tight truncate" title={threadDetails?.property?.title || "Select a property"}>
+              {threadDetails?.property?.title || "Colombo Heights"}
+            </p>
+            <p className="text-[9px] font-bold tracking-widest text-gray-400 uppercase mt-0.5 truncate">
+              {threadDetails?.property?.address ? `${threadDetails.property.address} • ${threadDetails.property.type}` : "Apt 12B • Residential"}
+            </p>
+            {threadDetails?.property?.price && (
+              <p className="text-[11px] font-extrabold text-emerald-600 mt-1">
+                Rs. {threadDetails.property.price.toLocaleString()}/mo
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Next Visit */}
+        <div>
+          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
+            Next Visit
+          </p>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-[#1A1A1A]">
+              OCT 29, 2024
+            </span>
+          </div>
+        </div>
+
+        {/* Status */}
+        <div>
+          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
+            Status
+          </p>
+          <div className="flex items-center gap-2">
+            <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-[#1A1A1A] uppercase tracking-wide">
+              Pending Visit
+            </span>
+          </div>
+        </div>
+
+        {/* Shared Documents */}
+        <div>
+          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
+            Shared Documents (2)
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {sharedDocs.map((doc) => (
+              <button
+                key={doc}
+                id={`chat-doc-${doc.replace(/\./g, "-").toLowerCase()}`}
+                className="flex items-center gap-2 bg-white rounded-lg px-2.5 py-1.5 shadow-sm hover:shadow-md transition-shadow text-left w-full"
+              >
+                <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                <span className="text-[9px] font-bold text-[#1A1A1A] tracking-wide truncate">
+                  {doc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Reschedule Visit */}
+        <button
+          id="chat-reschedule-visit-btn"
+          className="w-full border-2 border-[#1A1A1A] text-[#1A1A1A] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#1A1A1A] hover:text-white transition-colors"
+        >
+          Reschedule Visit
+        </button>
+      </aside>
+    </div>
+  );
+}
+
+function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, globalLanguage: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>> }) {
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Auto-show translation if dropdown matches stored translation
+  useEffect(() => {
+    if (globalLanguage !== "Original" && msg.translatedLanguage === globalLanguage && msg.translatedText) {
+      setShowTranslation(true);
+    } else {
+      setShowTranslation(false);
+    }
+  }, [globalLanguage, msg.translatedLanguage, msg.translatedText]);
+
+  // Auto-translate if global language changes to a specific language, and we don't have it yet
+  useEffect(() => {
+    if (globalLanguage !== "Original" && msg.translatedLanguage !== globalLanguage && !isTranslating && msg.id.length > 20) {
+      handleTranslate(globalLanguage);
+    }
+  }, [globalLanguage]);
+
+  const handleTranslate = async (targetLang: string) => {
+    if (msg.translatedLanguage === targetLang && msg.translatedText) {
+      setShowTranslation(true);
+      return;
+    }
+    
+    setIsTranslating(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/chat/message/${msg.id}/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetLanguage: targetLang })
+      });
+      const data = await res.json();
+      if (data.message) {
+        setMessages(prev => prev.map(m => m.id === msg.id ? {
+          ...m,
+          translatedText: data.message.translatedText,
+          translatedLanguage: data.message.translatedLanguage
+        } : m));
+        setShowTranslation(true);
+      }
+    } catch (e) {
+      console.error("Translation failed", e);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const toggleTranslation = () => {
+    if (showTranslation) {
+      setShowTranslation(false);
+    } else {
+      if (msg.translatedLanguage === globalLanguage && msg.translatedText) {
+        setShowTranslation(true);
+      } else if (globalLanguage !== "Original") {
+        handleTranslate(globalLanguage);
+      } else {
+        // Fallback if they click "See translation" when global is Original, just translate to English
+        handleTranslate("English");
+      }
+    }
+  };
+
+  const displayedText = showTranslation && msg.translatedText ? msg.translatedText : msg.originalText;
+  
+  // Only show the toggle button if it's not a temp message ID and a target language is selected, or if we already have a translation
+  const canTranslate = msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
+
+  return (
+    <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"}`}>
+      <div
+        className={`max-w-[68%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed font-medium ${
+          msg.from === "me"
+            ? "bg-[#1A1A1A] text-white rounded-br-sm"
+            : "bg-gray-100 text-[#1A1A1A] rounded-bl-sm"
+        }`}
+      >
+        {displayedText}
+      </div>
+      
+      <div className={`mt-1 flex items-center gap-2 ${msg.from === "me" ? "justify-end" : "justify-start"} w-full`}>
+        {canTranslate && (
+          <button 
+            onClick={toggleTranslation}
+            disabled={isTranslating}
+            className="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors"
+          >
+            {isTranslating ? "Translating..." : showTranslation ? "See original" : "See translation"}
+          </button>
+        )}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gray-400">{msg.time}</span>
+          {msg.status && (
+            <>
+              <span className="text-[10px] text-gray-300">•</span>
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                {msg.status}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

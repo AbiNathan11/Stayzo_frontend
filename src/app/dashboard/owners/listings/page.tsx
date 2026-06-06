@@ -20,12 +20,20 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Listing {
-  id: number;
-  name: string;
-  price: string;
-  location: string;
-  yield: string;
-  image: string;
+  id: string;
+  title: string;
+  price: number;
+  rentPerMonth?: number;
+  address: string;
+  city: string;
+  state: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  images: string[];
+  panoramaImage?: string;
+  status: string;
+  createdAt: string;
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────────────────
@@ -39,7 +47,7 @@ const INCOMPLETE_ASSET = {
   image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&h=240&fit=crop&q=80',
 };
 
-const LISTINGS: Listing[] = [
+const LISTINGS: any[] = [
   {
     id: 1,
     name: 'SKYLINE PAVILION',
@@ -79,10 +87,22 @@ const navLinks = [
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
+// ── Helper: decode JWT payload without a library ─────────────────────────────
+function decodeToken(token: string): Record<string, any> | null {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
 export default function OwnerListings() {
   const pathname = usePathname();
   const [currentPage, setCurrentPage] = useState(1);
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'processing'>('active');
   const [draft, setDraft] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,21 +131,36 @@ export default function OwnerListings() {
     }
   };
 
+  // Decode JWT once on mount to get the real owner ID
   useEffect(() => {
+    const token = sessionStorage.getItem('stayzo_token');
+    if (token) {
+      const payload = decodeToken(token);
+      if (payload?.id) setOwnerId(payload.id);
+    }
+  }, []);
+
+  // Fetch only this owner's properties whenever ownerId is resolved
+  useEffect(() => {
+    if (!ownerId) return;
     const fetchListings = async () => {
+      setLoading(true);
       try {
-        const res = await fetch('http://localhost:3001/api/properties');
+        const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`);
         if (res.ok) {
-          const data = await res.json();
-          // For owner dashboard, we'd normally filter by ownerId, but for now we'll show all or mock it
+          const data: Listing[] = await res.json();
           setListings(data);
+        } else {
+          console.error('Failed to fetch owner listings:', res.status);
         }
       } catch (err) {
         console.error('Error fetching listings:', err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchListings();
-  }, []);
+  }, [ownerId]);
 
   const totalPages = Math.ceil(listings.length / 6) || 1;
 
@@ -142,19 +177,19 @@ export default function OwnerListings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!ownerId) return alert('Could not identify your account. Please log in again.');
     try {
       const res = await fetch('http://localhost:3001/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Use a dummy ownerId for now since auth might not be fully linked here
         body: JSON.stringify({ 
           ...formData, 
-          ownerId: 'owner-123',
+          ownerId,                                    // real owner ID from JWT
           images: formData.image ? [formData.image] : []
         })
       });
       if (res.ok) {
-        const newProp = await res.json();
+        const newProp: Listing = await res.json();
         setListings([newProp, ...listings]);
         setIsModalOpen(false);
         setFormData({ title: '', description: '', price: '', address: '', city: '', type: 'Apartment', bedrooms: '', bathrooms: '', sqft: '', panoramaImage: '', waterBillImage: '', image: '' });
@@ -211,7 +246,43 @@ export default function OwnerListings() {
         </div>
 
         {/* ── Active Listings Tab ── */}
-        {activeTab === 'active' && (
+        {activeTab === 'active' && loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div 
+                key={i}
+                className="bg-white border border-gray-200 rounded-3xl overflow-hidden flex flex-col h-[380px]"
+              >
+                {/* Image Area Skeleton */}
+                <div className="h-[180px] bg-gray-100 shrink-0" />
+                {/* Card Content Skeleton */}
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="h-5 w-3/4 bg-gray-200 rounded-md" />
+                    <div className="h-3.5 w-1/2 bg-gray-100 rounded-md mt-2" />
+                    <div className="h-6 w-1/3 bg-gray-200 rounded-md mt-4" />
+                  </div>
+                  {/* Specs Skeleton */}
+                  <div className="grid grid-cols-3 gap-2 border-t border-b border-gray-100 py-3 my-4">
+                    {[...Array(3)].map((_, idx) => (
+                      <div key={idx} className="text-center space-y-1">
+                        <div className="h-2 w-10 bg-gray-100 rounded mx-auto" />
+                        <div className="h-3.5 w-8 bg-gray-200 rounded mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Action buttons Skeleton */}
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-9 bg-gray-100 rounded-xl" />
+                    <div className="w-10 h-9 bg-gray-100 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'active' && !loading && (
           <div>
             {listings.length === 0 ? (
               <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/55">
@@ -261,7 +332,7 @@ export default function OwnerListings() {
                         </p>
                         
                         <p className="text-xl font-black text-[#1A1A1A] mt-4 leading-none">
-                          Rs. {parseInt(listing.price || listing.rentPerMonth || '0').toLocaleString()}
+                          Rs. {Number(listing.price || listing.rentPerMonth || 0).toLocaleString()}
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
                         </p>
                       </div>

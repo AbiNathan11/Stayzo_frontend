@@ -18,7 +18,7 @@ export default function TenantDashboardLayout({
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -31,7 +31,11 @@ export default function TenantDashboardLayout({
         });
 
         // Live refresh from DB
-        fetch(`http://localhost:3001/api/auth/profile/${email}`)
+        fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
           .then(res => res.json())
           .then(data => {
             if (data.user) {
@@ -52,7 +56,7 @@ export default function TenantDashboardLayout({
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('stayzo_token');
+    sessionStorage.removeItem('stayzo_token');
     window.location.href = '/';
   };
 

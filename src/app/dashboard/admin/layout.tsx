@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
 
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('stayzo_token');
+    sessionStorage.removeItem('stayzo_token');
     localStorage.removeItem('stayzo_admin_profile');
     window.location.href = '/';
   };
