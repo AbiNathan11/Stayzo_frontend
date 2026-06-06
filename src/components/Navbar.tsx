@@ -58,7 +58,7 @@ export default function Navbar() {
 
   const getDashboardLink = () => {
     if (isAdmin) {
-      return '/dashboard/admin';
+      return 'http://localhost:3005';
     }
     if (isOwner) {
       return '/dashboard/owners';

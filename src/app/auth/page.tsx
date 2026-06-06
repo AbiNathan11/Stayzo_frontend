@@ -131,7 +131,7 @@ export default function TenantAuth() {
 
       const lowerEmail = email.toLowerCase();
       if (lowerEmail === 'stayzoavp@gmail.com' || lowerEmail.startsWith('admin@')) {
-        window.location.href = '/dashboard/admin';
+        window.location.href = 'http://localhost:3005';
       } else if (lowerEmail.includes('owner') || lowerEmail.includes('landlord') || role === 'landlord') {
         window.location.href = '/dashboard/owners';
       } else {
