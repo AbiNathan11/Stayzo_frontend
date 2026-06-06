@@ -14,6 +14,8 @@ export default function Navbar() {
   const [userInitial, setUserInitial] = useState('U');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -24,6 +26,8 @@ export default function Navbar() {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const email = payload.email || '';
           setUserEmail(email);
+          setIsOwner(!!payload.isOwner);
+          setIsAdmin(!!payload.isAdmin);
           if (payload.firstName) {
             setUserInitial(payload.firstName.charAt(0).toUpperCase());
           } else if (payload.email) {
@@ -53,11 +57,10 @@ export default function Navbar() {
   }, []);
 
   const getDashboardLink = () => {
-    const lowerEmail = userEmail.toLowerCase();
-    if (lowerEmail.startsWith('admin@')) {
-      return '/dashboard/admin';
+    if (isAdmin) {
+      return 'http://localhost:3005';
     }
-    if (lowerEmail.includes('owner') || lowerEmail.includes('landlord')) {
+    if (isOwner) {
       return '/dashboard/owners';
     }
     return '/dashboard/tenant';
