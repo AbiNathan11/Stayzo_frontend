@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { 
@@ -30,7 +31,7 @@ export default function LandingPage() {
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.fullName || !contactForm.email || !contactForm.message) {
-      alert("Please fill in all required fields (Full name, Email, and Message).");
+      toast.error("Please fill in all required fields (Full name, Email, and Message).");
       return;
     }
     const existing = localStorage.getItem('stayzo_contact_messages');
@@ -47,7 +48,7 @@ export default function LandingPage() {
     };
     messages.unshift(newMsg); // Newest messages at top
     localStorage.setItem('stayzo_contact_messages', JSON.stringify(messages));
-    alert("Thank you! Your message has been sent successfully.");
+    toast.success("Thank you! Your message has been sent successfully.");
     setContactForm({ fullName: '', email: '', subject: '', message: '' });
   };
 
@@ -176,6 +177,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#4F46E5] selection:text-white">
+      <Toaster position="top-right" />
       <style>{`
         .fade-in-section {
           opacity: 0;

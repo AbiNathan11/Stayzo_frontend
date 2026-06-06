@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 import {
   ChevronLeft,
   UploadCloud,
@@ -146,7 +147,7 @@ export default function StartListingPage() {
     // Validation for Step 1: Address Fields
     if (currentStep === 1) {
       if (!formData.street.trim() || !formData.city.trim() || !formData.postalCode.trim()) {
-        alert("Please provide at least a Street Name, City, and Postal Code to continue.");
+        toast.error("Please provide at least a Street Name, City, and Postal Code to continue.");
         return;
       }
     }
@@ -155,31 +156,31 @@ export default function StartListingPage() {
     if (currentStep === 2) {
       if (formData.ownershipType === "Broker") {
         if (!formData.realOwnerName.trim() || !formData.realOwnerEmail.trim()) {
-          alert("Please provide the property owner's full name and email address.");
+          toast.error("Please provide the property owner's full name and email address.");
           return;
         }
       }
       if (!formData.waterBillImage) {
-        alert("Please upload an electrical or water bill for property verification.");
+        toast.error("Please upload an electrical or water bill for property verification.");
         return;
       }
     }
 
     // Validation for Step 4: Category
     if (currentStep === 4 && !formData.propertyCategory) {
-      alert("Please select a property category that best describes your place.");
+      toast.error("Please select a property category that best describes your place.");
       return;
     }
 
     // Validation for Step 5: Rent
     if (currentStep === 5 && !formData.rentPerMonth) {
-      alert("Please specify a monthly rent amount.");
+      toast.error("Please specify a monthly rent amount.");
       return;
     }
 
     // Validation for Step 6: Cover Photo
     if (currentStep === 6 && !formData.images[0]) {
-      alert("Please upload at least a Cover Photo for your property listing.");
+      toast.error("Please upload at least a Cover Photo for your property listing.");
       return;
     }
 
@@ -237,15 +238,15 @@ export default function StartListingPage() {
 
         if (res.ok) {
           localStorage.removeItem('stayzo_listing_draft');
-          alert("Listing submitted successfully! Images have been saved to Cloudinary.");
+          toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
           router.push("/dashboard/owners/listings");
         } else {
           const errData = await res.json();
-          alert("Failed to submit listing: " + (errData.error || "Unknown error"));
+          toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
         }
       } catch (err) {
         console.error("Error submitting listing:", err);
-        alert("An error occurred while submitting. Please check your network and try again.");
+        toast.error("An error occurred while submitting. Please check your network and try again.");
       } finally {
         setIsSubmitting(false);
       }
@@ -264,6 +265,7 @@ export default function StartListingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
+      <Toaster position="top-right" />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
         <Link href="/" className="flex items-center space-x-2 group">
