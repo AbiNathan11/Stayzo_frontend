@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, User, ArrowRight, Search, Bookmark, Bell
+  Menu, X, User, ArrowRight, Search, Bookmark, Bell
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -13,6 +13,7 @@ export default function Navbar() {
   const [userEmail, setUserEmail] = useState('');
   const [userInitial, setUserInitial] = useState('U');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -175,10 +176,114 @@ export default function Navbar() {
         )}
 
         {/* Mobile Menu Toggle */}
-        <div className="lg:hidden">
-          <Menu className="w-6 h-6 text-[#1A1A1A]" />
+        <div className="lg:hidden flex items-center">
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-1 focus:outline-none cursor-pointer"
+            aria-label="Toggle Menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-6 h-6 text-[#1A1A1A]" />
+            ) : (
+              <Menu className="w-6 h-6 text-[#1A1A1A]" />
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-x-4 top-[84px] bg-white/95 backdrop-blur-md z-45 flex flex-col p-6 animate-in fade-in slide-in-from-top-5 duration-300 pointer-events-auto border border-gray-100 rounded-3xl shadow-xl lg:hidden">
+          <div className="flex flex-col space-y-5 text-xs font-bold uppercase tracking-wider">
+            <Link 
+              href="/" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`${pathname === '/' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
+            >
+              Home
+            </Link>
+            <a 
+              href="/#features" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+            >
+              Features
+            </a>
+            <a 
+              href="/#how-it-works" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+            >
+              Process
+            </a>
+            <a 
+              href="/#testimonials" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+            >
+              Testimonials
+            </a>
+            <a 
+              href="/#contact" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+            >
+              Contact
+            </a>
+            
+            <div className="h-px bg-gray-100 my-1"></div>
+            
+            {isLoggedIn ? (
+              <div className="flex flex-col space-y-4 pt-1">
+                <Link 
+                  href={getDashboardLink()} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 text-[#1A1A1A] py-1.5"
+                >
+                  <div className="relative shrink-0">
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="User Profile"
+                        className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-[10px] font-bold">
+                        {userInitial}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs uppercase font-extrabold tracking-wider">Dashboard</span>
+                </Link>
+                <Link 
+                  href="/dashboard/owners"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="bg-[#1A1A1A] text-white px-5 py-3 rounded-full text-xs font-extrabold tracking-wider uppercase text-center transition hover:bg-black"
+                >
+                  I am a landlord
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-4 pt-1">
+                <Link 
+                  href="/auth" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+                >
+                  Login
+                </Link>
+                <Link 
+                  href="/auth" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="bg-[#1A1A1A] text-white px-5 py-3 rounded-full text-xs font-extrabold tracking-wider uppercase text-center transition hover:bg-black"
+                >
+                  I am a landlord
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
