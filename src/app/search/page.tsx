@@ -354,6 +354,19 @@ function SearchContent() {
                   <div className="flex-1 flex flex-col justify-between pt-1">
                     <div>
                       <h3 className="font-semibold text-gray-900 text-sm md:text-base leading-snug group-hover:text-black transition-colors">{listing.title}</h3>
+                      
+                      {listing.noisePrediction && (
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                            listing.noisePrediction.label === 'Low'    ? 'text-emerald-700 bg-emerald-50 border-emerald-100' :
+                            listing.noisePrediction.label === 'Medium' ? 'text-amber-700 bg-amber-50 border-amber-100' :
+                            'text-rose-700 bg-rose-50 border-rose-100'
+                          }`}>
+                            🔊 {listing.noisePrediction.label} Noise
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center text-sm text-gray-500 mt-1 font-normal flex-wrap">
                         <span>{listing.price} <span className="text-xs text-gray-400 font-normal">/ mo</span></span>
                         <span className="mx-1.5">•</span>

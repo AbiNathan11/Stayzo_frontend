@@ -9,6 +9,14 @@ import {
   CheckCircle, Calendar, MapPin, Sparkles, Star,
   Play, Compass, ArrowLeft, X, Check, ExternalLink, MessageCircle
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useNearbyAmenities } from '@/hooks/useNearbyAmenities';
+import type { AmenityCategory } from '@/services/google/places';
+
+// Dynamically import map component to avoid SSR issues
+const PropertyMap      = dynamic(() => import('@/components/maps/PropertyMap'),      { ssr: false, loading: () => <div className="w-full h-[320px] rounded-3xl bg-gray-100 animate-pulse" /> });
+const NearbyAmenities  = dynamic(() => import('@/components/maps/NearbyAmenities'),  { ssr: false });
+const NoiseAnalysisCard = dynamic(() => import('@/components/maps/NoiseAnalysisCard'), { ssr: false });
 
 // ── DB-aligned interface ──────────────────────────────────────────────────────
 interface Property {
@@ -35,6 +43,15 @@ interface Property {
     lastName: string | null;
     email: string;
   };
+  latitude: number | null;
+  longitude: number | null;
+  noisePrediction?: {
+    noiseLevelScore: number;
+    label: 'Low' | 'Medium' | 'High';
+    color: 'green' | 'yellow' | 'red';
+    explanation: string;
+    factors: { name: string; contribution: number; description: string }[];
+  } | null;
 }
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80';
@@ -55,6 +72,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | null>(null);
   const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
+  const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
 
   // ── Fetch property by ID ────────────────────────────────────────────────────
   useEffect(() => {
@@ -134,6 +152,10 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   const fullAddress = property
     ? [property.address, property.city, property.state, property.zipCode].filter(Boolean).join(', ')
     : '';
+
+  // ── Nearby amenities via Google Maps APIs ───────────────────────────────────
+  const { coords, amenities, loading: amenitiesLoading, error: amenitiesError } =
+    useNearbyAmenities(fullAddress || null, property?.latitude, property?.longitude, 3000);
 
   // ── Loading / Error states ──────────────────────────────────────────────────
   if (loading) return (
@@ -417,35 +439,67 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               </div>
             </div>
 
-            {/* Map */}
-            {property.city && (
-              <div className="border-t border-gray-100 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Location</h4>
-                  <a
-                    href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddress)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#1A1A1A] hover:underline"
-                  >
-                    <ExternalLink className="w-3 h-3" />Open in Maps
-                  </a>
-                </div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex items-center gap-1.5 bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1.5 rounded-full">
-                    <MapPin className="w-3 h-3" />{fullAddress}
-                  </div>
-                </div>
-                <div className="relative w-full h-[280px] rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
-                  <iframe
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik&query=${encodeURIComponent(fullAddress)}`}
-                    className="w-full h-full border-none"
-                    style={{ filter: 'grayscale(100%) contrast(88%) brightness(104%)' }}
-                    title={`Map of ${fullAddress}`}
-                    loading="lazy"
-                  />
-                </div>
+            {/* ── Google Map Section ────────────────────────────────────────── */}
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Location &amp; Neighbourhood</h4>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#1A1A1A] hover:underline"
+                >
+                  <ExternalLink className="w-3 h-3" />Open in Google Maps
+                </a>
               </div>
-            )}
+
+              {/* Address pill */}
+              {fullAddress && (
+                <div className="inline-flex items-center gap-1.5 bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1.5 rounded-full">
+                  <MapPin className="w-3 h-3" />{fullAddress}
+                </div>
+              )}
+
+              {/* Interactive Google Map */}
+              {coords ? (
+                <PropertyMap
+                  coords={coords}
+                  amenities={amenities}
+                  propertyTitle={property.title}
+                  propertyImage={images[0]}
+                  activeCategories={mapActiveCategories}
+                  className="h-[320px]"
+                />
+              ) : (
+                <div className="w-full h-[320px] bg-gray-100 rounded-3xl flex items-center justify-center">
+                  {amenitiesLoading
+                    ? <div className="animate-pulse flex flex-col items-center gap-2"><div className="w-8 h-8 rounded-full bg-gray-300" /><div className="h-3 w-24 bg-gray-200 rounded" /></div>
+                    : <p className="text-xs text-gray-400 font-semibold">Map unavailable for this address.</p>}
+                </div>
+              )}
+            </div>
+
+            {/* ── Nearby Amenities Section ──────────────────────────────────────── */}
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nearby Amenities</h4>
+                {!amenitiesLoading && (
+                  <span className="text-[10px] font-extrabold text-gray-400 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full">
+                    within 3 km
+                  </span>
+                )}
+              </div>
+              <NearbyAmenities
+                amenities={amenities}
+                loading={amenitiesLoading}
+                error={amenitiesError}
+                onCategoryChange={setMapActiveCategories}
+              />
+            </div>
+
+            {/* ── Noise Level Analysis Section ─────────────────────────────────── */}
+            <div className="border-t border-gray-100 pt-6">
+              <NoiseAnalysisCard noisePrediction={property.noisePrediction} />
+            </div>
           </div>
 
           {/* Right Column */}
