@@ -34,6 +34,13 @@ interface Listing {
   panoramaImage?: string;
   status: string;
   createdAt: string;
+  noisePrediction?: {
+    noiseLevelScore: number;
+    label: 'Low' | 'Medium' | 'High';
+    color: 'green' | 'yellow' | 'red';
+    explanation: string;
+    factors: any[];
+  } | null;
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────────────────
@@ -310,8 +317,19 @@ export default function OwnerListings() {
                         alt={listing.title}
                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
                       />
-                      <div className="absolute top-4 left-4 bg-black text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
-                        Active
+                      <div className="absolute top-4 left-4 flex gap-2">
+                        <span className="bg-black text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
+                          Active
+                        </span>
+                        {listing.noisePrediction && (
+                          <span className={`text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md border ${
+                            listing.noisePrediction.label === 'Low'    ? 'bg-emerald-600 border-emerald-500' :
+                            listing.noisePrediction.label === 'Medium' ? 'bg-amber-500 border-amber-400' :
+                            'bg-rose-600 border-rose-500'
+                          }`}>
+                            🔊 {listing.noisePrediction.label} Noise
+                          </span>
+                        )}
                       </div>
                       {listing.panoramaImage && (
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-purple-700 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
