@@ -198,7 +198,7 @@ export default function LandingPage() {
         {/* Static Map Background Photo (styled with gradient mask for legibility) */}
         <div className="absolute inset-0 z-0 select-none">
           <img 
-            src="/map.png"
+            src="/map.jpg"
             alt="Sri Lanka Regional Map Background"
             className="w-full h-full object-cover opacity-[0.9] filter contrast-[1.08] brightness-[0.98] transition-opacity duration-500"
           />
