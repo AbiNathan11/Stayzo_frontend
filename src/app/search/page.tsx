@@ -43,6 +43,7 @@ function SearchContent() {
   const [activePropertyId, setActivePropertyId] = useState<string | number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -73,6 +74,7 @@ function SearchContent() {
       apiUrl += `?${queryString}`;
     }
 
+    setLoading(true);
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
@@ -92,8 +94,12 @@ function SearchContent() {
         }));
         setListings(mapped);
         if (mapped.length > 0) setActivePropertyId(mapped[0].id);
+        setLoading(false);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [searchParams]);
 
   const handleBookmarkToggle = (id: string, e: React.MouseEvent) => {
@@ -290,7 +296,18 @@ function SearchContent() {
 
           {/* Cards Grid (Square shape) */}
           <div className={`grid ${gridColsClass} gap-6`}>
-            {listings.length === 0 ? (
+            {loading ? (
+              [...Array(8)].map((_, i) => (
+                <div key={i} className="flex flex-col animate-pulse">
+                  <div className="w-full aspect-[4/3] rounded-2xl bg-gray-200 mb-2 shrink-0" />
+                  <div className="space-y-2 pt-1 flex-1">
+                    <div className="h-4.5 w-3/4 bg-gray-300 rounded-md" />
+                    <div className="h-3.5 w-1/2 bg-gray-250 rounded-md" />
+                    <div className="h-3 w-2/3 bg-gray-205 rounded-md" />
+                  </div>
+                </div>
+              ))
+            ) : listings.length === 0 ? (
               <div className="col-span-full py-12 text-center text-gray-500 font-semibold">
                 No properties found matching your search.
               </div>

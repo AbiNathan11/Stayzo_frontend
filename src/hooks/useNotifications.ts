@@ -5,7 +5,7 @@ const API = 'http://localhost:3001';
 
 function getToken() {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('stayzo_token');
+  return sessionStorage.getItem('stayzo_token');
 }
 
 export interface AppNotification {

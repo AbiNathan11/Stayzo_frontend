@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function TenantAuth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -17,6 +18,24 @@ export default function TenantAuth() {
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    if (mode === 'signup') {
+      if (!firstName.trim()) {
+        toast.error('First name is required.');
+        return;
+      }
+      if (!lastName.trim()) {
+        toast.error('Last name is required.');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -27,9 +46,10 @@ export default function TenantAuth() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+      toast.success('Secure verification code sent!');
       setStep('otp');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -37,6 +57,10 @@ export default function TenantAuth() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!otp || otp.trim().length !== 6) {
+      toast.error('Please enter a 6-digit verification code.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -48,7 +72,8 @@ export default function TenantAuth() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
 
-      if (data.token) localStorage.setItem('stayzo_token', data.token);
+      if (data.token) sessionStorage.setItem('stayzo_token', data.token);
+      toast.success('Successfully authenticated!');
 
       const lowerEmail = email.toLowerCase();
       if (lowerEmail === 'stayzoavp@gmail.com' || lowerEmail.startsWith('admin@')) {
@@ -59,7 +84,7 @@ export default function TenantAuth() {
         window.location.href = '/';
       }
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -113,7 +138,7 @@ export default function TenantAuth() {
                   : "Join Stayzo today to find your perfect stay. We'll verify you via email."}
               </p>
 
-              <form onSubmit={handleSendCode} className="space-y-6">
+              <form onSubmit={handleSendCode} noValidate className="space-y-6">
 
                 {mode === 'signup' && (
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -142,7 +167,7 @@ export default function TenantAuth() {
                   </div>
                 )}
 
-                {error && <p className="text-red-500 text-xs font-bold mb-4">{error}</p>}
+
 
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">Email Address</label>
@@ -201,7 +226,7 @@ export default function TenantAuth() {
               </div>
 
               <form onSubmit={handleVerify} className="space-y-6">
-                {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
+
 
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold block">Secure Login Code</label>

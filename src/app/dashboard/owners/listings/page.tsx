@@ -133,7 +133,7 @@ export default function OwnerListings() {
 
   // Decode JWT once on mount to get the real owner ID
   useEffect(() => {
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (token) {
       const payload = decodeToken(token);
       if (payload?.id) setOwnerId(payload.id);
@@ -247,9 +247,38 @@ export default function OwnerListings() {
 
         {/* ── Active Listings Tab ── */}
         {activeTab === 'active' && loading && (
-          <div className="py-20 text-center">
-            <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Loading your listings...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div 
+                key={i}
+                className="bg-white border border-gray-200 rounded-3xl overflow-hidden flex flex-col h-[380px]"
+              >
+                {/* Image Area Skeleton */}
+                <div className="h-[180px] bg-gray-100 shrink-0" />
+                {/* Card Content Skeleton */}
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="h-5 w-3/4 bg-gray-200 rounded-md" />
+                    <div className="h-3.5 w-1/2 bg-gray-100 rounded-md mt-2" />
+                    <div className="h-6 w-1/3 bg-gray-200 rounded-md mt-4" />
+                  </div>
+                  {/* Specs Skeleton */}
+                  <div className="grid grid-cols-3 gap-2 border-t border-b border-gray-100 py-3 my-4">
+                    {[...Array(3)].map((_, idx) => (
+                      <div key={idx} className="text-center space-y-1">
+                        <div className="h-2 w-10 bg-gray-100 rounded mx-auto" />
+                        <div className="h-3.5 w-8 bg-gray-200 rounded mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Action buttons Skeleton */}
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-9 bg-gray-100 rounded-xl" />
+                    <div className="w-10 h-9 bg-gray-100 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

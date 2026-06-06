@@ -71,7 +71,7 @@ export default function TenantOverviewPage() {
   const [profileSuccess, setProfileSuccess] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -86,7 +86,11 @@ export default function TenantOverviewPage() {
         setEditLastName(payload.lastName || '');
 
         // Fetch live profile from DB
-        fetch(`http://localhost:3001/api/auth/profile/${email}`)
+        fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
           .then(res => res.json())
           .then(data => {
             if (data.user) {
@@ -135,12 +139,14 @@ export default function TenantOverviewPage() {
     e.preventDefault();
     if (!user || !editFirstName.trim()) return;
 
+    const token = sessionStorage.getItem('stayzo_token');
     setUpdatingProfile(true);
     try {
       const response = await fetch('http://localhost:3001/api/auth/update-profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           email: user.email,

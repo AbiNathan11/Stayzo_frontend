@@ -53,7 +53,7 @@ function ChatPageContent() {
 
   // Decode user from token
   useEffect(() => {
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));

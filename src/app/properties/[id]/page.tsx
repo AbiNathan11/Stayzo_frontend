@@ -90,7 +90,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
     : '';
 
   const handleChatWithOwner = async () => {
-    const token = localStorage.getItem('stayzo_token');
+    const token = sessionStorage.getItem('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to chat with the owner.');
       setTimeout(() => {
@@ -137,10 +137,103 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
 
   // ── Loading / Error states ──────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="text-center space-y-4">
-        <div className="w-10 h-10 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading property…</p>
+    <div className="min-h-screen bg-white text-[#1A1A1A] font-sans flex flex-col relative animate-pulse">
+      <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-8 lg:py-12">
+        {/* Breadcrumb Skeleton */}
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
+          <div className="h-4 w-32 bg-gray-200 rounded-lg" />
+          <div className="h-4 w-28 bg-gray-200 rounded-lg" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Main Image Slider Skeleton */}
+            <div>
+              <div className="h-[420px] w-full bg-gray-100 rounded-[32px]" />
+              {/* Thumbnails Skeleton */}
+              <div className="grid grid-cols-6 gap-3 mt-4">
+                {[...Array(5)].map((_, idx) => (
+                  <div key={idx} className="h-16 md:h-20 rounded-2xl bg-gray-100" />
+                ))}
+                <div className="h-16 md:h-20 rounded-2xl bg-gray-100" />
+              </div>
+            </div>
+
+            {/* Title & Address Skeleton */}
+            <div className="space-y-3">
+              <div className="h-9 w-3/4 bg-gray-200 rounded-xl" />
+              <div className="h-4 w-1/2 bg-gray-100 rounded-lg" />
+            </div>
+
+            {/* Amenities Skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 w-20 bg-gray-200 rounded-md" />
+              <div className="flex flex-wrap gap-2.5">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-9 w-24 bg-gray-100 rounded-xl" />
+                ))}
+              </div>
+            </div>
+
+            {/* Description Skeleton */}
+            <div className="border-t border-gray-100 pt-6 space-y-3">
+              <div className="h-4 w-32 bg-gray-200 rounded-md" />
+              <div className="h-3 w-full bg-gray-100 rounded-md" />
+              <div className="h-3 w-5/6 bg-gray-100 rounded-md" />
+              <div className="h-3 w-2/3 bg-gray-100 rounded-md" />
+            </div>
+
+            {/* Highlights Grid Skeleton */}
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+              <div className="h-4 w-24 bg-gray-200 rounded-md" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                    <div className="w-10 h-10 rounded-xl bg-white shadow-sm shrink-0 border border-gray-100" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-12 bg-gray-200 rounded" />
+                      <div className="h-4 w-8 bg-gray-300 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Owner Card Skeleton */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gray-200 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-24 bg-gray-200 rounded-md" />
+                <div className="h-3.5 w-16 bg-gray-200 rounded-md" />
+              </div>
+            </div>
+
+            {/* Pricing & Booking Card Skeleton */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col space-y-6">
+              <div className="space-y-2">
+                <div className="h-3 w-10 bg-gray-200 rounded" />
+                <div className="h-8 w-36 bg-gray-300 rounded-md" />
+              </div>
+              <div className="h-4 w-full bg-gray-100 rounded-md" />
+              
+              {/* Date Planner Skeleton */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="h-3.5 w-24 bg-[#1A1A1A]/10 rounded" />
+                <div className="h-9 w-full bg-gray-100 rounded-xl" />
+                <div className="h-11 w-full bg-gray-100 rounded-xl" />
+              </div>
+
+              <div className="space-y-3">
+                <div className="h-11 w-full bg-gray-300 rounded-xl" />
+                <div className="h-11 w-full bg-gray-200 rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

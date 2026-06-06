@@ -16,7 +16,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('stayzo_token');
+      const token = sessionStorage.getItem('stayzo_token');
       setIsLoggedIn(!!token);
       if (token) {
         try {
@@ -31,7 +31,11 @@ export default function Navbar() {
 
           // Live fetch profile image
           if (email) {
-            fetch(`http://localhost:3001/api/auth/profile/${email}`)
+            fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
               .then(res => res.json())
               .then(data => {
                 if (data.user && data.user.profileImage) {
