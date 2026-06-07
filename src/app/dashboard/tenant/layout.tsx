@@ -14,7 +14,7 @@ export default function TenantDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
+  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null; isOwner?: boolean } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
@@ -27,7 +27,8 @@ export default function TenantDashboardLayout({
           firstName: payload.firstName || 'Abiramy',
           lastName: payload.lastName || '',
           email: email,
-          profileImage: payload.profileImage || null
+          profileImage: payload.profileImage || null,
+          isOwner: !!payload.isOwner
         });
 
         // Live refresh from DB
@@ -48,10 +49,10 @@ export default function TenantDashboardLayout({
           })
           .catch(err => console.warn("Live profile fetch issue:", err));
       } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
       }
     } else {
-      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
     }
   }, []);
 
@@ -127,7 +128,7 @@ export default function TenantDashboardLayout({
         {/* Right utility options */}
         <div className="flex-1 flex justify-end items-center space-x-4">
           <Link 
-            href="/dashboard/owners"
+            href={user?.isOwner ? '/dashboard/owners' : '/auth?role=landlord'}
             className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
           >
             Switch to owner
