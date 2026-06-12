@@ -7,7 +7,7 @@ import { MapPin } from 'lucide-react';
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
     initGoogleMap?: () => void;
     _googleMapsLoaded?: boolean;
   }
@@ -21,6 +21,8 @@ interface PropertyMapProps {
   /** Filter which amenity categories to show markers for. Defaults to all. */
   activeCategories?: AmenityCategory[];
   className?: string;
+  draggable?: boolean;
+  onCoordinatesChange?: (coords: LatLng) => void;
 }
 
 /** Dynamically loads the Maps JS API script only once per page lifecycle */
@@ -157,10 +159,12 @@ export default function PropertyMap({
   propertyImage,
   activeCategories,
   className = '',
+  draggable = false,
+  onCoordinatesChange,
 }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<google.maps.Map | null>(null);
-  const markers = useRef<google.maps.Marker[]>([]);
+  const mapInstance = useRef<any>(null);
+  const markers = useRef<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
@@ -193,7 +197,7 @@ export default function PropertyMap({
       mapInstance.current = map;
 
       // Generate custom marker icon (pin with property image or fallback)
-      let markerIcon: google.maps.Icon | undefined = undefined;
+      let markerIcon: any = undefined;
       try {
         const markerIconUrl = propertyImage 
           ? await createCustomMarkerIcon(propertyImage) 
@@ -211,10 +215,11 @@ export default function PropertyMap({
       }
 
       // Property marker
-      new window.google.maps.Marker({
+      const mainMarker = new window.google.maps.Marker({
         position: coords,
         map,
         title: propertyTitle,
+        draggable: draggable,
         icon: markerIcon || {
           path: window.google.maps.SymbolPath.CIRCLE,
           scale: 14,
@@ -225,6 +230,15 @@ export default function PropertyMap({
         },
         zIndex: 10,
       });
+
+      if (draggable && onCoordinatesChange) {
+        mainMarker.addListener('dragend', () => {
+          const pos = mainMarker.getPosition();
+          if (pos) {
+            onCoordinatesChange({ lat: pos.lat(), lng: pos.lng() });
+          }
+        });
+      }
 
       setMapReady(true);
     } catch (err: any) {
