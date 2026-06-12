@@ -147,7 +147,7 @@ export default function TenantAgreementPage() {
   const fetchAgreements = async (email: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/agreements?tenantEmail=${encodeURIComponent(email)}`);
+      const response = await fetch(`http://localhost:3001/api/agreements?tenantEmail=${encodeURIComponent(email)}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         setAgreements(data);

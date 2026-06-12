@@ -203,7 +203,7 @@ export default function TenantOverviewPage() {
 
   const fetchAgreements = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/agreements?tenantEmail=${encodeURIComponent(email)}`);
+      const response = await fetch(`http://localhost:3001/api/agreements?tenantEmail=${encodeURIComponent(email)}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         setAgreements(data);
@@ -233,6 +233,7 @@ export default function TenantOverviewPage() {
 
         // Fetch live profile from DB
         fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+          cache: 'no-store',
           headers: {
             'Authorization': `Bearer ${token}`
           }
