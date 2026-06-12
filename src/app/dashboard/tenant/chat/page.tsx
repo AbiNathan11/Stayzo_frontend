@@ -67,7 +67,10 @@ function ChatPageContent() {
   // Fetch all threads for this tenant
   const fetchThreads = () => {
     if (!userId) return;
-    fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=tenant`)
+    const token = sessionStorage.getItem('stayzo_token');
+    fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=tenant`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.threads) {
@@ -98,7 +101,10 @@ function ChatPageContent() {
   // Fetch specific thread details and messages
   useEffect(() => {
     if (activeThreadId) {
-      fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
+      const token = sessionStorage.getItem('stayzo_token');
+      fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
         .then(res => res.json())
         .then(data => {
           if (data.thread) {
@@ -113,6 +119,14 @@ function ChatPageContent() {
               status: m.isRead ? "READ" : "DELIVERED"
             }));
             setMessages(formattedMsgs);
+
+            // Dynamic Initial Dropdown Value
+            const lastTranslatedMsg = [...formattedMsgs].reverse().find(m => m.translatedLanguage);
+            if (lastTranslatedMsg) {
+              setLanguage(lastTranslatedMsg.translatedLanguage);
+            } else {
+              setLanguage("Original");
+            }
           }
         })
         .catch(err => console.error("Failed to fetch thread:", err));
@@ -141,9 +155,10 @@ function ChatPageContent() {
     ]);
     setInput("");
 
+    const token = sessionStorage.getItem('stayzo_token');
     fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}/message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ senderId: userId, text })
     })
       .then(res => res.json())
@@ -151,7 +166,9 @@ function ChatPageContent() {
         if (data.message) {
           // Re-fetch to get correct IDs and status
           fetchThreads();
-          fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`)
+          fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
             .then(res => res.json())
             .then(data => {
               if (data.thread) {
@@ -272,9 +289,9 @@ function ChatPageContent() {
               className="text-[11px] font-bold text-[#1A1A1A] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <option value="Original">Original</option>
-              <option value="Eng">English</option>
-              <option value="Sin">Sinhala</option>
-              <option value="Tam">Tamil</option>
+              <option value="English">English</option>
+              <option value="Sinhala">Sinhala</option>
+              <option value="Tamil">Tamil</option>
             </select>
             <button
               id="chat-more-options-btn"
@@ -442,24 +459,9 @@ function ChatPageContent() {
 }
 
 function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, globalLanguage: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>> }) {
-  const [showTranslation, setShowTranslation] = useState(false);
+  // Initialize to true if a translation already exists in the database
+  const [showTranslation, setShowTranslation] = useState(!!msg.translatedText);
   const [isTranslating, setIsTranslating] = useState(false);
-
-  // Auto-show translation if dropdown matches stored translation
-  useEffect(() => {
-    if (globalLanguage !== "Original" && msg.translatedLanguage === globalLanguage && msg.translatedText) {
-      setShowTranslation(true);
-    } else {
-      setShowTranslation(false);
-    }
-  }, [globalLanguage, msg.translatedLanguage, msg.translatedText]);
-
-  // Auto-translate if global language changes to a specific language, and we don't have it yet
-  useEffect(() => {
-    if (globalLanguage !== "Original" && msg.translatedLanguage !== globalLanguage && !isTranslating && msg.id.length > 20) {
-      handleTranslate(globalLanguage);
-    }
-  }, [globalLanguage]);
 
   const handleTranslate = async (targetLang: string) => {
     if (msg.translatedLanguage === targetLang && msg.translatedText) {
@@ -469,9 +471,10 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     
     setIsTranslating(true);
     try {
+      const token = sessionStorage.getItem('stayzo_token');
       const res = await fetch(`http://localhost:3001/api/chat/message/${msg.id}/translate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ targetLanguage: targetLang })
       });
       const data = await res.json();
@@ -494,12 +497,13 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     if (showTranslation) {
       setShowTranslation(false);
     } else {
-      if (msg.translatedLanguage === globalLanguage && msg.translatedText) {
+      if (msg.translatedText) {
+        // Lock to existing historical translation, do not re-translate
         setShowTranslation(true);
       } else if (globalLanguage !== "Original") {
         handleTranslate(globalLanguage);
       } else {
-        // Fallback if they click "See translation" when global is Original, just translate to English
+        // Fallback if they click "See translation" when global is Original
         handleTranslate("English");
       }
     }

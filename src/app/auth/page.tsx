@@ -21,15 +21,33 @@ export default function TenantAuth() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isUpgrading, setIsUpgrading] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlRole = params.get('role');
-      if (urlRole === 'landlord') {
-        setRole('landlord');
-      } else {
-        setRole('tenant');
+      const isLandlordUrl = urlRole === 'landlord';
+      setRole(isLandlordUrl ? 'landlord' : 'tenant');
+
+      const token = sessionStorage.getItem('stayzo_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.isOwner) {
+            window.location.href = '/dashboard/owners';
+          } else if (isLandlordUrl) {
+            setIsUpgrading(true);
+            setMode('signup');
+            setFirstName(payload.firstName || '');
+            setLastName(payload.lastName || '');
+            setEmail(payload.email || '');
+          } else {
+            window.location.href = '/dashboard/tenant';
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
   }, []);
@@ -195,7 +213,8 @@ export default function TenantAuth() {
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
+                        disabled={isUpgrading}
+                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                         placeholder="Jane"
                       />
                     </div>
@@ -206,7 +225,8 @@ export default function TenantAuth() {
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
+                        disabled={isUpgrading}
+                        className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                         placeholder="Doe"
                       />
                     </div>
@@ -220,7 +240,8 @@ export default function TenantAuth() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold"
+                    disabled={isUpgrading}
+                    className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                     placeholder="jane@example.com"
                   />
                 </div>
@@ -280,26 +301,28 @@ export default function TenantAuth() {
                 </button>
               </form>
 
-              <div className="mt-8 pt-8 border-t border-gray-100 text-center">
-                <p className="text-xs text-gray-400 font-semibold">
-                  {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{" "}
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'login' ? 'signup' : 'login');
-                      setFirstName('');
-                      setLastName('');
-                      setNicFront(null);
-                      setNicBack(null);
-                      setNicFrontName('');
-                      setNicBackName('');
-                      setError('');
-                    }}
-                    className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
-                  >
-                    {mode === 'login' ? 'Sign up' : 'Log in'}
-                  </button>
-                </p>
-              </div>
+              {!isUpgrading && (
+                <div className="mt-8 pt-8 border-t border-gray-100 text-center">
+                  <p className="text-xs text-gray-400 font-semibold">
+                    {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{" "}
+                    <button
+                      onClick={() => {
+                        setMode(mode === 'login' ? 'signup' : 'login');
+                        setFirstName('');
+                        setLastName('');
+                        setNicFront(null);
+                        setNicBack(null);
+                        setNicFrontName('');
+                        setNicBackName('');
+                        setError('');
+                      }}
+                      className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
+                    >
+                      {mode === 'login' ? 'Sign up' : 'Log in'}
+                    </button>
+                  </p>
+                </div>
+              )}
 
             </div>
           ) : (
