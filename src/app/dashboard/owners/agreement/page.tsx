@@ -67,8 +67,9 @@ const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
     description: 'A basic, short tenancy agreement covering only the absolute essentials (parties, address, rent, start date). Ideal for quick sub-leases or informal setups.',
     fields: [
       { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
+      { id: 'tenantEmail', label: 'Tenant Email Address', question: "What is the Tenant's Registered Email Address?", placeholder: 'e.g. tenant@example.com' },
       { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
-      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $1,200 / month' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 30,000 / month' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' }
     ],
     generateText: (values) => `SIMPLE TENANCY AGREEMENT
@@ -78,6 +79,7 @@ Date: ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', 
 1. PARTIES:
 This Agreement is made between Stayzo Properties (Landlord) and the Tenant:
 TENANT Name: ${values.tenantName || '___________________________'}
+TENANT Email: ${values.tenantEmail || '___________________________'}
 
 2. PROPERTY PREMISES:
 The Landlord agrees to rent to the Tenant the property located at:
@@ -108,18 +110,20 @@ Signature                                Signature`
     description: 'Our most popular template. Extends the simple template by including security deposits, advanced rent, lease duration, and standard covenants.',
     fields: [
       { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
+      { id: 'tenantEmail', label: 'Tenant Email Address', question: "What is the Tenant's Registered Email Address?", placeholder: 'e.g. tenant@example.com' },
       { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
-      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $1,800 / month' },
-      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. $3,000' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 45,000 / month' },
+      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. Rs 90,000' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the start date of the lease?', placeholder: 'e.g. June 1, 2026' },
       { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease term?', placeholder: 'e.g. 12 months' },
-      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 2 months rent ($3,600)' }
+      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 2 months rent (Rs 90,000)' }
     ],
     generateText: (values) => `STANDARD LEASE AGREEMENT
 
 THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between Stayzo Premier Properties (Landlord) and:
 
 TENANT: ${values.tenantName || '___________________________'}
+TENANT Email: ${values.tenantEmail || '___________________________'}
 
 1. PREMISES: Landlord hereby leases to Tenant the real property located at:
 PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
@@ -149,22 +153,24 @@ Signature                                Signature`
     description: 'A comprehensive, strict legal agreement. Adds sections for utilities responsibility, pet rules, late payment fees, and property maintenance terms to minimize disputes.',
     fields: [
       { id: 'tenantName', label: 'Tenant Name', question: "What is the Tenant's Full Name?", placeholder: 'e.g. Julianne Voss' },
+      { id: 'tenantEmail', label: 'Tenant Email Address', question: "What is the Tenant's Registered Email Address?", placeholder: 'e.g. tenant@example.com' },
       { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
-      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. $2,200 / month' },
-      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. $4,450' },
+      { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 60,000 / month' },
+      { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. Rs 120,000' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' },
       { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 months' },
-      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 3 months rent ($6,600)' },
+      { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 3 months rent (Rs 180,000)' },
       { id: 'utilities', label: 'Utilities Terms', question: 'Who is responsible for utility payments (water, electricity, gas, internet)?', placeholder: 'e.g. Tenant pays electricity and water; Landlord pays gas and internet.' },
-      { id: 'petPolicy', label: 'Pet Policy', question: 'What is the policy regarding pets in the property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a $300 pet fee; no aggressive breeds.' },
-      { id: 'lateFee', label: 'Late Rent Penalty', question: 'What is the penalty for late rent payments?', placeholder: 'e.g. A late fee of $50 plus 1% daily for payments made after the 5th of the month.' },
-      { id: 'maintenance', label: 'Maintenance Rules', question: 'Who handles property maintenance and minor repairs?', placeholder: 'e.g. Tenant handles repairs under $50; Landlord handles structural and appliance failures.' }
+      { id: 'petPolicy', label: 'Pet Policy', question: 'What is the policy regarding pets in the property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a Rs 20,000 pet fee; no aggressive breeds.' },
+      { id: 'lateFee', label: 'Late Rent Penalty', question: 'What is the penalty for late rent payments?', placeholder: 'e.g. A late fee of Rs 5,000 plus 1% daily for payments made after the 5th of the month.' },
+      { id: 'maintenance', label: 'Maintenance Rules', question: 'Who handles property maintenance and minor repairs?', placeholder: 'e.g. Tenant handles repairs under Rs 5,000; Landlord handles structural and appliance failures.' }
     ],
     generateText: (values) => `COMPREHENSIVE LEASE AGREEMENT
 
 THIS LEASE AGREEMENT is executed on this ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} by and between Stayzo Executive Properties (Landlord) and:
 
 TENANT: ${values.tenantName || '___________________________'}
+TENANT Email: ${values.tenantEmail || '___________________________'}
 
 1. DESCRIPTION OF PREMISES:
 Landlord leases to Tenant the premises located at:
@@ -436,19 +442,65 @@ export default function OwnerAgreementPage() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Load saved agreements from localStorage
-  useEffect(() => {
+  const [landlordUser, setLandlordUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
+
+  // Load saved agreements from backend database
+  const fetchAgreementsFromDb = async (email: string) => {
     try {
-      const stored = localStorage.getItem('stayzo_agreements_v2');
-      if (stored) {
-        setSavedAgreements(JSON.parse(stored));
+      const response = await fetch(`http://localhost:3001/api/agreements?landlordEmail=${encodeURIComponent(email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        const mapped: SavedAgreement[] = data.map((item: any) => ({
+          id: item.id,
+          templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
+          templateTitle: 'Rental Lease Agreement',
+          complexity: item.termLength === '12 Months' ? 'Standard' : 'Simple',
+          tenantName: item.tenantName,
+          propertyAddress: item.listingName,
+          rentAmount: `Rs ${item.monthlyRent.toLocaleString()}`,
+          dateCreated: new Date(item.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          visualTheme: 'classic-legal',
+          values: {
+            tenantName: item.tenantName,
+            tenantEmail: item.tenantEmail,
+            propertyAddress: item.listingName,
+            rentAmount: `Rs ${item.monthlyRent.toLocaleString()}`,
+            startDate: item.startDate,
+            duration: item.termLength,
+            depositAmount: `Rs ${item.securityDeposit.toLocaleString()}`
+          },
+          landlordSig: item.landlordSig || undefined,
+          tenantSig: item.tenantSig || undefined
+        }));
+        setSavedAgreements(mapped);
       }
     } catch (e) {
-      console.error("Failed to load saved agreements", e);
+      console.error("Failed to fetch agreements from DB", e);
     }
+  };
+
+  useEffect(() => {
+    let email = 'landlord@example.com';
+    const token = sessionStorage.getItem('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const u = {
+          firstName: payload.firstName || 'Owner',
+          lastName: payload.lastName || '',
+          email: payload.email || 'landlord@example.com'
+        };
+        setLandlordUser(u);
+        email = u.email;
+      } catch (e) {}
+    } else {
+      setLandlordUser({ firstName: 'Owner', lastName: '', email: 'landlord@example.com' });
+    }
+
+    fetchAgreementsFromDb(email);
   }, []);
 
-  // Save agreements to localStorage helper
+  // Save agreements to localStorage helper (unused now, but kept to prevent TS warnings)
   const saveAgreementsToLocalStorage = (agreements: SavedAgreement[]) => {
     try {
       localStorage.setItem('stayzo_agreements_v2', JSON.stringify(agreements));
@@ -675,33 +727,63 @@ export default function OwnerAgreementPage() {
     }));
   };
 
-  // Save to vault (localStorage)
-  const handleSaveToVault = () => {
+  // Save to database & vault
+  const handleSaveToVault = async () => {
     if (!selectedTemplate) return;
     
     const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
+    const tenantEmail = fieldValues.tenantEmail || '';
     const propertyAddress = fieldValues.propertyAddress || 'No Address Specified';
-    const rentAmount = fieldValues.rentAmount || 'N/A';
+    const rentAmountText = fieldValues.rentAmount || '0';
+    // Clean monthlyRent to Float
+    const monthlyRent = parseFloat(rentAmountText.replace(/[^0-9.]/g, '')) || 0;
+    const depositAmountText = fieldValues.depositAmount || '0';
+    const securityDeposit = parseFloat(depositAmountText.replace(/[^0-9.]/g, '')) || 0;
+    const termLength = fieldValues.duration || '12 Months';
+    const startDate = fieldValues.startDate || new Date().toLocaleDateString();
+    const endDate = fieldValues.endDate || ''; 
 
-    const newAgreement: SavedAgreement = {
-      id: 'agree_' + Date.now(),
-      templateId: selectedTemplate.id,
-      templateTitle: selectedTemplate.title,
-      complexity: selectedTemplate.complexity,
+    // Generate contract text
+    const contractText = selectedTemplate.generateText(fieldValues);
+
+    const body = {
       tenantName,
-      propertyAddress,
-      rentAmount,
-      dateCreated: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-      visualTheme: selectedTheme,
-      values: fieldValues,
-      landlordSig: landlordSig || undefined,
-      tenantSig: tenantSig || undefined
+      tenantEmail,
+      landlordName: landlordUser?.firstName ? `${landlordUser.firstName} ${landlordUser.lastName}` : 'Stayzo Landlord',
+      landlordEmail: landlordUser?.email || 'landlord@example.com',
+      monthlyRent,
+      securityDeposit,
+      termLength,
+      startDate,
+      endDate,
+      listingName: propertyAddress,
+      contractText,
+      landlordSig: landlordSig || ''
     };
 
-    const updated = [newAgreement, ...savedAgreements];
-    saveAgreementsToLocalStorage(updated);
+    try {
+      const response = await fetch('http://localhost:3001/api/agreements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
 
-    showToast("Agreement successfully saved to Stayzo Document Vault!");
+      if (!response.ok) {
+        throw new Error('Failed to save agreement to database');
+      }
+
+      const savedData = await response.json();
+      showToast("Agreement successfully saved to Database & Vault!");
+      
+      if (landlordUser?.email) {
+        fetchAgreementsFromDb(landlordUser.email);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving agreement to database. Please check your network connection.');
+    }
   };
 
   const handleDeleteAgreement = (id: string, name: string) => {

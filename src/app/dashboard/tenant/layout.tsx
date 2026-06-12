@@ -67,6 +67,7 @@ export default function TenantDashboardLayout({
     { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
     { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
     { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
+    { name: 'Agreement', href: '/dashboard/tenant/agreement', icon: FileText },
     { name: 'Relocation Services', href: '/dashboard/tenant/services', icon: Compass },
   ];
 
@@ -78,7 +79,7 @@ export default function TenantDashboardLayout({
         
         {/* Left Brand Logo */}
         <div className="flex-1 flex justify-start">
-          <Link href="/" className="flex items-center space-x-3 group">
+          <Link href="/" className="flex items-center space-x-2.5 group">
             <svg 
               viewBox="0 0 100 100" 
               fill="none" 
@@ -86,7 +87,7 @@ export default function TenantDashboardLayout({
               strokeWidth="5.5" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              className="w-8 h-8 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
+              className="w-5.5 h-5.5 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
             >
               {/* Outer gable */}
               <path d="M 20,90 L 20,40 L 50,15 L 80,40 L 80,90" />
@@ -99,7 +100,7 @@ export default function TenantDashboardLayout({
               {/* Central Door */}
               <rect x="46" y="72" width="8" height="18" />
             </svg>
-            <span className="text-2xl font-black tracking-tight text-[#1A1A1A]">Stayzo</span>
+            <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
           </Link>
         </div>
 

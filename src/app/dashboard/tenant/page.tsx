@@ -1,9 +1,136 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+import { io } from 'socket.io-client';
+
+// ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────
+function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(15, canvas.height - 30);
+    ctx.lineTo(canvas.width - 15, canvas.height - 30);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+  }, []);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(15, canvas.height - 30);
+    ctx.lineTo(canvas.width - 15, canvas.height - 30);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 3;
+  };
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    onSave(canvas.toDataURL('image/png'));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 flex flex-col items-center">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          width={360}
+          height={180}
+          className="bg-white cursor-crosshair border-b border-slate-100"
+        />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={handleClear}
+          type="button"
+          className="px-4 py-2 border border-slate-200 text-slate-700 hover:border-slate-400 text-[10px] font-black uppercase rounded-lg transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          onClick={handleSave}
+          type="button"
+          className="px-4 py-2 bg-[#1A1A1A] hover:bg-black text-white text-[10px] font-black uppercase rounded-lg transition-colors shadow-sm"
+        >
+          Apply Signature
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 interface PendingReview {
   id: number;
@@ -71,6 +198,21 @@ export default function TenantOverviewPage() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  // Agreement States
+  const [agreements, setAgreements] = useState<any[]>([]);
+
+  const fetchAgreements = async (email: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/agreements?tenantEmail=${encodeURIComponent(email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAgreements(data);
+      }
+    } catch (err) {
+      console.error("Error fetching agreements for tenant:", err);
+    }
+  };
+
   useEffect(() => {
     const token = sessionStorage.getItem('stayzo_token');
     if (token) {
@@ -85,6 +227,9 @@ export default function TenantOverviewPage() {
         });
         setEditFirstName(payload.firstName || 'Abiramy');
         setEditLastName(payload.lastName || '');
+
+        // Fetch live agreements from database
+        fetchAgreements(email);
 
         // Fetch live profile from DB
         fetch(`http://localhost:3001/api/auth/profile/${email}`, {
@@ -114,7 +259,6 @@ export default function TenantOverviewPage() {
       setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
     }
 
-    // Check if URL query contains edit=true to trigger edit profile modal
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('edit') === 'true') {
@@ -124,6 +268,9 @@ export default function TenantOverviewPage() {
       }
     }
   }, []);
+
+
+
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -297,35 +444,41 @@ export default function TenantOverviewPage() {
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Agreements</h3>
                 </div>
                 <div className="space-y-3">
-                  <div className="group flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-gray-100 transition cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-                        <FileSignature className="w-4 h-4 text-[#1A1A1A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#1A1A1A]">Villa Tropical Cana Lease</h4>
-                        <p className="text-xs text-gray-500 mt-0.5 font-medium">Signed: Oct 1, 2026</p>
-                      </div>
-                    </div>
-                    <button className="w-8 h-8 rounded-full bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] shadow-sm flex items-center justify-center transition duration-200">
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="group flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-gray-100 transition cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-                        <FileSignature className="w-4 h-4 text-[#1A1A1A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#1A1A1A]">Colombo Heights Agreement</h4>
-                        <p className="text-xs text-gray-500 mt-0.5 font-medium">Signed: Jan 15, 2024</p>
-                      </div>
-                    </div>
-                    <button className="w-8 h-8 rounded-full bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] shadow-sm flex items-center justify-center transition duration-200">
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {agreements.length === 0 ? (
+                    <p className="text-xs text-gray-400 font-semibold italic">No tenancy agreements assigned to your email.</p>
+                  ) : (
+                    <>
+                      {agreements.slice(0, 2).map((agreement) => (
+                        <div key={agreement.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-gray-100 transition gap-3">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
+                              <FileSignature className="w-4 h-4 text-[#1A1A1A]" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-[#1A1A1A]">{agreement.listingName}</h4>
+                              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                                Rent: Rs {agreement.monthlyRent?.toLocaleString()} | Status: <span className={`font-bold uppercase text-[10px] ${agreement.status === 'Active' ? 'text-emerald-600' : 'text-amber-500'}`}>{agreement.status}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <Link 
+                            href="/dashboard/tenant/agreement"
+                            className="bg-[#1A1A1A] text-white hover:bg-black text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition duration-200"
+                          >
+                            {agreement.status === 'Active' ? 'View' : 'Sign'}
+                          </Link>
+                        </div>
+                      ))}
+                      {agreements.length > 2 && (
+                        <Link 
+                          href="/dashboard/tenant/agreement"
+                          className="block text-center text-[10px] font-black text-[#4F46E5] hover:underline uppercase tracking-wider pt-1"
+                        >
+                          View all {agreements.length} agreements
+                        </Link>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -690,6 +843,8 @@ export default function TenantOverviewPage() {
           </div>
         </div>
       )}
+
+
 
     </div>
   );
