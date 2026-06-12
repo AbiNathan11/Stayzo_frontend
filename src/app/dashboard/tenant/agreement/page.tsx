@@ -144,6 +144,38 @@ export default function TenantAgreementPage() {
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [socket, setSocket] = useState<any>(null);
 
+  // Tenant NIC States for renting
+  const [nicFront, setNicFront] = useState<string | null>(null);
+  const [nicBack, setNicBack] = useState<string | null>(null);
+  const [nicFrontName, setNicFrontName] = useState<string>('');
+  const [nicBackName, setNicBackName] = useState<string>('');
+
+  const handleNICChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Only image files (.jpg, .jpeg, .png, etc.) are allowed for the NIC copy!');
+        e.target.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (side === 'front') {
+          setNicFront(base64String);
+          setNicFrontName(file.name);
+          toast.success('NIC front image uploaded successfully!');
+        } else {
+          setNicBack(base64String);
+          setNicBackName(file.name);
+          toast.success('NIC back image uploaded successfully!');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const fetchAgreements = async (email: string) => {
     setLoading(true);
     try {
@@ -221,6 +253,10 @@ export default function TenantAgreementPage() {
 
   const submitTenantSignature = async () => {
     if (!selectedAgreement || !tenantSig) return;
+    if (!nicFront || !nicBack) {
+      toast.error("Please upload both NIC Front and Back images to complete the lease verification.");
+      return;
+    }
 
     try {
       const response = await fetch(`http://localhost:3001/api/agreements/${selectedAgreement.id}/sign`, {
@@ -228,19 +264,23 @@ export default function TenantAgreementPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ tenantSig })
+        body: JSON.stringify({ tenantSig, nicFront, nicBack })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit signature to database.');
+        throw new Error('Failed to submit signature and verification to database.');
       }
 
       toast.success("Agreement signed successfully! Status is now Active.");
       setSelectedAgreement(null);
+      setNicFront(null);
+      setNicBack(null);
+      setNicFrontName('');
+      setNicBackName('');
       fetchAgreements(userEmail);
     } catch (err) {
       console.error(err);
-      toast.error("Error signing agreement database record.");
+      toast.error("Error signing agreement and uploading verification documents.");
     }
   };
 
@@ -510,9 +550,63 @@ export default function TenantAgreementPage() {
                       </div>
                     )}
 
+                    {/* NIC Upload Section (Required for Renting) */}
+                    <div className="space-y-4 border-t border-dashed border-gray-100 pt-4">
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verify Identity (Submit NIC to rent)</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Front of NIC */}
+                        <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC FRONT IMAGE *</label>
+                          <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-3 transition text-center cursor-pointer bg-[#F5F7F8]">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              required
+                              onChange={(e) => handleNICChange(e, 'front')}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="text-gray-400 text-[10px] font-semibold py-1">
+                              {nicFrontName ? (
+                                <span className="text-emerald-600 font-bold">✓ {nicFrontName}</span>
+                              ) : (
+                                <>Front copy <span className="text-[#1A1A1A] underline">browse</span></>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Back of NIC */}
+                        <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC BACK IMAGE *</label>
+                          <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-3 transition text-center cursor-pointer bg-[#F5F7F8]">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              required
+                              onChange={(e) => handleNICChange(e, 'back')}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="text-gray-400 text-[10px] font-semibold py-1">
+                              {nicBackName ? (
+                                <span className="text-emerald-600 font-bold">✓ {nicBackName}</span>
+                              ) : (
+                                <>Back copy <span className="text-[#1A1A1A] underline">browse</span></>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="flex gap-3">
                       <button
-                        onClick={() => setSelectedAgreement(null)}
+                        onClick={() => {
+                          setSelectedAgreement(null);
+                          setNicFront(null);
+                          setNicBack(null);
+                          setNicFrontName('');
+                          setNicBackName('');
+                        }}
                         type="button"
                         className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-2xl py-3 text-xs font-bold transition"
                       >
@@ -520,10 +614,10 @@ export default function TenantAgreementPage() {
                       </button>
                       <button
                         onClick={submitTenantSignature}
-                        disabled={!tenantSig}
+                        disabled={!tenantSig || !nicFront || !nicBack}
                         type="button"
                         className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 ${
-                          !tenantSig
+                          !tenantSig || !nicFront || !nicBack
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-[#4F46E5] text-white hover:bg-[#4338CA] active:scale-95"
                         }`}
