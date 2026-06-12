@@ -28,28 +28,35 @@ export default function LandingPage() {
   
   const [contactForm, setContactForm] = useState({ fullName: '', email: '', subject: '', message: '' });
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.fullName || !contactForm.email || !contactForm.message) {
       toast.error("Please fill in all required fields (Full name, Email, and Message).");
       return;
     }
-    const existing = localStorage.getItem('stayzo_contact_messages');
-    const messages = existing ? JSON.parse(existing) : [];
-    const newMsg = {
-      id: `MSG-${Date.now()}`,
-      fullName: contactForm.fullName,
-      email: contactForm.email,
-      subject: contactForm.subject || 'General Inquiry',
-      message: contactForm.message,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      status: 'Unread'
-    };
-    messages.unshift(newMsg); // Newest messages at top
-    localStorage.setItem('stayzo_contact_messages', JSON.stringify(messages));
-    toast.success("Thank you! Your message has been sent successfully.");
-    setContactForm({ fullName: '', email: '', subject: '', message: '' });
+    try {
+      const res = await fetch('http://localhost:3001/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: contactForm.fullName,
+          email: contactForm.email,
+          subject: contactForm.subject || 'General Inquiry',
+          message: contactForm.message
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to send message');
+      }
+
+      toast.success("Thank you! Your message has been sent successfully.");
+      setContactForm({ fullName: '', email: '', subject: '', message: '' });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to send message. Please try again.");
+    }
   };
 
   useEffect(() => {

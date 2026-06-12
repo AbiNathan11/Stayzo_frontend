@@ -89,8 +89,8 @@ function SearchContent() {
           beds: item.bedrooms || 1,
           baths: item.bathrooms || 1,
           sqft: item.sqft || 1000,
-          price: `$${item.price}`,
-          address: `${item.city || 'Anytown'}, ${item.state || 'ST'}`
+          price: `Rs. ${Number(item.price).toLocaleString()}`,
+          address: item.address || `${item.city || 'Anytown'}, ${item.state || 'ST'}`
         }));
         setListings(mapped);
         if (mapped.length > 0) setActivePropertyId(mapped[0].id);

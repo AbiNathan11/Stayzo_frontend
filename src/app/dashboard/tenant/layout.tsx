@@ -67,6 +67,7 @@ export default function TenantDashboardLayout({
     { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
     { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
     { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
+    { name: 'Agreement', href: '/dashboard/tenant/agreement', icon: FileText },
     { name: 'Relocation Services', href: '/dashboard/tenant/services', icon: Compass },
   ];
 
@@ -78,28 +79,14 @@ export default function TenantDashboardLayout({
         
         {/* Left Brand Logo */}
         <div className="flex-1 flex justify-start">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <svg 
-              viewBox="0 0 100 100" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="5.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="w-8 h-8 text-[#1A1A1A] shrink-0 transition-transform group-hover:scale-105"
-            >
-              {/* Outer gable */}
-              <path d="M 20,90 L 20,40 L 50,15 L 80,40 L 80,90" />
-              {/* Middle gable */}
-              <path d="M 30,90 L 30,46 L 50,28 L 70,46 L 70,90" />
-              {/* High peak */}
-              <path d="M 40,90 L 40,24 L 50,15" />
-              {/* Inner gable */}
-              <path d="M 42,90 L 42,54 L 50,46 L 58,54 L 58,90" />
-              {/* Central Door */}
-              <rect x="46" y="72" width="8" height="18" />
-            </svg>
-            <span className="text-2xl font-black tracking-tight text-[#1A1A1A]">Stayzo</span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="flex items-end space-x-1 h-5">
+              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            </div>
+            <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
           </Link>
         </div>
 
