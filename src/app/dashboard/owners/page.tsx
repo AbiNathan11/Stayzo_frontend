@@ -19,14 +19,14 @@ export default function OwnerDashboard() {
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <Link 
           href="/dashboard/owners/start_listing"
-          className="flex items-center justify-center bg-[#1A1A1A] hover:bg-black text-white px-10 py-4 rounded-full text-xs font-bold tracking-widest uppercase transition shadow-md"
+          className="flex items-center justify-center bg-[#4F46E5] hover:bg-[#4338CA] text-white px-10 py-4 rounded-full text-xs font-bold tracking-widest uppercase transition shadow-md"
         >
           Get Started <ArrowRight className="w-4 h-4 ml-2" />
         </Link>
         
         <Link
           href="/dashboard/owners/learn_more"
-          className="flex items-center justify-center bg-transparent border border-[#1A1A1A]/20 hover:border-[#1A1A1A] text-[#1A1A1A] px-10 py-4 rounded-full text-xs font-bold tracking-widest uppercase transition"
+          className="flex items-center justify-center bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-10 py-4 rounded-full text-xs font-bold tracking-widest uppercase transition"
         >
           Learn More
         </Link>

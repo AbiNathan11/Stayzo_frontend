@@ -230,7 +230,7 @@ function ChatPageContent() {
                 onClick={() => setActiveThreadId(convo.id)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
                   convo.id === activeThreadId
-                    ? "bg-white border-l-[3px] border-l-[#1A1A1A]"
+                    ? "bg-white border-l-[3px] border-l-[#4F46E5]"
                     : "hover:bg-gray-50"
                 }`}
               >
@@ -247,8 +247,8 @@ function ChatPageContent() {
                 </p>
                 {convo.id === activeThreadId && (
                   <div className="mt-1.5 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]" />
-                    <span className="text-[9px] font-bold tracking-widest text-[#1A1A1A] uppercase">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5]" />
+                    <span className="text-[9px] font-bold tracking-widest text-[#4F46E5] uppercase">
                       Active Thread
                     </span>
                   </div>
@@ -347,7 +347,7 @@ function ChatPageContent() {
             <button
               id="chat-send-btn"
               onClick={sendMessage}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#1A1A1A] hover:bg-black rounded-full transition-colors shadow-md"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#4F46E5] hover:bg-[#4338CA] rounded-full transition-colors shadow-md"
               aria-label="Send message"
             >
               <Send className="w-3.5 h-3.5 text-white" />
@@ -448,7 +448,7 @@ function ChatPageContent() {
         {/* Schedule Site Visit */}
         <button
           id="chat-schedule-visit-btn"
-          className="w-full border-2 border-[#1A1A1A] text-[#1A1A1A] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#1A1A1A] hover:text-white transition-colors"
+          className="w-full border-2 border-[#4F46E5] text-[#4F46E5] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#4F46E5] hover:text-white transition-colors"
         >
           Schedule Site Visit
         </button>
@@ -518,7 +518,7 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
       <div
         className={`max-w-[68%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed font-medium ${
           msg.from === "me"
-            ? "bg-[#1A1A1A] text-white rounded-br-sm"
+            ? "bg-[#4F46E5] text-white rounded-br-sm"
             : "bg-gray-100 text-[#1A1A1A] rounded-bl-sm"
         }`}
       >

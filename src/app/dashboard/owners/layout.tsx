@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React from 'react';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, KeyRound, MessageSquare, 
-  CalendarCheck, FileSignature, User, Bell, ArrowRight
-} from 'lucide-react';
+import OwnerNavbar from '@/components/OwnerNavbar';
+
+import Footer from '@/components/Footer';
 
 export default function OwnerDashboardLayout({
   children,
@@ -14,41 +12,6 @@ export default function OwnerDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
-
-  useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({
-          firstName: payload.firstName || 'Abiramy',
-          lastName: payload.lastName || '',
-          email: payload.email || 'abiramy@example.com'
-        });
-      } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
-      }
-    } else {
-      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
-    }
-  }, []);
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('stayzo_token');
-    window.location.href = '/';
-  };
-
-  const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
-
-  const navItems = [
-    { name: 'Home', href: '/dashboard/owners', icon: LayoutDashboard },
-    { name: 'Listings', href: '/dashboard/owners/listings', icon: KeyRound },
-    { name: 'Appointments', href: '/dashboard/owners/appointments', icon: CalendarCheck },
-    { name: 'Chat', href: '/dashboard/owners/chat', icon: MessageSquare },
-    { name: 'Agreement', href: '/dashboard/owners/agreement', icon: FileSignature },
-    { name: 'Profile', href: '/dashboard/owners/profile', icon: User },
-  ];
 
   if (pathname.includes('/start_listing')) {
     return <>{children}</>;
@@ -60,56 +23,7 @@ export default function OwnerDashboardLayout({
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col animate-in fade-in duration-300">
       
       {/* Top Header with Navigation */}
-      <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex items-center justify-between z-50 shrink-0 select-none sticky top-0">
-        
-        {/* Left Brand Logo */}
-        <div className="flex-1 flex justify-start">
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="flex items-end space-x-1 h-5">
-              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
-          </Link>
-        </div>
-
-        {/* Center Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-8 flex-none">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link 
-                key={item.href}
-                href={item.href}
-                className={`text-xs font-bold transition whitespace-nowrap select-none ${
-                  isActive 
-                    ? 'text-[#1A1A1A]' 
-                    : 'text-gray-500 hover:text-[#1A1A1A]'
-                }`}
-              >
-                {item.name}
-              </Link>
-            )
-          })}
-        </nav>
-
-        {/* Right utility options */}
-        <div className="flex-1 flex justify-end items-center space-x-6">
-          <Link 
-            href="/dashboard/tenant"
-            className="hidden sm:flex items-center space-x-2 bg-[#1A1A1A] text-white px-5 py-2.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest hover:bg-black transition shadow-sm"
-          >
-            <span>I am a tenant</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-          <div className="relative cursor-pointer hover:opacity-80 transition">
-            <Bell className="w-5 h-5 text-[#1A1A1A]" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full border border-white"></span>
-          </div>
-        </div>
-      </header>
+      <OwnerNavbar />
 
       {/* Main Content Area */}
       <div className={`flex-1 w-full mx-auto flex flex-col ${isChat ? 'max-w-none px-4 py-4' : 'max-w-[1200px] px-6 sm:px-10 py-10'}`}>
@@ -117,6 +31,9 @@ export default function OwnerDashboardLayout({
           {children}
         </main>
       </div>
+
+      <Footer />
     </div>
   );
 }
+

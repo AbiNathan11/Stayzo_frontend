@@ -36,7 +36,7 @@ export default function OwnerProfilePage() {
               <div className="w-28 h-28 bg-gray-100 rounded-full flex items-center justify-center">
                 <span className="text-4xl font-black text-[#1A1A1A]">V</span>
               </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#1A1A1A] rounded-full flex items-center justify-center text-white hover:bg-black transition-colors shadow-md">
+              <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#4F46E5] rounded-full flex items-center justify-center text-white hover:bg-[#4338CA] transition-colors shadow-md">
                 <Camera className="w-4 h-4" />
               </button>
             </div>
@@ -44,7 +44,7 @@ export default function OwnerProfilePage() {
             <p className="text-sm text-gray-500 mb-8">yogarajahvishnnu@gmail.com</p>
             
             <div className="w-full space-y-3">
-              <button className="w-full flex items-center justify-center space-x-2 bg-[#1A1A1A] hover:bg-black text-white text-[13px] font-bold px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg">
+              <button className="w-full flex items-center justify-center space-x-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[13px] font-bold px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg">
                 <Edit2 className="w-4 h-4" />
                 <span>Edit Profile</span>
               </button>
@@ -113,7 +113,7 @@ export default function OwnerProfilePage() {
                 <p className="text-sm text-gray-500 mt-1">Securely manage your legal agreements and verified KYC files.</p>
               </div>
             </div>
-            <button className="flex items-center justify-center space-x-2 bg-[#1A1A1A] hover:bg-black text-white text-[12px] font-bold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg whitespace-nowrap">
+            <button className="flex items-center justify-center space-x-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[12px] font-bold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg whitespace-nowrap">
               <UploadCloud className="w-4 h-4" />
               <span>Upload New</span>
             </button>
@@ -163,7 +163,7 @@ export default function OwnerProfilePage() {
               <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
                 IDENTITY (KYC)
               </h4>
-              <button className="w-full flex items-center justify-between p-4 rounded-xl bg-[#1A1A1A] hover:bg-black transition-colors text-left group shadow-md hover:shadow-lg">
+              <button className="w-full flex items-center justify-center p-4 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] transition-colors text-left group shadow-md hover:shadow-lg justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
                     <ShieldCheck className="w-5 h-5 text-white" />
@@ -173,7 +173,7 @@ export default function OwnerProfilePage() {
                     <p className="text-[11px] text-gray-400 font-medium">Verified & Secure</p>
                   </div>
                 </div>
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#1A1A1A] shadow-sm transform group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#4F46E5] shadow-sm transform group-hover:scale-105 transition-transform">
                   <ArrowRight className="w-4 h-4" />
                 </div>
               </button>

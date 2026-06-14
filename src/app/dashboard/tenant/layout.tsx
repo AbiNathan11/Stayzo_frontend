@@ -7,6 +7,7 @@ import {
   LogOut, LayoutDashboard, KeyRound, Heart, 
   CalendarCheck, MessageSquare, FileText, Compass
 } from 'lucide-react';
+import EditProfileModal, { UserProfile } from '@/components/EditProfileModal';
 
 export default function TenantDashboardLayout({
   children,
@@ -14,8 +15,9 @@ export default function TenantDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null; isOwner?: boolean } | null>(null);
+  const [user, setUser] = useState<UserProfile & { isOwner?: boolean }>({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem('stayzo_token');
@@ -71,6 +73,10 @@ export default function TenantDashboardLayout({
     { name: 'Agreement', href: '/dashboard/tenant/agreement', icon: FileText },
     { name: 'Relocation Services', href: '/dashboard/tenant/services', icon: Compass },
   ];
+
+  const handleProfileSuccess = (updatedUser: UserProfile) => {
+    setUser(prev => ({ ...prev, ...updatedUser }));
+  };
 
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
@@ -145,13 +151,16 @@ export default function TenantDashboardLayout({
                     <p className="text-[10px] text-gray-400 font-semibold truncate mt-0.5">{user?.email}</p>
                   </div>
                   
-                  <Link 
-                    href="/dashboard/tenant?edit=true" 
-                    onClick={() => setShowDropdown(false)}
+                  
+                  <button 
+                    onClick={() => {
+                      setShowDropdown(false);
+                      setShowEditModal(true);
+                    }}
                     className="flex w-full px-4 py-2.5 text-left text-xs font-bold text-[#4F46E5] hover:bg-[#EEF2FF] transition duration-150"
                   >
                     Edit Profile
-                  </Link>
+                  </button>
                   
                   <button 
                     onClick={() => {
@@ -175,6 +184,13 @@ export default function TenantDashboardLayout({
           {children}
         </main>
       </div>
+      
+      <EditProfileModal 
+        isOpen={showEditModal} 
+        onClose={() => setShowEditModal(false)} 
+        user={user} 
+        onSuccess={handleProfileSuccess} 
+      />
     </div>
   );
 }
