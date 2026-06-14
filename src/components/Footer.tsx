@@ -33,15 +33,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Extra Links */}
+          {/* Column 2: Navigation Links */}
           <div className="space-y-4">
-            <h4 className="font-bold text-xs uppercase tracking-wider text-white">Extra links</h4>
+            <h4 className="font-bold text-xs uppercase tracking-wider text-white">Navigation</h4>
             <ul className="space-y-2.5 text-xs font-semibold text-gray-400">
               <li><Link href="/" className="hover:text-white transition">Home</Link></li>
-              <li><Link href="/search" className="hover:text-white transition">Buyers</Link></li>
-              <li><Link href="/search" className="hover:text-white transition">Sellers</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Our team</Link></li>
-              <li><Link href="#" className="hover:text-white transition">About Us</Link></li>
+              <li><Link href="/#features" className="hover:text-white transition">Features</Link></li>
+              <li><Link href="/#how-it-works" className="hover:text-white transition">Process</Link></li>
+              <li><Link href="/#testimonials" className="hover:text-white transition">Testimonials</Link></li>
+              <li><Link href="/#contact" className="hover:text-white transition">Contact</Link></li>
             </ul>
           </div>
 
@@ -49,9 +49,9 @@ export default function Footer() {
           <div className="space-y-4">
             <h4 className="font-bold text-xs uppercase tracking-wider text-white">Contact</h4>
             <ul className="space-y-2.5 text-xs font-semibold text-gray-400">
-              <li>123 Example Road, Colombo 03, Sri Lanka</li>
-              <li><a href="mailto:email@example.com" className="hover:text-white transition">email@example.com</a></li>
-              <li><a href="tel:5555555555" className="hover:text-white transition">(555) 555-5555</a></li>
+              <li>620/06 H.T.P Road, Liyanagemull Seeduwa, Katunayake</li>
+              <li><a href="mailto:stayzorentalplatform@gmail.com" className="hover:text-white transition">stayzorentalplatform@gmail.com</a></li>
+              <li><a href="tel:0112258215" className="hover:text-white transition">0112258215</a></li>
             </ul>
           </div>
 
