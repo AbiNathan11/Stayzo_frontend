@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ArrowRight, CheckCheck, CalendarCheck, X } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import EditProfileModal, { UserProfile } from './EditProfileModal';
 
 const navLinks = [
   { label: 'Home', href: '/dashboard/owners' },
@@ -18,14 +19,38 @@ const navLinks = [
 export default function OwnerNavbar() {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUser({
+          firstName: payload.firstName || '',
+          lastName: payload.lastName || '',
+          email: payload.email || '',
+          profileImage: payload.profileImage || null
+        });
+      } catch (e) {
+        console.error('Failed to parse token', e);
+      }
+    }
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -39,25 +64,34 @@ export default function OwnerNavbar() {
     return '🔔';
   };
 
-  return (
-    <header className="w-full bg-white border-b border-gray-100 shadow-sm shrink-0 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-[60px] flex items-center justify-between">
+  const handleLogout = () => {
+    sessionStorage.removeItem('stayzo_token');
+    window.location.href = '/auth?role=landlord';
+  };
 
-        {/* Logo with custom nested house SVG */}
-        <Link href="/" className="flex items-center space-x-2 group">
-          <div className="flex items-end space-x-1 h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
-          </div>
-          <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">
-            Stayzo
-          </span>
-        </Link>
+  const handleProfileSuccess = (updatedUser: UserProfile) => {
+    setUser(updatedUser);
+  };
+
+  return (
+    <>
+    <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex items-center justify-between z-50 shrink-0 select-none sticky top-0">
+
+        {/* Left Brand Logo */}
+        <div className="flex-1 flex justify-start">
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="flex items-end space-x-1 h-5">
+              <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+              <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-[#1A1A1A] transition-colors"></div>
+            </div>
+            <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
+          </Link>
+        </div>
 
         {/* Center Nav */}
-        <nav className="hidden md:flex items-center space-x-1">
+        <nav className="hidden lg:flex items-center space-x-1 flex-none">
           {navLinks.map((link) => {
             const finalIsActive = link.href === '/dashboard/owners' ? pathname === link.href : pathname.startsWith(link.href);
             return (
@@ -66,8 +100,8 @@ export default function OwnerNavbar() {
                 href={link.href}
                 className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
                   finalIsActive
-                    ? 'text-[#1A1A1A] bg-gray-100'
-                    : 'text-gray-500 hover:text-[#1A1A1A] hover:bg-gray-50'
+                    ? 'text-[#4F46E5] bg-[#EEF2FF]'
+                    : 'text-gray-500 hover:text-[#4F46E5] hover:bg-gray-50'
                 }`}
               >
                 {link.label}
@@ -77,22 +111,21 @@ export default function OwnerNavbar() {
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center space-x-3">
+        <div className="flex-1 flex justify-end items-center space-x-4">
           <Link
             href="/dashboard/tenant"
-            className="flex items-center space-x-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[12px] font-extrabold tracking-wider uppercase px-5 py-2.5 rounded-full transition-colors shadow-md"
+            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
           >
-            <span>I am a Tenant</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            Switch to tenant
           </Link>
           <div className="relative" ref={notifRef}>
             <button
               id="owner-notifications-btn"
               onClick={() => setShowNotifications(v => !v)}
-              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#EEF2FF] transition-colors group"
               aria-label="Notifications"
             >
-              <Bell className="w-5 h-5 text-[#1A1A1A]" />
+              <Bell className="w-5 h-5 text-[#1A1A1A] group-hover:text-[#4F46E5] transition-colors" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -109,7 +142,7 @@ export default function OwnerNavbar() {
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
-                        className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-[#1A1A1A] transition"
+                        className="flex items-center gap-1 text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] transition"
                       >
                         <CheckCheck className="w-3 h-3" /> Mark all read
                       </button>
@@ -154,15 +187,60 @@ export default function OwnerNavbar() {
                 <Link
                   href="/dashboard/owners/appointments"
                   onClick={() => setShowNotifications(false)}
-                  className="block text-center text-[10px] font-bold text-gray-500 hover:text-[#1A1A1A] py-3 border-t border-gray-100 transition"
+                  className="block text-center text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] py-3 border-t border-gray-100 transition"
                 >
                   View Appointments →
                 </Link>
               </div>
             )}
           </div>
+
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setShowProfileMenu(v => !v)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#1A1A1A] text-white text-[15px] font-black uppercase hover:bg-black transition-colors"
+            >
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              ) : (
+                user ? user.firstName.charAt(0) : 'U'
+              )}
+            </button>
+            {showProfileMenu && user && (
+              <div className="absolute right-0 top-12 w-64 bg-white border border-gray-100 rounded-3xl shadow-xl z-50 overflow-hidden py-2">
+                <div className="px-5 py-4 border-b border-gray-50">
+                  <p className="text-[14px] font-extrabold text-[#1A1A1A]">{user.firstName} {user.lastName}</p>
+                  <p className="text-[12px] font-bold text-gray-400 truncate mt-0.5">{user.email}</p>
+                </div>
+                <div className="py-2">
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowEditModal(true);
+                    }}
+                    className="w-full text-left px-5 py-2.5 text-[13px] font-bold text-indigo-600 hover:bg-gray-50 transition"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-5 py-2.5 text-[13px] font-bold text-red-600 hover:bg-gray-50 transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
-      </div>
     </header>
+    <EditProfileModal 
+      isOpen={showEditModal} 
+      onClose={() => setShowEditModal(false)} 
+      user={user} 
+      onSuccess={handleProfileSuccess} 
+    />
+    </>
   );
 }

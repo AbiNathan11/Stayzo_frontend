@@ -203,7 +203,7 @@ export default function Navbar() {
               <Link href="/auth" className="text-xs font-extrabold text-gray-700 hover:text-[#1A1A1A] transition uppercase tracking-wide">Login</Link>
             )}
             <Link
-              href={isLoggedIn ? '/dashboard/owners' : '/auth?role=landlord'}
+              href={isLoggedIn && isOwner ? '/dashboard/owners' : '/auth?role=landlord'}
               className="bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-full text-xs font-extrabold tracking-wider uppercase transition flex items-center shadow-md"
             >
               I am a landlord <ArrowRight className="w-3.5 h-3.5 ml-2" />
@@ -292,7 +292,7 @@ export default function Navbar() {
                   <span className="text-xs uppercase font-extrabold tracking-wider">Dashboard</span>
                 </Link>
                 <Link 
-                  href="/dashboard/owners"
+                  href={isOwner ? '/dashboard/owners' : '/auth?role=landlord'}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="bg-[#1A1A1A] text-white px-5 py-3 rounded-full text-xs font-extrabold tracking-wider uppercase text-center transition hover:bg-black"
                 >

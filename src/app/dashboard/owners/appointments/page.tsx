@@ -223,7 +223,7 @@ export default function OwnerAppointmentsPage() {
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#1A1A1A] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#4F46E5] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
           {toast}
         </div>
       )}
@@ -238,7 +238,7 @@ export default function OwnerAppointmentsPage() {
         </div>
         <button
           onClick={() => { setShowCreateModal(true); setCreateMode("single"); }}
-          className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+          className="flex items-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
         >
           <Plus className="w-4 h-4" /> Add Availability
         </button>
@@ -271,7 +271,7 @@ export default function OwnerAppointmentsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition capitalize ${
-              tab === t ? "bg-white text-[#1A1A1A] shadow-sm" : "text-gray-500 hover:text-gray-700"
+              tab === t ? "bg-white text-[#4F46E5] shadow-sm" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {t === "bookings" && pendingBookings.length > 0 ? (
@@ -311,7 +311,7 @@ export default function OwnerAppointmentsPage() {
             {/* Legend */}
             <div className="flex items-center gap-4 mb-4 text-[10px] font-semibold text-gray-500">
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400"></span>Available</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#1A1A1A]"></span>Booked</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#4F46E5]"></span>Booked</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-300"></span>Blocked</span>
             </div>
 
@@ -337,17 +337,17 @@ export default function OwnerAppointmentsPage() {
                     onClick={() => setSelectedDate(dateStr)}
                     className={`aspect-square flex flex-col items-center justify-center rounded-2xl border transition cursor-pointer ${
                       isSelected
-                        ? "bg-[#1A1A1A] border-[#1A1A1A] text-white"
+                        ? "bg-[#4F46E5] border-[#4F46E5] text-white"
                         : isBlocked
                         ? "bg-red-50 border-red-100 text-red-300"
                         : "border-transparent hover:bg-gray-50 text-gray-700 font-semibold"
-                    } ${isToday && !isSelected ? "border-2 border-[#1A1A1A]" : ""}`}
+                    } ${isToday && !isSelected ? "border-2 border-[#4F46E5]" : ""}`}
                   >
                     <span className="text-sm font-bold">{day}</span>
                     {(hasSlots || isBooked || isBlocked) && (
                       <div className="flex gap-0.5 mt-0.5">
                         {hasSlots && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-emerald-400"}`} />}
-                        {isBooked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-[#1A1A1A]"}`} />}
+                        {isBooked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-[#4F46E5]"}`} />}
                         {isBlocked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-red-300"}`} />}
                       </div>
                     )}
@@ -370,7 +370,7 @@ export default function OwnerAppointmentsPage() {
                 <button
                   disabled={isPastSelected}
                   onClick={() => { setNewSlot(f => ({ ...f, date: selectedDate })); setShowCreateModal(true); setCreateMode("single"); }}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition ${isPastSelected ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1A1A1A] text-white hover:bg-black'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition ${isPastSelected ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#4F46E5] text-white hover:bg-[#4338CA]'}`}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -546,7 +546,7 @@ export default function OwnerAppointmentsPage() {
                   onClick={() => updateSettings({ slotDuration: d })}
                   className={`flex-1 py-3 rounded-xl text-xs font-bold border transition ${
                     settings.slotDuration === d
-                      ? "bg-[#1A1A1A] text-white border-[#1A1A1A]"
+                      ? "bg-[#4F46E5] text-white border-[#4F46E5]"
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -566,7 +566,7 @@ export default function OwnerAppointmentsPage() {
                   onClick={() => updateSettings({ bufferTime: b })}
                   className={`flex-1 py-3 rounded-xl text-xs font-bold border transition ${
                     settings.bufferTime === b
-                      ? "bg-[#1A1A1A] text-white border-[#1A1A1A]"
+                      ? "bg-[#4F46E5] text-white border-[#4F46E5]"
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -586,7 +586,7 @@ export default function OwnerAppointmentsPage() {
                   onClick={() => updateSettings({ maxBookingsPerDay: n })}
                   className={`flex-1 py-3 rounded-xl text-xs font-bold border transition ${
                     settings.maxBookingsPerDay === n
-                      ? "bg-[#1A1A1A] text-white border-[#1A1A1A]"
+                      ? "bg-[#4F46E5] text-white border-[#4F46E5]"
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -609,7 +609,7 @@ export default function OwnerAppointmentsPage() {
                   key={m}
                   onClick={() => setCreateMode(m)}
                   className={`flex-1 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wide transition capitalize ${
-                    createMode === m ? "bg-white text-[#1A1A1A] shadow-sm" : "text-gray-500"
+                    createMode === m ? "bg-white text-[#4F46E5] shadow-sm" : "text-gray-500"
                   }`}
                 >
                   {m === "block" ? "Block Date" : m}
@@ -626,7 +626,7 @@ export default function OwnerAppointmentsPage() {
                   <select
                     value={newSlot.propertyId}
                     onChange={e => setNewSlot(f => ({ ...f, propertyId: e.target.value }))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#1A1A1A]"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#4F46E5]"
                   >
                     <option value="" disabled>Select a property...</option>
                     {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -638,25 +638,25 @@ export default function OwnerAppointmentsPage() {
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Date</label>
                   <input type="date" value={newSlot.date} min={formatDate(new Date())} onChange={e => setNewSlot(f => ({ ...f, date: e.target.value }))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Start Time</label>
                     <input type="time" value={newSlot.startTime} onChange={e => setNewSlot(f => ({ ...f, startTime: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">End Time</label>
                     <input type="time" value={newSlot.endTime} onChange={e => setNewSlot(f => ({ ...f, endTime: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Duration (min)</label>
                     <select value={newSlot.slotDuration} onChange={e => setNewSlot(f => ({ ...f, slotDuration: +e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]">
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]">
                       <option value={15}>15 min</option>
                       <option value={30}>30 min</option>
                       <option value={60}>60 min</option>
@@ -665,7 +665,7 @@ export default function OwnerAppointmentsPage() {
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Buffer (min)</label>
                     <select value={newSlot.bufferTime} onChange={e => setNewSlot(f => ({ ...f, bufferTime: +e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]">
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]">
                       <option value={0}>None</option>
                       <option value={15}>15 min</option>
                       <option value={30}>30 min</option>
@@ -678,7 +678,7 @@ export default function OwnerAppointmentsPage() {
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition">Cancel</button>
                   <button onClick={handleCreateSlot} disabled={actionLoading === "create"}
-                    className="flex-1 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-bold hover:bg-black transition disabled:opacity-50">
+                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition disabled:opacity-50 shadow-sm">
                     {actionLoading === "create" ? "Creating…" : "Create Slots"}
                   </button>
                 </div>
@@ -692,7 +692,7 @@ export default function OwnerAppointmentsPage() {
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Property</label>
                   <select value={recurringForm.propertyId} onChange={e => setRecurringForm(f => ({ ...f, propertyId: e.target.value }))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]">
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]">
                     <option value="" disabled>Select a property...</option>
                     {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                   </select>
@@ -705,7 +705,7 @@ export default function OwnerAppointmentsPage() {
                   <div className="grid grid-cols-7 gap-1">
                     {DAYS.map((d, i) => (
                       <button key={d} onClick={() => setRecurringForm(f => ({ ...f, dayOfWeek: i }))}
-                        className={`py-2 rounded-xl text-[10px] font-bold border transition ${recurringForm.dayOfWeek === i ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white border-gray-200 text-gray-600"}`}>
+                        className={`py-2 rounded-xl text-[10px] font-bold border transition ${recurringForm.dayOfWeek === i ? "bg-[#4F46E5] text-white border-[#4F46E5]" : "bg-white border-gray-200 text-gray-600"}`}>
                         {d}
                       </button>
                     ))}
@@ -715,25 +715,25 @@ export default function OwnerAppointmentsPage() {
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Start</label>
                     <input type="time" value={recurringForm.startTime} onChange={e => setRecurringForm(f => ({ ...f, startTime: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">End</label>
                     <input type="time" value={recurringForm.endTime} onChange={e => setRecurringForm(f => ({ ...f, endTime: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Weeks Ahead</label>
                   <select value={recurringForm.weeksAhead} onChange={e => setRecurringForm(f => ({ ...f, weeksAhead: +e.target.value }))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]">
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]">
                     {[4, 8, 12].map(n => <option key={n} value={n}>{n} weeks</option>)}
                   </select>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition">Cancel</button>
                   <button onClick={handleCreateRecurring} disabled={actionLoading === "recurring"}
-                    className="flex-1 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-bold hover:bg-black transition disabled:opacity-50">
+                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition disabled:opacity-50 shadow-sm">
                     {actionLoading === "recurring" ? "Creating…" : `Create for ${recurringForm.weeksAhead} Weeks`}
                   </button>
                 </div>
@@ -747,7 +747,7 @@ export default function OwnerAppointmentsPage() {
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Property</label>
                   <select value={blockForm.propertyId} onChange={e => setBlockForm(f => ({ ...f, propertyId: e.target.value }))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]">
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]">
                     <option value="" disabled>Select a property...</option>
                     {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                   </select>
@@ -759,12 +759,12 @@ export default function OwnerAppointmentsPage() {
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">From</label>
                     <input type="date" value={blockForm.startDate} min={formatDate(new Date())} onChange={e => setBlockForm(f => ({ ...f, startDate: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">To (optional)</label>
                     <input type="date" value={blockForm.endDate} min={formatDate(new Date())} onChange={e => setBlockForm(f => ({ ...f, endDate: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A1A1A]" />
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#4F46E5]" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-2">
@@ -791,7 +791,7 @@ export default function OwnerAppointmentsPage() {
             <p className="text-sm text-gray-500 font-medium mb-8">{successMessage}</p>
             <button
               onClick={() => setSuccessMessage(null)}
-              className="w-full py-3.5 bg-[#1A1A1A] text-white rounded-xl text-sm font-bold hover:bg-black transition shadow-md"
+              className="w-full py-3.5 bg-[#4F46E5] text-white rounded-xl text-sm font-bold hover:bg-[#4338CA] transition shadow-md"
             >
               Done
             </button>

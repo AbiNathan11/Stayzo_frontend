@@ -224,7 +224,7 @@ export default function OwnerListings() {
           </div>
           <Link 
             href="/dashboard/owners/start_listing"
-            className="bg-[#1A1A1A] text-white px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-black transition-colors"
+            className="bg-[#4F46E5] text-white px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-[#4338CA] transition-colors rounded-xl shadow-sm"
           >
             + Create New Listing
           </Link>
@@ -235,7 +235,7 @@ export default function OwnerListings() {
             onClick={() => setActiveTab('active')}
             className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
               activeTab === 'active' 
-                ? 'border-black text-[#1A1A1A]' 
+                ? 'border-[#4F46E5] text-[#4F46E5]' 
                 : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -245,7 +245,7 @@ export default function OwnerListings() {
             onClick={() => setActiveTab('processing')}
             className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'processing' 
-                ? 'border-black text-[#1A1A1A]' 
+                ? 'border-[#4F46E5] text-[#4F46E5]' 
                 : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -300,7 +300,7 @@ export default function OwnerListings() {
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Deploy a high-fidelity property listing today to start receiving lease applications.</p>
                 <Link 
                   href="/dashboard/owners/start_listing"
-                  className="mt-5 inline-block bg-[#1A1A1A] hover:bg-black text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full shadow-sm transition"
+                  className="mt-5 inline-block bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full shadow-sm transition"
                 >
                   Start Listing Wizard
                 </Link>
@@ -391,7 +391,7 @@ export default function OwnerListings() {
                           View Details
                         </Link>
                         <button 
-                          className="px-3 border border-gray-200 hover:border-black rounded-xl text-[#1A1A1A] transition flex items-center justify-center animate-pulse"
+                          className="px-3 border border-gray-200 hover:border-[#4F46E5] hover:text-[#4F46E5] rounded-xl text-[#1A1A1A] transition flex items-center justify-center animate-pulse"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -466,7 +466,7 @@ export default function OwnerListings() {
                 <div className="mt-6 flex gap-3 relative z-10">
                   <Link 
                     href="/dashboard/owners/start_listing"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Continue Wizard</span>
@@ -488,10 +488,10 @@ export default function OwnerListings() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 text-[12px] font-extrabold border transition-colors ${
+                  className={`w-8 h-8 text-[12px] font-extrabold border transition-colors rounded-lg ${
                     currentPage === page
-                      ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                      : 'bg-white text-[#1A1A1A] border-gray-200 hover:border-[#1A1A1A]'
+                      ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
+                      : 'bg-white text-[#1A1A1A] border-gray-200 hover:border-[#4F46E5]'
                   }`}
                 >
                   {page}
@@ -604,7 +604,7 @@ export default function OwnerListings() {
 
                 <div className="border-t pt-5 flex justify-end gap-3 mt-8">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-[11px] font-bold text-gray-500 hover:text-black uppercase tracking-widest">Cancel</button>
-                  <button type="submit" className="px-6 py-2.5 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black uppercase tracking-widest transition-colors">Publish Listing</button>
+                  <button type="submit" className="px-6 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-colors shadow-sm">Publish Listing</button>
                 </div>
               </form>
             </div>
