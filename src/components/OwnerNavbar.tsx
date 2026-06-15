@@ -100,8 +100,8 @@ export default function OwnerNavbar() {
                 href={link.href}
                 className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
                   finalIsActive
-                    ? 'text-[#4F46E5] bg-[#EEF2FF]'
-                    : 'text-gray-500 hover:text-[#4F46E5] hover:bg-gray-50'
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 {link.label}
