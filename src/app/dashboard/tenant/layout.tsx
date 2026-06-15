@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LogOut, LayoutDashboard, KeyRound, Heart, 
-  CalendarCheck, MessageSquare, FileText, Compass
+  CalendarCheck, MessageSquare, FileText, Compass,
+  Bell, CheckCheck, X
 } from 'lucide-react';
 import EditProfileModal, { UserProfile } from '@/components/EditProfileModal';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function TenantDashboardLayout({
   children,
@@ -18,6 +20,8 @@ export default function TenantDashboardLayout({
   const [user, setUser] = useState<UserProfile & { isOwner?: boolean }>({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
 
   useEffect(() => {
     const token = sessionStorage.getItem('stayzo_token');
@@ -126,6 +130,91 @@ export default function TenantDashboardLayout({
           >
             Switch to owner
           </Link>
+
+          {/* Notification Bell Dropdown */}
+          <div className="relative">
+            <button
+              id="tenant-notifications-btn"
+              onClick={() => setShowNotifications(v => !v)}
+              className="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors group"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-[#1A1A1A] group-hover:text-gray-900 transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <>
+                {/* Backdrop overlay for close-on-click */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)}></div>
+                
+                <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-50">
+                    <span className="text-xs font-black text-[#1A1A1A] uppercase tracking-wider">Notifications</span>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="flex items-center gap-1 text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] transition"
+                        >
+                          <CheckCheck className="w-3 h-3" /> Mark all read
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <CalendarCheck className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                        <p className="text-xs text-gray-400 font-semibold">No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.slice(0, 10).map(n => (
+                        <button
+                          key={n.id}
+                          onClick={() => {
+                            markOneRead(n.id);
+                            setShowNotifications(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 ${
+                            !n.isRead ? 'bg-blue-50/50' : ''
+                          }`}
+                        >
+                          <span className="text-base shrink-0 mt-0.5">
+                            {n.type === 'booking_confirmed' ? '✅' : n.type === 'booking_cancelled' ? '❌' : n.type === 'booking_request' ? '📅' : '🔔'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-bold truncate ${!n.isRead ? 'text-[#1A1A1A]' : 'text-gray-600'}`}>
+                              {n.title}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                            <p className="text-[9px] text-gray-300 mt-1 font-mono">
+                              {new Date(n.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {!n.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <Link
+                    href="/dashboard/tenant/visits"
+                    onClick={() => setShowNotifications(false)}
+                    className="block text-center text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] py-3 border-t border-gray-100 transition"
+                  >
+                    View Visits Scheduler →
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="relative">
             <button 
               onClick={() => setShowDropdown(!showDropdown)} 
