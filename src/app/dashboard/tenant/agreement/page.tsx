@@ -305,32 +305,9 @@ export default function TenantAgreementPage() {
     }
   };
 
-  const handleToggleWallet = async (id: string, currentSaved: boolean) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/agreements/${id}/wallet`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: 'tenant', saved: !currentSaved })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to toggle agreement wallet state');
-      }
-
-      toast.success(!currentSaved ? "Agreement saved to your Document Vault!" : "Agreement removed from your Document Vault.");
-      fetchAgreements(userEmail);
-      
-      // Update selected agreement if open in modal
-      if (selectedAgreement && selectedAgreement.id === id) {
-        setSelectedAgreement((prev: any) => prev ? { ...prev, savedInTenantWallet: !currentSaved } : null);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error updating vault status.');
-    }
-  };
+  const pendingAgreements = agreements.filter(a => a.status !== 'Active');
+  const activeAgreements = agreements.filter(a => a.status === 'Active');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -351,98 +328,60 @@ export default function TenantAgreementPage() {
         </div>
       </div>
 
-      {/* Main Table view of agreements */}
-      <div className="bg-white border border-gray-200 rounded-[32px] p-6 md:p-8 shadow-sm space-y-6">
-        <div>
-          <h4 className="font-extrabold text-base text-gray-900">Your Tenancy Contracts</h4>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Inspect and execute pending signatures</p>
-        </div>
-
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest animate-pulse">
-              Loading tenancy agreements...
+      {/* Agreements Lists */}
+      <div className="space-y-8">
+        {/* SECTION 1: PENDING SIGNATURES */}
+        {pendingAgreements.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-[32px] p-6 md:p-8 shadow-sm space-y-6">
+            <div>
+              <h4 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                <FileSignature className="w-5 h-5 text-amber-500" /> Pending Signatures
+              </h4>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Inspect and sign pending lease agreements</p>
             </div>
-          ) : agreements.length === 0 ? (
-            <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-8 space-y-3">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="text-sm font-extrabold text-slate-800">No Lease Agreements Found</p>
-              <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto">
-                Once a landlord initiates an agreement and registers it to your email ({userEmail}), it will appear here for execution.
-              </p>
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse text-xs font-bold">
-              <thead>
-                <tr className="border-b border-gray-100 text-gray-400 uppercase tracking-widest text-[9px]">
-                  <th className="py-4 px-4">Lease Target</th>
-                  <th className="py-4 px-4">Landlord details</th>
-                  <th className="py-4 px-4">Monthly Rent</th>
-                  <th className="py-4 px-4">Security Deposit</th>
-                  <th className="py-4 px-4">Signature Status</th>
-                  <th className="py-4 px-4 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {agreements.map((agreement) => (
-                  <tr key={agreement.id} className="hover:bg-gray-50/40 transition">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
-                          <FileSignature className="w-4 h-4 text-slate-700" />
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs font-bold">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 uppercase tracking-widest text-[9px]">
+                    <th className="py-4 px-4">Lease Target</th>
+                    <th className="py-4 px-4">Landlord details</th>
+                    <th className="py-4 px-4">Monthly Rent</th>
+                    <th className="py-4 px-4">Security Deposit</th>
+                    <th className="py-4 px-4">Signature Status</th>
+                    <th className="py-4 px-4 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {pendingAgreements.map((agreement) => (
+                    <tr key={agreement.id} className="hover:bg-gray-50/40 transition">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                            <FileSignature className="w-4 h-4 text-slate-700" />
+                          </div>
+                          <div>
+                            <p className="text-gray-950 font-extrabold">{agreement.listingName}</p>
+                            <p className="text-[9px] text-gray-400 font-semibold mt-0.5">ID: {agreement.id.substring(0, 10).toUpperCase()}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-950 font-extrabold">{agreement.listingName}</p>
-                          <p className="text-[9px] text-gray-400 font-semibold mt-0.5">ID: {agreement.id.substring(0, 10).toUpperCase()}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <p className="text-gray-850 font-bold">{agreement.landlordName}</p>
-                      <p className="text-gray-400 font-semibold text-[9px] mt-0.5">{agreement.landlordEmail}</p>
-                    </td>
-                    <td className="py-4 px-4 text-gray-950 font-extrabold">
-                      Rs {agreement.monthlyRent?.toLocaleString()}/mo
-                    </td>
-                    <td className="py-4 px-4 text-gray-950 font-extrabold">
-                      Rs {agreement.securityDeposit?.toLocaleString()}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border ${
-                        agreement.status === 'Active' 
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                          : 'bg-amber-50 text-amber-600 border-amber-100'
-                      }`}>
-                        {agreement.status === 'Active' ? 'Active (Signed)' : 'Pending signature'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      {agreement.status === 'Active' ? (
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              setSelectedAgreement(agreement);
-                              setTenantSig(agreement.tenantSig || null);
-                            }}
-                            className="bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition uppercase flex items-center space-x-1 cursor-pointer"
-                          >
-                            <span>Inspect</span>
-                            <ExternalLink className="w-3 h-3 ml-0.5" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleWallet(agreement.id, !!agreement.savedInTenantWallet)}
-                            className={`px-3 py-1.5 border rounded-lg text-[10px] font-extrabold transition uppercase flex items-center gap-1 cursor-pointer ${
-                              agreement.savedInTenantWallet
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                            }`}
-                            title={agreement.savedInTenantWallet ? "Saved in vault" : "Save to vault"}
-                          >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>{agreement.savedInTenantWallet ? 'Vault' : 'Save'}</span>
-                          </button>
-                        </div>
-                      ) : (
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-gray-850 font-bold">{agreement.landlordName}</p>
+                        <p className="text-gray-400 font-semibold text-[9px] mt-0.5">{agreement.landlordEmail}</p>
+                      </td>
+                      <td className="py-4 px-4 text-gray-950 font-extrabold">
+                        Rs {agreement.monthlyRent?.toLocaleString()}/mo
+                      </td>
+                      <td className="py-4 px-4 text-gray-950 font-extrabold">
+                        Rs {agreement.securityDeposit?.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border bg-amber-50 text-amber-600 border-amber-100">
+                          Pending signature
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
                         <button
                           onClick={() => {
                             setSelectedAgreement(agreement);
@@ -452,13 +391,96 @@ export default function TenantAgreementPage() {
                         >
                           Review &amp; Sign
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 2: DIGITAL DOCUMENT VAULT (FULLY SIGNED) */}
+        <div className="bg-white border border-gray-200 rounded-[32px] p-6 md:p-8 shadow-sm space-y-6">
+          <div>
+            <h4 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" /> Digital Document Vault
+            </h4>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Your double-sided, fully signed lease agreements</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest animate-pulse">
+                Loading tenancy agreements...
+              </div>
+            ) : activeAgreements.length === 0 ? (
+              <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-8 space-y-3">
+                <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-sm font-extrabold text-slate-800">No Signed Agreements Vaulted</p>
+                <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto">
+                  Once lease agreements are fully signed by both you and the landlord, they will automatically be preserved here.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse text-xs font-bold">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 uppercase tracking-widest text-[9px]">
+                    <th className="py-4 px-4">Lease Target</th>
+                    <th className="py-4 px-4">Landlord details</th>
+                    <th className="py-4 px-4">Monthly Rent</th>
+                    <th className="py-4 px-4">Security Deposit</th>
+                    <th className="py-4 px-4">Signature Status</th>
+                    <th className="py-4 px-4 text-center">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {activeAgreements.map((agreement) => (
+                    <tr key={agreement.id} className="hover:bg-gray-50/40 transition">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                            <FileSignature className="w-4 h-4 text-slate-700" />
+                          </div>
+                          <div>
+                            <p className="text-gray-950 font-extrabold">{agreement.listingName}</p>
+                            <p className="text-[9px] text-gray-400 font-semibold mt-0.5">ID: {agreement.id.substring(0, 10).toUpperCase()}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="text-gray-850 font-bold">{agreement.landlordName}</p>
+                        <p className="text-gray-400 font-semibold text-[9px] mt-0.5">{agreement.landlordEmail}</p>
+                      </td>
+                      <td className="py-4 px-4 text-gray-950 font-extrabold">
+                        Rs {agreement.monthlyRent?.toLocaleString()}/mo
+                      </td>
+                      <td className="py-4 px-4 text-gray-950 font-extrabold">
+                        Rs {agreement.securityDeposit?.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border bg-emerald-50 text-emerald-600 border-emerald-100">
+                          Active (Signed)
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <button
+                          onClick={() => {
+                            setSelectedAgreement(agreement);
+                            setTenantSig(agreement.tenantSig || null);
+                          }}
+                          className="bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition uppercase flex items-center space-x-1 cursor-pointer mx-auto"
+                        >
+                          <span>Inspect</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
 
@@ -544,20 +566,6 @@ export default function TenantAgreementPage() {
                     <div className="text-center py-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       <span>This Agreement is Active & Fully Signed</span>
-                    </div>
-
-                    <div className="pt-2 flex justify-center">
-                      <button
-                        onClick={() => handleToggleWallet(selectedAgreement.id, !!selectedAgreement.savedInTenantWallet)}
-                        className={`px-4 py-2 border rounded-xl text-[10px] font-black uppercase transition-all tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                          selectedAgreement.savedInTenantWallet
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                        }`}
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>{selectedAgreement.savedInTenantWallet ? 'Saved in Document Vault' : 'Save to Document Vault'}</span>
-                      </button>
                     </div>
                   </div>
 

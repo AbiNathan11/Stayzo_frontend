@@ -456,7 +456,8 @@ export default function OwnerAgreementPage() {
       let mapped: SavedAgreement[] = [];
       if (response.ok) {
         const data = await response.json();
-        mapped = data.map((item: any) => ({
+        const activeAgreements = data.filter((item: any) => item.status === 'Active');
+        mapped = activeAgreements.map((item: any) => ({
           id: item.id,
           templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
           templateTitle: 'Rental Lease Agreement',
@@ -983,7 +984,7 @@ export default function OwnerAgreementPage() {
         if (!response.ok) {
           throw new Error('Failed to delete agreement from database');
         }
-        showToast("Agreement deleted from database successfully.");
+        showToast("Agreement deleted successfully.");
       }
       
       if (landlordUser?.email) {
@@ -999,29 +1000,6 @@ export default function OwnerAgreementPage() {
     setDeleteConfirmAgreement({ id, name });
   };
 
-  const handleToggleWallet = async (id: string, currentSaved: boolean) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/agreements/${id}/wallet`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: 'landlord', saved: !currentSaved })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle agreement wallet state');
-      }
-
-      showToast(!currentSaved ? "Agreement saved to your Document Vault!" : "Agreement removed from your Document Vault.");
-      if (landlordUser?.email) {
-        fetchAgreementsFromDb(landlordUser.email);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error updating vault status.');
-    }
-  };
 
   const showToast = (message: string) => {
     toast.success(message);
@@ -1468,7 +1446,7 @@ export default function OwnerAgreementPage() {
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Exit Current Draft?</h3>
-                  <p className="text-gray-500 text-[12px] font-semibold mt-1.5 leading-relaxed">
+                  <p className="text-gray-550 text-[12px] font-semibold mt-1.5 leading-relaxed">
                     Are you sure you want to exit? Any unsaved progress will be permanently lost.
                   </p>
                 </div>
@@ -1477,13 +1455,13 @@ export default function OwnerAgreementPage() {
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
                     onClick={() => setShowExitConfirm(false)}
-                    className="flex-1 py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white"
+                    className="flex-1 py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleConfirmExit}
-                    className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+                    className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
                     Yes, Exit
                   </button>
@@ -1493,21 +1471,21 @@ export default function OwnerAgreementPage() {
           </div>
         )}
 
-        {/* CUSTOM DELETE CONFIRMATION MODAL (TOASTER METHOD STYLE) */}
+        {/* CUSTOM DELETE CONFIRMATION MODAL (BLUE THEMED STYLE) */}
         {deleteConfirmAgreement && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center text-center space-y-4">
                 {/* Icon wrapper */}
-                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+                <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
                   <Trash2 className="w-6 h-6" />
                 </div>
                 
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Delete Agreement?</h3>
-                  <p className="text-gray-505 text-[12px] font-semibold mt-1.5 leading-relaxed">
-                    Are you sure you want to delete the agreement for <strong>"{deleteConfirmAgreement.name}"</strong>? This will permanently remove it from both your vault and the database.
+                  <p className="text-gray-550 text-[12px] font-semibold mt-1.5 leading-relaxed">
+                    Are you sure you want to delete the agreement for <strong>"{deleteConfirmAgreement.name}"</strong>? This will permanently remove it from your vault.
                   </p>
                 </div>
                 
@@ -1525,7 +1503,7 @@ export default function OwnerAgreementPage() {
                       handleConfirmDelete(id);
                       setDeleteConfirmAgreement(null);
                     }}
-                    className="flex-1 py-2 px-4 bg-red-650 hover:bg-red-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
+                    className="flex-1 py-2 px-4 bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors border border-[#C7D2FE] shadow-sm cursor-pointer"
                   >
                     Yes, Delete
                   </button>
@@ -1674,34 +1652,6 @@ export default function OwnerAgreementPage() {
               </div>
             </div>
 
-            {/* Unsaved Draft Progress Banner (Toaster themed) */}
-            {hasSavedDraft && (
-              <div className="bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#E0E7FF] flex items-center justify-center text-[#4F46E5] shrink-0">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-[#1A1A1A]">Ongoing Activity Detected</h4>
-                    <p className="text-[10px] text-gray-500 font-semibold mt-0.5">You have an unfinished lease agreement draft from your last session.</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={handleClearSavedDraft}
-                    className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-transparent hover:bg-slate-100 transition-all"
-                  >
-                    Dismiss
-                  </button>
-                  <button
-                    onClick={handleRestoreDraft}
-                    className="px-4 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm"
-                  >
-                    Restore Draft
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Template Selection Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -2002,18 +1952,6 @@ export default function OwnerAgreementPage() {
                           <span>Workspace</span>
                         </button>
 
-                        <button
-                          onClick={() => handleToggleWallet(ag.id, !!ag.savedInLandlordWallet)}
-                          className={`flex items-center gap-1 text-[9px] font-black uppercase px-2 py-1 rounded-md border transition-all ${
-                            ag.savedInLandlordWallet
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                              : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                          title={ag.savedInLandlordWallet ? "Saved in vault" : "Save to vault"}
-                        >
-                          <ShieldCheck className="w-3 h-3" />
-                          <span>{ag.savedInLandlordWallet ? 'Vault' : 'Save to Vault'}</span>
-                        </button>
 
                         <button
                           onClick={() => handleDeleteAgreement(ag.id, ag.tenantName)}
