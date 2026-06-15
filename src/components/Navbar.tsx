@@ -16,6 +16,51 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeHash, setActiveHash] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash);
+    };
+
+    const handleScroll = () => {
+      const sections = ['features', 'how-it-works', 'testimonials', 'contact'];
+      let currentSection = '';
+
+      if (window.scrollY < 200) {
+        setActiveHash('');
+        return;
+      }
+
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 250 && rect.bottom >= 200) {
+            currentSection = `#${section}`;
+            break;
+          }
+        }
+      }
+
+      if (currentSection) {
+        setActiveHash(currentSection);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('scroll', handleScroll);
+    
+    handleHashChange();
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -89,11 +134,11 @@ export default function Navbar() {
         {/* Center Links or Search Bar */}
         {!isSearchPage ? (
           <div className="hidden lg:flex items-center space-x-8 text-xs font-bold uppercase tracking-wide">
-            <Link href="/" className={`${pathname === '/' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
-            <a href="/#features" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Features</a>
-            <a href="/#how-it-works" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Process</a>
-            <a href="/#testimonials" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Testimonials</a>
-            <a href="/#contact" className="text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition">Contact</a>
+            <Link href="/" className={`${pathname === '/' && activeHash === '' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Home</Link>
+            <a href="/#features" className={`${activeHash === '#features' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Features</a>
+            <a href="/#how-it-works" className={`${activeHash === '#how-it-works' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Process</a>
+            <a href="/#testimonials" className={`${activeHash === '#testimonials' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Testimonials</a>
+            <a href="/#contact" className={`${activeHash === '#contact' ? 'text-[#1A1A1A] font-extrabold px-4 py-2' : 'text-gray-500 hover:text-[#1A1A1A] px-4 py-2 transition'}`}>Contact</a>
           </div>
         ) : (
           <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
@@ -110,13 +155,15 @@ export default function Navbar() {
         {/* Right Actions */}
         {(isSearchPage && isLoggedIn) ? (
           <div className="flex items-center space-x-5">
-
-            <Bookmark className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />
-            <Bell className="w-4 h-4 text-gray-600 hover:text-[#1A1A1A] cursor-pointer transition" />
-
-            <div className="w-px h-5 bg-gray-200"></div>
-
-            <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
+            <a 
+              href={getDashboardLink()} 
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = getDashboardLink();
+              }}
+              className="relative transition flex items-center group/profile" 
+              title="Go to Dashboard"
+            >
               <div className="relative">
                 {profileImage ? (
                   <img
@@ -131,7 +178,7 @@ export default function Navbar() {
                 )}
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
               </div>
-            </Link>
+            </a>
           </div>
         ) : (
           <div className="hidden md:flex items-center space-x-5">
@@ -187,35 +234,35 @@ export default function Navbar() {
             <Link 
               href="/" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`${pathname === '/' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
+              className={`${pathname === '/' && activeHash === '' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
             >
               Home
             </Link>
             <a 
               href="/#features" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+              className={`${activeHash === '#features' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
             >
               Features
             </a>
             <a 
               href="/#how-it-works" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+              className={`${activeHash === '#how-it-works' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
             >
               Process
             </a>
             <a 
               href="/#testimonials" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+              className={`${activeHash === '#testimonials' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
             >
               Testimonials
             </a>
             <a 
               href="/#contact" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 hover:text-[#1A1A1A] transition-colors py-1.5"
+              className={`${activeHash === '#contact' ? 'text-[#4F46E5] font-black' : 'text-gray-500 hover:text-[#1A1A1A]'} transition-colors py-1.5`}
             >
               Contact
             </a>

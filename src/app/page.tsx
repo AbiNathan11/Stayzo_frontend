@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import ScrollReveal from '../components/ScrollReveal';
 import {
   Search, MapPin, Home, Building2, Menu,
   ArrowRight, ShieldCheck, Sparkles, Check, User, ChevronDown,
@@ -112,7 +113,7 @@ export default function LandingPage() {
   useEffect(() => {
     if (!isAutoCycling) return;
 
-    const sequence = [0, 1, 3, 4, 2];
+    const sequence = [0, 1, 3, 4];
     let step = 0;
     
     setHoveredPin(sequence[0]);
@@ -381,7 +382,8 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section with Map Background and Floating Card */}
-      <section className="relative w-full bg-gradient-to-b from-[#EEF2FF] via-[#F3F7FF] to-white pt-32 pb-28 z-40 min-h-[700px] flex flex-col justify-start">
+      <ScrollReveal direction="up" delay={0.1}>
+        <section className="relative w-full bg-gradient-to-b from-[#EEF2FF] via-[#F3F7FF] to-white pt-32 pb-28 z-40 min-h-[700px] flex flex-col justify-start">
 
         {/* Static Map Background Photo (styled with gradient mask for legibility) */}
         <div className="absolute inset-0 z-0 select-none hero-animate-map">
@@ -499,10 +501,15 @@ export default function LandingPage() {
                 left: `calc(${CURSOR_POSITIONS[hoveredPin].left} + 24px)`,
               }}
             >
-              {/* Premium dark navigation arrow cursor icon */}
-              <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md text-black fill-black" stroke="white" strokeWidth="1.5">
-                <path d="M5.5 3.21a.5.5 0 0 1 .844-.365l13.12 12.333a.5.5 0 0 1-.35.85H12.5l-3.21 6.42a.5.5 0 0 1-.9-.05l-2.84-18.98a.5.5 0 0 1-.05-.208z" />
-              </svg>
+              {visibleCardIndex === hoveredPin ? (
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md text-[#1A1A1A] fill-[#1A1A1A]" stroke="white" strokeWidth="1.5">
+                  <path d="M12 21.5c-1.35 0-2.65-.65-3.55-1.75l-4.5-5.5a1.5 1.5 0 0 1 2.3-1.9l2.75 3.35V5.5a1.5 1.5 0 0 1 3 0v7h1v-1.5a1.5 1.5 0 0 1 3 0v1.5h1V11a1.5 1.5 0 0 1 3 0v3.5a7 7 0 0 1-7 7z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md text-black fill-black" stroke="white" strokeWidth="1.5">
+                  <path d="M5.5 3.21a.5.5 0 0 1 .844-.365l13.12 12.333a.5.5 0 0 1-.35.85H12.5l-3.21 6.42a.5.5 0 0 1-.9-.05l-2.84-18.98a.5.5 0 0 1-.05-.208z" />
+                </svg>
+              )}
             </div>
           )}
         </div>
@@ -600,7 +607,7 @@ export default function LandingPage() {
               {/* Search Button */}
               <button
                 onClick={handleSearch}
-                className="bg-[#4F46E5] hover:bg-[#4338CA] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-md transition shrink-0 active:scale-95"
+                className="bg-[#4F46E5] hover:bg-[#4338CA] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-md transition shrink-0 active:scale-95 cursor-pointer"
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -612,10 +619,12 @@ export default function LandingPage() {
 
         </div>
       </section>
+      </ScrollReveal>
 
 
       {/* Why Stayzo — 3-Column Horizontal Features Layout */}
-      <section id="features" className="bg-white pt-36 pb-16 fade-in-section">
+      <ScrollReveal direction="left" delay={0.2}>
+        <section id="features" className="bg-white pt-36 pb-16 fade-in-section">
         <div className="max-w-[90rem] mx-auto px-6 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 lg:gap-16 items-start">
 
@@ -688,9 +697,11 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="bg-white border-t border-gray-100 py-16 select-none fade-in-section">
+      <ScrollReveal direction="right" delay={0.2}>
+        <section id="how-it-works" className="bg-white border-t border-gray-100 py-16 select-none fade-in-section">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* Header (Matching Features Heading style exactly) */}
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -761,12 +772,13 @@ export default function LandingPage() {
               );
             })}
           </div>
-
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="bg-white border-t border-gray-100 py-16 fade-in-section">
+      <ScrollReveal direction="up" delay={0.3}>
+        <section id="testimonials" className="bg-white border-t border-gray-100 py-16 fade-in-section">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12 gap-6">
@@ -933,9 +945,11 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* FAQ Section */}
-      <section className="bg-white pt-16 pb-16 border-t border-gray-100 fade-in-section">
+      <ScrollReveal direction="up" delay={0.1}>
+        <section className="bg-white pt-16 pb-16 border-t border-gray-100 fade-in-section">
         <div className="max-w-3xl mx-auto px-6">
 
           <div className="text-left mb-12">
@@ -983,12 +997,13 @@ export default function LandingPage() {
               </details>
             ))}
           </div>
-
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Contact Us Section */}
-      <section id="contact" className="bg-white border-t border-gray-100 py-16 fade-in-section">
+      <ScrollReveal direction="up" delay={0.1}>
+        <section id="contact" className="bg-white border-t border-gray-100 py-16 fade-in-section">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
 
@@ -1113,7 +1128,8 @@ export default function LandingPage() {
 
           </div>
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       {/* Footer Component */}
       <Footer />

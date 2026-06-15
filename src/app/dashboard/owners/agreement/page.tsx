@@ -56,6 +56,7 @@ interface SavedAgreement {
   values: Record<string, string>;
   landlordSig?: string;
   tenantSig?: string;
+  savedInLandlordWallet?: boolean;
 }
 
 // ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
@@ -470,7 +471,8 @@ export default function OwnerAgreementPage() {
             depositAmount: `Rs ${item.securityDeposit.toLocaleString()}`
           },
           landlordSig: item.landlordSig || undefined,
-          tenantSig: item.tenantSig || undefined
+          tenantSig: item.tenantSig || undefined,
+          savedInLandlordWallet: item.savedInLandlordWallet || false
         }));
         setSavedAgreements(mapped);
       }
@@ -529,6 +531,9 @@ export default function OwnerAgreementPage() {
 
   // Start Drafting a new agreement from a template
   const handleStartDraft = (template: AgreementTemplate) => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     setSelectedTemplate(template);
     setCurrentFieldIdx(0);
     setLandlordSig(null);
@@ -730,6 +735,11 @@ export default function OwnerAgreementPage() {
   // Save to database & vault
   const handleSaveToVault = async () => {
     if (!selectedTemplate) return;
+
+    if (!landlordSig) {
+      alert("You must sign the agreement before sending it to the tenant! Please click the 'Sign Contract' button at the bottom of the document preview.");
+      return;
+    }
     
     const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
     const tenantEmail = fieldValues.tenantEmail || '';
@@ -775,7 +785,7 @@ export default function OwnerAgreementPage() {
       }
 
       const savedData = await response.json();
-      showToast("Agreement successfully saved to Database & Vault!");
+      showToast("Agreement signed and successfully sent to Tenant!");
       
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
@@ -1349,59 +1359,208 @@ export default function OwnerAgreementPage() {
             </div>
 
             {/* Template Selection Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {AGREEMENT_TEMPLATES.map((tmpl) => (
                 <div 
                   key={tmpl.id}
-                  className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between hover:border-[#4F46E5] hover:shadow-lg transition-all duration-300 group"
+                  className="relative w-full h-[520px] bg-[#F8FAFB] border border-gray-200 rounded-[28px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between"
                 >
-                  <div>
-                    {/* Complexity badge */}
-                    <div className="flex justify-between items-center">
-                      <span className={`text-[9px] font-black tracking-widest uppercase border px-2.5 py-1 rounded ${
-                        tmpl.complexity === 'Simple'
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                          : tmpl.complexity === 'Standard'
-                          ? 'bg-blue-50 border-blue-200 text-blue-600'
-                          : 'bg-purple-50 border-purple-200 text-purple-600'
-                      }`}>
-                        {tmpl.complexity} Version
-                      </span>
-                      <span className="text-[10px] text-gray-400 font-bold font-mono">
-                        {tmpl.fields.length} Questions
-                      </span>
-                    </div>
-
-                    <h3 className="text-[18px] font-black text-[#1A1A1A] mt-4 group-hover:text-black">
-                      {tmpl.title}
-                    </h3>
-                    <p className="text-[12px] text-gray-500 mt-2 leading-relaxed">
-                      {tmpl.description}
-                    </p>
-
-                    {/* Fields List details */}
-                    <div className="mt-5 space-y-2">
-                      <div className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-gray-400" />
-                        Variables asked by Assistant:
+                  
+                  {/* DEFAULT STATE: Shows the actual exact agreement document preview */}
+                  <div className="absolute inset-0 p-6 flex flex-col bg-white overflow-hidden transition-all duration-700 ease-in-out group-hover:opacity-10 group-hover:scale-95">
+                    {tmpl.id === 'simple-agreement' && (
+                      /* CLASSIC SIMPLE AGREEMENT DESIGN */
+                      <div className="border border-slate-300 rounded-xl p-5 bg-white h-full shadow-inner overflow-hidden font-serif text-[7px] leading-relaxed text-slate-700 select-none relative text-left">
+                        {/* Gold watermark stamp */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                          <div className="w-20 h-20 rounded-full border-2 border-yellow-600/15 flex flex-col items-center justify-center rotate-12 bg-white/5 shadow-xs">
+                            <span className="text-[5px] font-black text-yellow-600/20 tracking-wider">STANDARD</span>
+                            <Scale className="w-6 h-6 text-yellow-600/15 my-0.5" />
+                            <span className="text-[5px] font-black text-yellow-600/20 tracking-wider">APPROVED</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-center font-black tracking-wider uppercase text-[9px] text-slate-900 border-b border-slate-300 pb-1.5 mb-2">
+                          SIMPLE TENANCY AGREEMENT
+                        </div>
+                        <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        
+                        <div className="space-y-2">
+                          <p><strong>1. PARTIES:</strong><br />This Agreement is made between Stayzo Properties (Landlord) and the Tenant:<br />TENANT Name: ___________________________<br />TENANT Email: ___________________________</p>
+                          <p><strong>2. PROPERTY PREMISES:</strong><br />The Landlord agrees to rent to the Tenant the property located at:<br />ADDRESS: ___________________________</p>
+                          <p><strong>3. RENT & PAYMENT:</strong><br />The Tenant agrees to pay a Monthly Rent of:<br />RENT: ___________________________<br />payable on the first day of each calendar month.</p>
+                          <p><strong>4. START DATE:</strong><br />The tenancy commences on the following start date:<br />START DATE: ___________________________</p>
+                          <p><strong>5. AGREEMENT TERMS:</strong><br />The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.</p>
+                        </div>
+                        
+                        <div className="mt-6 flex justify-between border-t border-dashed border-slate-200 pt-3 text-[6px]">
+                          <div>
+                            <p className="font-bold">LANDLORD:</p>
+                            <p className="text-slate-500">Stayzo Properties</p>
+                            <p className="text-slate-300 mt-2">_______________________<br />Signature</p>
+                          </div>
+                          <div>
+                            <p className="font-bold">TENANT:</p>
+                            <p className="text-slate-350 mt-4">_______________________<br />Signature</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {tmpl.fields.map(f => (
-                          <span key={f.id} className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
-                            {f.label}
-                          </span>
-                        ))}
+                    )}
+
+                    {tmpl.id === 'standard-agreement' && (
+                      /* CLASSIC STANDARD AGREEMENT DESIGN - CREAM PAPER CLIPBOARD LOOK */
+                      <div className="border border-[#E5DEC9] rounded-xl p-5 bg-[#FAF8F2] h-full shadow-inner overflow-hidden font-serif text-[7px] leading-relaxed text-[#5C5643] select-none relative text-left">
+                        {/* Blue stamp watermark */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                          <div className="w-20 h-20 rounded-full border-2 border-blue-600/15 flex flex-col items-center justify-center -rotate-12 bg-white/5 shadow-xs">
+                            <span className="text-[5px] font-black text-blue-600/20 tracking-widest">PREMIER</span>
+                            <Scale className="w-6 h-6 text-blue-600/15 my-0.5" />
+                            <span className="text-[5px] font-black text-blue-600/20 tracking-widest">AUTHENTIC</span>
+                          </div>
+                        </div>
+
+                        <div className="text-center font-black tracking-wide uppercase text-[9px] text-[#2C2920] border-b-2 border-double border-[#DCD3B6] pb-2 mb-2">
+                          STANDARD LEASE AGREEMENT
+                        </div>
+                        <p className="text-[6px] text-[#8C846C] italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+                        <div className="space-y-2">
+                          <p>THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into by and between Stayzo Premier Properties (Landlord) and:<br />TENANT: ___________________________<br />TENANT Email: ___________________________</p>
+                          <p><strong>1. PREMISES:</strong> Landlord hereby leases to Tenant the real property located at:<br />PROPERTY ADDRESS: ___________________________</p>
+                          <p><strong>2. LEASE TERM:</strong> The lease shall commence on ___________ and shall remain in effect for a period of ___________.</p>
+                          <p><strong>3. PAYMENT OF RENT:</strong> Tenant agrees to pay monthly rent in the amount of ___________ on or before the first day of each calendar month.</p>
+                          <p><strong>4. ADVANCED PAYMENT:</strong> Tenant agrees to make an advanced payment of ___________ upon signing, to be applied towards the rental term.</p>
+                          <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall deposit the sum of ___________ with Landlord as a security deposit for damages or default under this Agreement.</p>
+                          <p><strong>6. CONDITION & COVENANTS:</strong> Tenant agrees to keep the premises in a sanitary and good condition and comply with all housing regulations.</p>
+                          <p className="text-[5.5px] italic text-[#8C846C] mt-2">IN WITNESS WHEREOF, the Landlord and Tenant have executed this Agreement on the day and year first above written.</p>
+                        </div>
+
+                        <div className="mt-6 flex justify-between border-t border-dashed border-[#DCD3B6] pt-3 text-[6px]">
+                          <div>
+                            <p className="font-bold">LANDLORD:</p>
+                            <p className="text-[#8C846C]">Stayzo Premier Properties</p>
+                            <p className="text-[#B5AC94] mt-2">_______________________<br />Signature</p>
+                          </div>
+                          <div>
+                            <p className="font-bold">TENANT:</p>
+                            <p className="text-[#B5AC94] mt-4">_______________________<br />Signature</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {tmpl.id === 'detailed-agreement' && (
+                      /* CLASSIC COMPREHENSIVE LEASE DESIGN - BLUE BORDER MARGINS */
+                      <div className="border border-slate-300 rounded-xl p-5 bg-white h-full shadow-inner overflow-hidden font-serif text-[7px] leading-relaxed text-slate-800 select-none relative text-left">
+                        {/* Navy crest watermark */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                          <div className="w-20 h-20 rounded-full border-2 border-indigo-900/10 flex flex-col items-center justify-center rotate-45 bg-white/5 shadow-xs">
+                            <span className="text-[5px] font-black text-indigo-900/15 tracking-wider">EXECUTIVE</span>
+                            <Scale className="w-6 h-6 text-indigo-900/10 my-0.5" />
+                            <span className="text-[5px] font-black text-indigo-900/15 tracking-wider">COMPREHENSIVE</span>
+                          </div>
+                        </div>
+
+                        {/* Blue side rules */}
+                        <div className="absolute left-2.5 top-0 bottom-0 border-l border-indigo-900/15" />
+                        <div className="absolute right-2.5 top-0 bottom-0 border-r border-indigo-900/15" />
+
+                        <div className="pl-3 pr-3 h-full flex flex-col justify-between overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+                          <div>
+                            <div className="text-center font-black tracking-wider uppercase text-[8.5px] text-indigo-950 border-b border-indigo-900/20 pb-1.5 mb-2">
+                              COMPREHENSIVE LEASE AGREEMENT
+                            </div>
+                            <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+                            <div className="space-y-1.5">
+                              <p>THIS LEASE AGREEMENT is executed by and between Stayzo Executive Properties (Landlord) and:<br />TENANT: ___________________________<br />TENANT Email: ___________________________</p>
+                              <p><strong>1. DESCRIPTION OF PREMISES:</strong> Landlord leases to Tenant the premises located at:<br />PROPERTY ADDRESS: ___________________________</p>
+                              <p><strong>2. DURATION & TERM:</strong> The lease commences on ___________ and runs for a term of ___________.</p>
+                              <p><strong>3. MONTHLY RENT:</strong> Rent is set at ___________ per month, due in advance on the 1st day of the month.</p>
+                              <p><strong>4. ADVANCED RENT PAYMENT:</strong> Tenant shall pay an advanced sum of ___________ to be credited towards the initial months.</p>
+                              <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall pay a security deposit of ___________ held as security for damages.</p>
+                              <p><strong>6. UTILITIES PAYMENT:</strong> ___________________________</p>
+                              <p><strong>7. PET POLICY:</strong> ___________________________</p>
+                              <p><strong>8. LATE FEE PENALTIES:</strong> ___________________________</p>
+                              <p><strong>9. MAINTENANCE & REPAIRS:</strong> ___________________________</p>
+                              <p className="text-[5.5px] italic text-slate-400 mt-1">IN WITNESS WHEREOF, the Landlord and Tenant have executed this Agreement on the day and year first above written.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between border-t border-indigo-900/20 pt-2 text-[6px] mt-4">
+                            <div>
+                              <p className="font-bold">LANDLORD:</p>
+                              <p className="text-slate-500">Stayzo Executive Properties</p>
+                              <p className="text-slate-350 mt-2">_______________________<br />Signature</p>
+                            </div>
+                            <div>
+                              <p className="font-bold">TENANT:</p>
+                              <p className="text-slate-350 mt-4">_______________________<br />Signature</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    onClick={() => handleStartDraft(tmpl)}
-                    className="mt-8 w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-extrabold tracking-widest uppercase py-3.5 rounded-xl transition-all shadow-md group-hover:shadow-lg flex items-center justify-center gap-2 group-hover:scale-[1.01]"
-                  >
-                    <span>Start Draft</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </button>
+                  {/* HOVER STATE: The details shown in the screenshot */}
+                  <div className="absolute inset-0 bg-white p-6 flex flex-col justify-between transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-10 invisible group-hover:visible">
+                    <div className="space-y-5">
+                      {/* Top badges */}
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded ${
+                          tmpl.complexity === 'Simple'
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            : tmpl.complexity === 'Standard'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                            : 'bg-purple-50 text-purple-600 border border-purple-200'
+                        }`}>
+                          {tmpl.complexity === 'Detailed' ? 'DETAILED' : tmpl.complexity.toUpperCase()} VERSION
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-bold font-mono">
+                          {tmpl.fields.length} Questions
+                        </span>
+                      </div>
+
+                      {/* Title & Description */}
+                      <div className="text-left">
+                        <h3 className="text-[18px] font-black text-[#1A1A1A]">
+                          {tmpl.title}
+                        </h3>
+                        <p className="text-[12px] text-gray-500 mt-2 leading-relaxed">
+                          {tmpl.description}
+                        </p>
+                      </div>
+
+                      {/* Variables list */}
+                      <div className="space-y-2 text-left">
+                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                          <BookOpen className="w-3.5 h-3.5 text-gray-300" />
+                          Variables asked by Assistant:
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {tmpl.fields.map(f => (
+                            <span key={f.id} className="text-[10px] font-bold text-gray-700 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-lg">
+                              {f.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Start Draft Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartDraft(tmpl);
+                      }}
+                      className="w-full bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-extrabold tracking-widest uppercase py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer relative z-20"
+                    >
+                      <span>Start Draft</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1491,7 +1650,7 @@ export default function OwnerAgreementPage() {
                           className="flex items-center gap-1 text-[11px] font-black text-[#1A1A1A] hover:underline"
                         >
                           <Info className="w-3.5 h-3.5" />
-                          <span>Open in Workspace</span>
+                          <span>Workspace</span>
                         </button>
 
                         <button
@@ -1739,11 +1898,11 @@ export default function OwnerAgreementPage() {
                     </button>
                     <button
                       onClick={handleSaveToVault}
-                      className="px-3 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1 shadow-sm"
-                      title="Save to Vault"
+                      className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1 shadow-sm animate-pulse"
+                      title="Sign & Send to Tenant"
                     >
-                      <Check className="w-3 h-3" />
-                      <span>Save</span>
+                      <Send className="w-3 h-3" />
+                      <span>Sign & Send to Tenant</span>
                     </button>
                   </div>
                 </div>
