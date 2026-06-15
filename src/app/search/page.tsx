@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link'; // Use simple link or button to redirect
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
+import SearchMap from '../../components/maps/SearchMap';
 import { 
   Home, Building2, Landmark, Map, HelpCircle, 
   Search, Bookmark, Bell, ChevronDown, 
@@ -78,20 +79,38 @@ function SearchContent() {
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
-        const mapped = data.map((item: any, index: number) => ({
-          ...item,
-          // Generate mock map coordinates for the frontend demo based on index
-          lat: 100 + ((index * 40) % 200),
-          lng: 150 + ((index * 30) % 200),
-          rating: 4.8 + (Math.random() * 0.2),
-          guestFavorite: index % 3 === 0,
-          image: item.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
-          beds: item.bedrooms || 1,
-          baths: item.bathrooms || 1,
-          sqft: item.sqft || 1000,
-          price: `Rs. ${Number(item.price).toLocaleString()}`,
-          address: item.address || `${item.city || 'Anytown'}, ${item.state || 'ST'}`
-        }));
+        const getCityCoords = (address: string, idx: number) => {
+          const addr = (address || "").toLowerCase();
+          const offsetLat = ((idx * 7) % 10) * 0.005 - 0.02;
+          const offsetLng = ((idx * 9) % 10) * 0.005 - 0.02;
+          if (addr.includes('jaffna') || addr.includes('vannarponnai') || addr.includes('kopay')) return { lat: 9.6615 + offsetLat, lng: 80.0125 + offsetLng };
+          if (addr.includes('kandy') || addr.includes('peradeniya')) return { lat: 7.2906 + offsetLat, lng: 80.6337 + offsetLng };
+          if (addr.includes('katunayake') || addr.includes('seeduwa') || addr.includes('negombo') || addr.includes('liyanagemull') || addr.includes('liyanagemulla')) return { lat: 7.1804 + offsetLat, lng: 79.8837 + offsetLng };
+          if (addr.includes('galle')) return { lat: 6.0535 + offsetLat, lng: 80.2210 + offsetLng };
+          return { lat: 6.9271 + offsetLat, lng: 79.8612 + offsetLng };
+        };
+
+        const mapped = data.map((item: any, index: number) => {
+          const parsedLat = Number(item.latitude);
+          const parsedLng = Number(item.longitude);
+          const hasDbCoords = !isNaN(parsedLat) && parsedLat !== 0 && !isNaN(parsedLng) && parsedLng !== 0;
+          const fallback = getCityCoords(item.address, index);
+          const lat = hasDbCoords ? parsedLat : fallback.lat;
+          const lng = hasDbCoords ? parsedLng : fallback.lng;
+          return {
+            ...item,
+            lat,
+            lng,
+            rating: 4.8 + (Math.random() * 0.2),
+            guestFavorite: index % 3 === 0,
+            image: item.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
+            beds: item.bedrooms || 1,
+            baths: item.bathrooms || 1,
+            sqft: item.sqft || 1000,
+            price: `Rs. ${Number(item.price).toLocaleString()}`,
+            address: item.address || `${item.city || 'Anytown'}, ${item.state || 'ST'}`
+          };
+        });
         setListings(mapped);
         if (mapped.length > 0) setActivePropertyId(mapped[0].id);
         setLoading(false);
@@ -386,76 +405,40 @@ function SearchContent() {
           </div>
         </main>
 
-        {/* Column 3: Styled Interactive Mock Map (Right) */}
+        {/* Column 3: Google Map (Right) */}
         <section className={`bg-[#E8EEF0] relative overflow-hidden shrink-0 flex flex-col transition-all duration-300 ${
           showMap ? 'w-full lg:w-[42%] min-h-[300px] lg:min-h-0 opacity-100 border-l border-gray-100' : 'w-0 min-h-0 opacity-0 pointer-events-none'
         }`}>
-          {/* Real Map representing roads and landmarks */}
-          <div className="absolute inset-0 z-0">
-            <iframe 
-              src="https://www.openstreetmap.org/export/embed.html?bbox=80.59%2C7.26%2C80.68%2C7.32&amp;layer=mapnik" 
-              className="w-full h-full border-none select-none"
-              style={{ filter: 'grayscale(100%) contrast(90%) brightness(102%)' }}
-              title="Real Interactive Map of Sri Lanka"
-            ></iframe>
-          </div>
+          {showMap && (
+            <SearchMap 
+              listings={listings}
+              activePropertyId={activePropertyId}
+              onActivePropertyChange={(id) => setActivePropertyId(id)}
+            />
+          )}
 
-          {/* Map Pins */}
-          <div className="absolute inset-0 z-10">
-            {/* Generic Pins */}
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '80px', left: '70px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '150px', left: '320px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '90px', left: '440px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '250px', left: '50px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '350px', left: '410px' }}></div>
-            <div className="absolute w-2 h-2 bg-[#1A1A1A] rounded-full border border-white shadow-sm" style={{ top: '420px', left: '260px' }}></div>
-
-            {/* Interactive Pins corresponding to listings */}
-            {listings.map((listing) => (
-              <button 
-                key={listing.id}
-                onClick={() => setActivePropertyId(listing.id)}
-                className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-                  activePropertyId === listing.id 
-                    ? 'w-10 h-10 bg-[#1A1A1A]/20 border border-[#1A1A1A] rounded-full flex items-center justify-center z-20' 
-                    : 'w-4 h-4 bg-[#1A1A1A] border-2 border-white rounded-full shadow-lg hover:scale-125 z-10'
-                }`}
-                style={{ top: `${listing.lng}px`, left: `${listing.lat}px` }}
-              >
-                {activePropertyId === listing.id && (
-                  <span className="w-4 h-4 bg-[#1A1A1A] rounded-full border border-white shadow-md animate-ping absolute"></span>
-                )}
-                {activePropertyId === listing.id && (
-                  <span className="w-4 h-4 bg-[#1A1A1A] rounded-full border border-white shadow-md relative z-10"></span>
-                )}
-              </button>
-            ))}
-
-            {/* Overlapping Hover/Popup details block from the image */}
-            {selectedProperty && (
-              <Link 
-                href={`/properties/${selectedProperty.id}`}
-                className="absolute bg-white rounded-2xl p-3 shadow-2xl flex flex-col max-w-[240px] z-30 transition-all duration-500 border border-gray-150 hover:border-gray-300 no-underline cursor-pointer"
-                style={{ top: `${selectedProperty.lng - 100}px`, left: `${selectedProperty.lat + 30}px` }}
-              >
-                <div className="w-full h-[100px] rounded-xl overflow-hidden mb-2 bg-gray-50">
-                  <img 
-                    src={selectedProperty.image} 
-                    alt={selectedProperty.title} 
-                    className="w-full h-full object-cover"
-                  />
+          {/* Overlapping Hover/Popup details card on the active listing */}
+          {showMap && selectedProperty && (
+            <Link 
+              href={`/properties/${selectedProperty.id}`}
+              className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-2xl p-3 shadow-2xl flex items-center space-x-3 w-[280px] z-30 transition-all duration-300 border border-gray-150 hover:border-gray-300 hover:scale-[1.02] no-underline cursor-pointer"
+            >
+              <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-50 shrink-0">
+                <img 
+                  src={selectedProperty.image} 
+                  alt={selectedProperty.title} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <h4 className="font-extrabold text-[#1A1A1A] text-xs truncate mb-1">{selectedProperty.title}</h4>
+                <p className="text-[10px] font-semibold text-gray-400 mb-1.5 truncate">{selectedProperty.address}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-gray-900">{selectedProperty.price}<span className="text-[9px] text-gray-400 font-normal">/mo</span></span>
                 </div>
-                <h4 className="font-extrabold text-[#1A1A1A] text-sm mb-0.5">{selectedProperty.price}<span className="text-[10px] text-gray-400 font-medium">/month</span></h4>
-                <p className="text-[10px] font-semibold text-gray-500 line-clamp-1">{selectedProperty.address}</p>
-              </Link>
-            )}
-          </div>
-
-          {/* Bottom Zoom Tools */}
-          <div className="absolute bottom-6 right-6 z-20 bg-white shadow-xl rounded-xl flex flex-col divide-y divide-gray-100 overflow-hidden font-bold text-gray-500">
-            <button className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition">+</button>
-            <button className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition">-</button>
-          </div>
+              </div>
+            </Link>
+          )}
         </section>
 
       </div>
