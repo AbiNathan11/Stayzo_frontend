@@ -4,7 +4,6 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import OwnerNavbar from '@/components/OwnerNavbar';
 
-import Footer from '@/components/Footer';
 
 export default function OwnerDashboardLayout({
   children,
@@ -32,7 +31,6 @@ export default function OwnerDashboardLayout({
         </main>
       </div>
 
-      <Footer />
     </div>
   );
 }

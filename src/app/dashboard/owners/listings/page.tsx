@@ -154,7 +154,10 @@ export default function OwnerListings() {
     const fetchListings = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`);
+        const token = sessionStorage.getItem('stayzo_token');
+        const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data: Listing[] = await res.json();
           setListings(data);
