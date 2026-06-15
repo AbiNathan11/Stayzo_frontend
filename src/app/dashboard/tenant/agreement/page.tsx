@@ -134,6 +134,31 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
 }
 
 export default function TenantAgreementPage() {
+  const getThemeClass = (theme: string) => {
+    switch (theme) {
+      case 'classic-legal':
+        return 'font-serif border-4 border-double border-gray-800 p-8 md:p-12 bg-white text-gray-900 leading-relaxed text-justify';
+      case 'modern-clean':
+        return 'font-sans p-8 md:p-10 bg-white text-gray-700 leading-loose text-left';
+      case 'executive-elite':
+        return 'font-serif border-l-8 border-gray-900 p-8 md:p-11 bg-[#FAFAFA] text-slate-800 leading-normal text-justify';
+      default:
+        return 'font-serif border-4 border-double border-gray-855 p-8 md:p-12 bg-white text-gray-900 leading-relaxed text-justify';
+    }
+  };
+
+  const cleanContractText = (text: string) => {
+    if (!text) return '';
+    const lastLandlordIdx = text.lastIndexOf("LANDLORD:");
+    if (lastLandlordIdx !== -1 && lastLandlordIdx > text.length - 400) {
+      const afterText = text.substring(lastLandlordIdx);
+      if (afterText.includes("TENANT:") || afterText.includes("Signature")) {
+        return text.substring(0, lastLandlordIdx).trim();
+      }
+    }
+    return text;
+  };
+
   const [userEmail, setUserEmail] = useState('abiramy@example.com');
   const [agreements, setAgreements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,10 +278,6 @@ export default function TenantAgreementPage() {
 
   const submitTenantSignature = async () => {
     if (!selectedAgreement || !tenantSig) return;
-    if (!nicFront || !nicBack) {
-      toast.error("Please upload both NIC Front and Back images to complete the lease verification.");
-      return;
-    }
 
     try {
       const response = await fetch(`http://localhost:3001/api/agreements/${selectedAgreement.id}/sign`, {
@@ -264,7 +285,7 @@ export default function TenantAgreementPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ tenantSig, nicFront, nicBack })
+        body: JSON.stringify({ tenantSig, nicFront: "", nicBack: "" })
       });
 
       if (!response.ok) {
@@ -464,8 +485,34 @@ export default function TenantAgreementPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
               {/* Document Text Pane */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 h-[400px] overflow-y-auto font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-slate-800 shadow-inner">
-                {selectedAgreement.contractText}
+              <div className={`h-[400px] overflow-y-auto rounded-2xl border border-slate-200 flex flex-col justify-between ${getThemeClass(selectedAgreement.visualTheme)} shadow-inner`}>
+                <div className="whitespace-pre-wrap text-[13px]">{cleanContractText(selectedAgreement.contractText)}</div>
+                
+                {/* Signatures inside the document layout */}
+                <div className="mt-12 pt-8 border-t border-gray-200 grid grid-cols-2 gap-8 text-[12px] font-sans text-left">
+                  <div>
+                    <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-2">Landlord Representative</p>
+                    {selectedAgreement.landlordSig ? (
+                      <img src={selectedAgreement.landlordSig} alt="Landlord Signature" className="h-10 object-contain my-1" />
+                    ) : (
+                      <p className="text-[10px] font-bold text-gray-400 italic">Signature Pending</p>
+                    )}
+                    <div className="border-b border-gray-400 w-full h-1 mt-1" />
+                    <p className="font-bold mt-1 text-[11px] text-[#1A1A1A]">{selectedAgreement.landlordName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-2">Tenant Signature</p>
+                    {selectedAgreement.tenantSig ? (
+                      <img src={selectedAgreement.tenantSig} alt="Tenant Signature" className="h-10 object-contain my-1" />
+                    ) : tenantSig ? (
+                      <img src={tenantSig} alt="Tenant Signature Preview" className="h-10 object-contain my-1" />
+                    ) : (
+                      <p className="text-[10px] font-bold text-gray-400 italic">Signature Pending</p>
+                    )}
+                    <div className="border-b border-gray-400 w-full h-1 mt-1" />
+                    <p className="font-bold mt-1 text-[11px] text-[#1A1A1A]">{selectedAgreement.tenantName}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Signing Control Pane */}
@@ -499,29 +546,6 @@ export default function TenantAgreementPage() {
                       <span>This Agreement is Active & Fully Signed</span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 text-center">Landlord Signature</div>
-                        <div className="border border-slate-200 rounded-xl bg-slate-50 p-2.5 flex items-center justify-center h-20">
-                          {selectedAgreement.landlordSig ? (
-                            <img src={selectedAgreement.landlordSig} alt="Landlord Sig" className="max-h-full max-w-full object-contain" />
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-300">NO SIGNATURE</span>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 text-center">Tenant Signature</div>
-                        <div className="border border-slate-200 rounded-xl bg-slate-50 p-2.5 flex items-center justify-center h-20">
-                          {selectedAgreement.tenantSig ? (
-                            <img src={selectedAgreement.tenantSig} alt="Tenant Sig" className="max-h-full max-w-full object-contain" />
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-300">NO SIGNATURE</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="pt-2 flex justify-center">
                       <button
                         onClick={() => handleToggleWallet(selectedAgreement.id, !!selectedAgreement.savedInTenantWallet)}
@@ -536,6 +560,7 @@ export default function TenantAgreementPage() {
                       </button>
                     </div>
                   </div>
+
                 ) : (
                   /* SIGNING WORKFLOW */
                   <div className="space-y-6">
@@ -596,83 +621,24 @@ export default function TenantAgreementPage() {
                       <DesktopCanvasPad onSave={(dataUrl) => setTenantSig(dataUrl)} />
                     )}
 
-                    {tenantSig && (
-                      <div className="space-y-2 border border-dashed border-[#EEF2FF] rounded-2xl p-4 bg-[#EEF2FF]/20">
-                        <div className="text-[10px] font-extrabold text-[#4F46E5] uppercase tracking-widest">Tenant Signature Preview</div>
-                        <div className="bg-white border border-slate-200 rounded-xl p-2 h-16 flex items-center justify-center">
-                          <img src={tenantSig} alt="Tenant Signature" className="max-h-full max-w-full object-contain" />
-                        </div>
-                      </div>
-                    )}
 
-                    {/* NIC Upload Section (Required for Renting) */}
-                    <div className="space-y-4 border-t border-dashed border-gray-100 pt-4">
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verify Identity (Submit NIC to rent)</div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Front of NIC */}
-                        <div className="space-y-2">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC FRONT IMAGE *</label>
-                          <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-3 transition text-center cursor-pointer bg-[#F5F7F8]">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              required
-                              onChange={(e) => handleNICChange(e, 'front')}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="text-gray-400 text-[10px] font-semibold py-1">
-                              {nicFrontName ? (
-                                <span className="text-emerald-600 font-bold">✓ {nicFrontName}</span>
-                              ) : (
-                                <>Front copy <span className="text-[#1A1A1A] underline">browse</span></>
-                              )}
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Back of NIC */}
-                        <div className="space-y-2">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block">NIC BACK IMAGE *</label>
-                          <div className="relative border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl p-3 transition text-center cursor-pointer bg-[#F5F7F8]">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              required
-                              onChange={(e) => handleNICChange(e, 'back')}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="text-gray-400 text-[10px] font-semibold py-1">
-                              {nicBackName ? (
-                                <span className="text-emerald-600 font-bold">✓ {nicBackName}</span>
-                              ) : (
-                                <>Back copy <span className="text-[#1A1A1A] underline">browse</span></>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
+                     <div className="flex gap-3">
                       <button
                         onClick={() => {
                           setSelectedAgreement(null);
-                          setNicFront(null);
-                          setNicBack(null);
-                          setNicFrontName('');
-                          setNicBackName('');
                         }}
                         type="button"
-                        className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-2xl py-3 text-xs font-bold transition"
+                        className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-2xl py-3 text-xs font-bold transition cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={submitTenantSignature}
-                        disabled={!tenantSig || !nicFront || !nicBack}
+                        disabled={!tenantSig}
                         type="button"
-                        className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 ${
-                          !tenantSig || !nicFront || !nicBack
+                        className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 cursor-pointer ${
+                          !tenantSig
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-[#4F46E5] text-white hover:bg-[#4338CA] active:scale-95"
                         }`}

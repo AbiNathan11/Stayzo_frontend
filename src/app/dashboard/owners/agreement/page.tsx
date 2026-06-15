@@ -26,6 +26,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import toast, { Toaster } from 'react-hot-toast';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface TemplateField {
@@ -58,6 +59,7 @@ interface SavedAgreement {
   landlordSig?: string;
   tenantSig?: string;
   savedInLandlordWallet?: boolean;
+  isDraft?: boolean;
 }
 
 // ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
@@ -362,13 +364,15 @@ export default function OwnerAgreementPage() {
   const [selectedTheme, setSelectedTheme] = useState<VisualTheme>('classic-legal');
   
   const [savedAgreements, setSavedAgreements] = useState<SavedAgreement[]>([]);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
 
   // Signatures State
   const [landlordSig, setLandlordSig] = useState<string | null>(null);
   const [tenantSig, setTenantSig] = useState<string | null>(null);
   const [showSigModal, setShowSigModal] = useState<'landlord' | 'tenant' | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [deleteConfirmAgreement, setDeleteConfirmAgreement] = useState<{ id: string; name: string } | null>(null);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
   const [customIp, setCustomIp] = useState<string>('');
@@ -449,9 +453,10 @@ export default function OwnerAgreementPage() {
   const fetchAgreementsFromDb = async (email: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/agreements?landlordEmail=${encodeURIComponent(email)}`);
+      let mapped: SavedAgreement[] = [];
       if (response.ok) {
         const data = await response.json();
-        const mapped: SavedAgreement[] = data.map((item: any) => ({
+        mapped = data.map((item: any) => ({
           id: item.id,
           templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
           templateTitle: 'Rental Lease Agreement',
@@ -474,8 +479,40 @@ export default function OwnerAgreementPage() {
           tenantSig: item.tenantSig || undefined,
           savedInLandlordWallet: item.savedInLandlordWallet || false
         }));
-        setSavedAgreements(mapped);
       }
+
+      // Check if we have an ongoing local draft and append it to the vault!
+      if (typeof window !== 'undefined') {
+        const localDraftStr = localStorage.getItem('stayzo_ongoing_agreement_draft');
+        if (localDraftStr) {
+          try {
+            const parsed = JSON.parse(localDraftStr);
+            const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === parsed.templateId);
+            if (tmpl) {
+              const draftAgreement: SavedAgreement = {
+                id: 'local_draft_ongoing',
+                templateId: parsed.templateId,
+                templateTitle: tmpl.title,
+                complexity: tmpl.complexity,
+                tenantName: parsed.fieldValues?.tenantName || 'Draft Tenant',
+                propertyAddress: parsed.fieldValues?.propertyAddress || 'Draft Address',
+                rentAmount: parsed.fieldValues?.rentAmount || 'N/A',
+                dateCreated: 'Ongoing Draft',
+                visualTheme: parsed.selectedTheme || 'classic-legal',
+                values: parsed.fieldValues || {},
+                landlordSig: parsed.landlordSig || undefined,
+                savedInLandlordWallet: true,
+                isDraft: true
+              };
+              mapped.unshift(draftAgreement);
+            }
+          } catch (err) {
+            console.error("Error parsing local draft for vault", err);
+          }
+        }
+      }
+
+      setSavedAgreements(mapped);
     } catch (e) {
       console.error("Failed to fetch agreements from DB", e);
     }
@@ -501,6 +538,60 @@ export default function OwnerAgreementPage() {
 
     fetchAgreementsFromDb(email);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stayzo_ongoing_agreement_draft');
+      if (saved) {
+        setHasSavedDraft(true);
+      }
+    }
+  }, []);
+
+  const handleSaveProgress = () => {
+    if (!selectedTemplate) return;
+    const progressData = {
+      templateId: selectedTemplate.id,
+      fieldValues,
+      chatHistory,
+      currentFieldIdx,
+      landlordSig,
+      selectedTheme
+    };
+    localStorage.setItem('stayzo_ongoing_agreement_draft', JSON.stringify(progressData));
+    showToast("Ongoing activity saved successfully!");
+    if (landlordUser?.email) {
+      fetchAgreementsFromDb(landlordUser.email);
+    }
+  };
+
+  const handleRestoreDraft = () => {
+    const saved = localStorage.getItem('stayzo_ongoing_agreement_draft');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === parsed.templateId);
+        if (tmpl) {
+          setSelectedTemplate(tmpl);
+          setFieldValues(parsed.fieldValues || {});
+          setChatHistory(parsed.chatHistory || []);
+          setCurrentFieldIdx(parsed.currentFieldIdx ?? 0);
+          setLandlordSig(parsed.landlordSig || null);
+          if (parsed.selectedTheme) setSelectedTheme(parsed.selectedTheme);
+          setHasSavedDraft(false);
+          showToast("Saved progress restored successfully!");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const handleClearSavedDraft = () => {
+    localStorage.removeItem('stayzo_ongoing_agreement_draft');
+    setHasSavedDraft(false);
+    showToast("Saved progress cleared.");
+  };
 
   // Save agreements to localStorage helper (unused now, but kept to prevent TS warnings)
   const saveAgreementsToLocalStorage = (agreements: SavedAgreement[]) => {
@@ -551,7 +642,7 @@ export default function OwnerAgreementPage() {
     const initialMessage = {
       id: 'welcome',
       sender: 'bot' as const,
-      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your **${template.title}** (${template.complexity} version). \n\nI will ask you a few simple questions one by one. \n\nTo start: **${firstField.question}**`,
+      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your ${template.title} (${template.complexity} version). \n\nI will ask you a few simple questions one by one. \n\nTo start: ${firstField.question}`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setChatHistory([initialMessage]);
@@ -560,13 +651,16 @@ export default function OwnerAgreementPage() {
 
   // Exit current drafting
   const handleExitDraft = () => {
-    if (window.confirm("Are you sure you want to exit the current draft? Your unsaved progress will be lost.")) {
-      setSelectedTemplate(null);
-      setChatHistory([]);
-      setFieldValues({});
-      setLandlordSig(null);
-      setTenantSig(null);
-    }
+    setShowExitConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setSelectedTemplate(null);
+    setChatHistory([]);
+    setFieldValues({});
+    setLandlordSig(null);
+    setTenantSig(null);
+    setShowExitConfirm(false);
   };
 
   // Simulate bot typing delay
@@ -582,10 +676,10 @@ export default function OwnerAgreementPage() {
       let botText = '';
       
       if (isFinished) {
-        botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes on the right preview pane, click on the **Landlord Sign** or **Tenant Sign** buttons at the bottom of the document to sign, and click **"Save"** or **"Print PDF"** to complete.`;
+        botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
-        botText = `Got it. Registered **${prevFieldName}** as **"${previousAnswer}"**.\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: **${nextField.question}**`;
+        botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
       }
 
       setChatHistory(prev => [
@@ -606,6 +700,55 @@ export default function OwnerAgreementPage() {
     }, 900);
   };
 
+  // Validate chatbot field answers
+  const validateField = (fieldId: string, value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Input cannot be empty. Please provide an answer.";
+    }
+
+    if (fieldId === 'tenantName') {
+      const nameRegex = /^[A-Za-z\s.'-]{2,}$/;
+      if (!nameRegex.test(trimmed)) {
+        return "Please enter a valid tenant name (at least 2 characters, alphabetic letters only).";
+      }
+    }
+
+    if (fieldId === 'tenantEmail') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        return "Please enter a valid email address (e.g., tenant@example.com).";
+      }
+    }
+
+    if (fieldId === 'propertyAddress') {
+      if (trimmed.length < 5) {
+        return "Please enter a valid property address (at least 5 characters).";
+      }
+    }
+
+    if (['rentAmount', 'advancePayment', 'depositAmount', 'lateFee'].includes(fieldId)) {
+      // Must contain at least one digit
+      if (!/\d/.test(trimmed)) {
+        return "Please include a numeric amount in your response (e.g., Rs 30,000).";
+      }
+    }
+
+    if (fieldId === 'startDate') {
+      if (trimmed.length < 4) {
+        return "Please enter a valid starting date (e.g., June 1, 2026).";
+      }
+    }
+
+    if (fieldId === 'duration') {
+      if (trimmed.length < 2) {
+        return "Please enter a valid lease duration (e.g., 12 Months).";
+      }
+    }
+
+    return null;
+  };
+
   // Handle Send Chat
   const handleSendChat = (textToSend?: string) => {
     const text = (textToSend !== undefined ? textToSend : chatInput).trim();
@@ -622,6 +765,30 @@ export default function OwnerAgreementPage() {
     }
 
     const currentField = selectedTemplate.fields[currentFieldIdx];
+    
+    // Validate answer!
+    const validationError = validateField(currentField.id, text);
+    if (validationError) {
+      const userMsg = {
+        id: Math.random().toString(),
+        sender: 'user' as const,
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatHistory(prev => [
+        ...prev,
+        userMsg,
+        {
+          id: Math.random().toString(),
+          sender: 'bot' as const,
+          text: `⚠️ Invalid Input: ${validationError}\n\nPrompt: ${currentField.question}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      if (textToSend === undefined) setChatInput('');
+      return;
+    }
+
     const nextVals = { ...fieldValues, [currentField.id]: text };
     setFieldValues(nextVals);
 
@@ -696,7 +863,7 @@ export default function OwnerAgreementPage() {
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `✨ I have successfully auto-filled the **${selectedTemplate.title}** with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or sign it at the bottom.`,
+        text: `✨ I have successfully auto-filled the ${selectedTemplate.title} with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or apply your signature.`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -717,7 +884,7 @@ export default function OwnerAgreementPage() {
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `Let's edit the **${field.label}** (currently: "${fieldValues[fieldId] || 'Not set'}"). \n\nPlease provide the new value:`,
+        text: `Let's edit the ${field.label} (currently: "${fieldValues[fieldId] || 'Not set'}"). \n\nPlease provide the new value:`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -734,8 +901,16 @@ export default function OwnerAgreementPage() {
   const handleSaveToVault = async () => {
     if (!selectedTemplate) return;
 
+    if (getProgressPercentage() < 100) {
+      toast.error("Please fill in all details via the assistant before sending the contract.");
+      return;
+    }
+
     if (!landlordSig) {
-      alert("You must sign the agreement before sending it to the tenant! Please click the 'Sign Contract' button at the bottom of the document preview.");
+      // Automatically open the signature modal for the landlord
+      setShowSigModal('landlord');
+      setSigModalTab('qr');
+      toast.error("Please sign the agreement first to send it to the tenant.");
       return;
     }
     
@@ -766,7 +941,8 @@ export default function OwnerAgreementPage() {
       endDate,
       listingName: propertyAddress,
       contractText,
-      landlordSig: landlordSig || ''
+      landlordSig: landlordSig || '',
+      visualTheme: selectedTheme
     };
 
     try {
@@ -790,16 +966,37 @@ export default function OwnerAgreementPage() {
       }
     } catch (err) {
       console.error(err);
-      alert('Error saving agreement to database. Please check your network connection.');
+      toast.error('Error saving agreement to database. Please check your network connection.');
+    }
+  };
+
+  const handleConfirmDelete = async (id: string) => {
+    try {
+      if (id === 'local_draft_ongoing') {
+        localStorage.removeItem('stayzo_ongoing_agreement_draft');
+        setHasSavedDraft(false);
+        showToast("Ongoing draft deleted successfully.");
+      } else {
+        const response = await fetch(`http://localhost:3001/api/agreements/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete agreement from database');
+        }
+        showToast("Agreement deleted from database successfully.");
+      }
+      
+      if (landlordUser?.email) {
+        fetchAgreementsFromDb(landlordUser.email);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error deleting agreement from database.');
     }
   };
 
   const handleDeleteAgreement = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete the agreement for "${name}"?`)) {
-      const filtered = savedAgreements.filter(a => a.id !== id);
-      saveAgreementsToLocalStorage(filtered);
-      showToast("Agreement deleted successfully.");
-    }
+    setDeleteConfirmAgreement({ id, name });
   };
 
   const handleToggleWallet = async (id: string, currentSaved: boolean) => {
@@ -822,15 +1019,12 @@ export default function OwnerAgreementPage() {
       }
     } catch (err) {
       console.error(err);
-      alert('Error updating vault status.');
+      toast.error('Error updating vault status.');
     }
   };
 
   const showToast = (message: string) => {
-    setSuccessToast(message);
-    setTimeout(() => {
-      setSuccessToast(null);
-    }, 4000);
+    toast.success(message);
   };
 
   const handleCopyText = () => {
@@ -1026,11 +1220,23 @@ export default function OwnerAgreementPage() {
           </div>
         ) : roleType === 'landlord' ? (
           <button 
-            onClick={(e) => { e.stopPropagation(); setShowSigModal(roleType); setSigModalTab('qr'); }}
-            className="text-[10px] border border-dashed border-[#C7D2FE] bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] font-extrabold px-3 py-2 rounded-lg flex items-center gap-1.5 mt-2 transition-all hover:scale-[1.01] hide-on-print"
+            type="button"
+            onClick={() => {
+              if (getProgressPercentage() < 100) {
+                toast.error("Please fill in all details via the assistant before signing.");
+                return;
+              }
+              setShowSigModal('landlord');
+              setSigModalTab('qr');
+            }}
+            className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${
+              getProgressPercentage() < 100 
+                ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
+                : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
+            }`}
           >
             <FileSignature className="w-3.5 h-3.5" />
-            <span>Sign Contract</span>
+            <span>Click to Sign Contract</span>
           </button>
         ) : (
           <div className="text-[10px] font-bold text-gray-400 italic py-2 mt-2 flex items-center gap-1.5 hide-on-print">
@@ -1246,11 +1452,86 @@ export default function OwnerAgreementPage() {
       {/* ── Page Content ── */}
       <div className="w-full">
         
-        {/* Toast Notification */}
-        {successToast && (
-          <div className="fixed top-20 right-6 bg-[#4F46E5] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-            <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-            <span className="text-[11px] font-black uppercase tracking-widest leading-none">{successToast}</span>
+        {/* Toast Notification Container */}
+        <Toaster position="top-right" />
+
+        {/* CUSTOM EXIT CONFIRMATION MODAL (TOASTER METHOD) */}
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Icon wrapper */}
+                <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
+                  <ArrowLeft className="w-6 h-6" />
+                </div>
+                
+                {/* Title & Description */}
+                <div>
+                  <h3 className="text-[16px] font-black text-[#1A1A1A]">Exit Current Draft?</h3>
+                  <p className="text-gray-500 text-[12px] font-semibold mt-1.5 leading-relaxed">
+                    Are you sure you want to exit? Any unsaved progress will be permanently lost.
+                  </p>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex items-center gap-3 w-full pt-2">
+                  <button
+                    onClick={() => setShowExitConfirm(false)}
+                    className="flex-1 py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmExit}
+                    className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+                  >
+                    Yes, Exit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOM DELETE CONFIRMATION MODAL (TOASTER METHOD STYLE) */}
+        {deleteConfirmAgreement && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Icon wrapper */}
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                
+                {/* Title & Description */}
+                <div>
+                  <h3 className="text-[16px] font-black text-[#1A1A1A]">Delete Agreement?</h3>
+                  <p className="text-gray-505 text-[12px] font-semibold mt-1.5 leading-relaxed">
+                    Are you sure you want to delete the agreement for <strong>"{deleteConfirmAgreement.name}"</strong>? This will permanently remove it from both your vault and the database.
+                  </p>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex items-center gap-3 w-full pt-2">
+                  <button
+                    onClick={() => setDeleteConfirmAgreement(null)}
+                    className="flex-1 py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const { id } = deleteConfirmAgreement;
+                      handleConfirmDelete(id);
+                      setDeleteConfirmAgreement(null);
+                    }}
+                    className="flex-1 py-2 px-4 bg-red-650 hover:bg-red-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
+                  >
+                    Yes, Delete
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1392,6 +1673,35 @@ export default function OwnerAgreementPage() {
                 </p>
               </div>
             </div>
+
+            {/* Unsaved Draft Progress Banner (Toaster themed) */}
+            {hasSavedDraft && (
+              <div className="bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#E0E7FF] flex items-center justify-center text-[#4F46E5] shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-[#1A1A1A]">Ongoing Activity Detected</h4>
+                    <p className="text-[10px] text-gray-500 font-semibold mt-0.5">You have an unfinished lease agreement draft from your last session.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleClearSavedDraft}
+                    className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-transparent hover:bg-slate-100 transition-all"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    onClick={handleRestoreDraft}
+                    className="px-4 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm"
+                  >
+                    Restore Draft
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Template Selection Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1664,6 +1974,10 @@ export default function OwnerAgreementPage() {
                       <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5">
                         <button
                           onClick={() => {
+                            if (ag.id === 'local_draft_ongoing') {
+                              handleRestoreDraft();
+                              return;
+                            }
                             const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === ag.templateId);
                             if (tmpl) {
                               setSelectedTemplate(tmpl);
@@ -1676,7 +1990,7 @@ export default function OwnerAgreementPage() {
                                 {
                                   id: 'reopen',
                                   sender: 'bot',
-                                  text: `Loaded saved **${ag.complexity}** agreement for **${ag.tenantName}**. You can preview, edit details, and add or clear signatures.`,
+                                  text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. You can preview, edit details, or manage your landlord signature.`,
                                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 }
                               ]);
@@ -1876,7 +2190,15 @@ export default function OwnerAgreementPage() {
                   </span>
                   
                   {/* Action Group */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <button
+                      onClick={handleSaveProgress}
+                      className="px-2.5 py-1.5 bg-white border border-[#4F46E5]/30 hover:border-[#4F46E5] text-[#4F46E5] text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1"
+                      title="Save ongoing activity"
+                    >
+                      <Check className="w-3 h-3 text-[#4F46E5]" />
+                      <span>Save Draft</span>
+                    </button>
                     <button
                       onClick={handlePrint}
                       className="px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#4F46E5] text-gray-700 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1"
@@ -1887,11 +2209,11 @@ export default function OwnerAgreementPage() {
                     </button>
                     <button
                       onClick={handleSaveToVault}
-                      className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1 shadow-sm"
-                      title="Sign & Send to Tenant"
+                      className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+                      title="Send to Tenant"
                     >
                       <Send className="w-3 h-3" />
-                      <span>Sign & Send to Tenant</span>
+                      <span>Send to Tenant</span>
                     </button>
                   </div>
                 </div>
