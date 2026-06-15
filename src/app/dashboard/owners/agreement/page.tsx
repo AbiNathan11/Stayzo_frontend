@@ -374,8 +374,7 @@ export default function OwnerAgreementPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [deleteConfirmAgreement, setDeleteConfirmAgreement] = useState<{ id: string; name: string } | null>(null);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
-  const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
-  const [customIp, setCustomIp] = useState<string>('');
+  const [localNetIp, setLocalNetIp] = useState<string>('localhost');
   const [socket, setSocket] = useState<Socket | null>(null);
   
   // Use a unique draft ID (timestamp-based) for the socket room
@@ -383,12 +382,14 @@ export default function OwnerAgreementPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Set mobile URL for QR code and init Socket.io
+  // Auto-detect local network IP and init Socket.io
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('stayzo_landlord_sig');
-      localStorage.removeItem('stayzo_tenant_sig');
-      setMobileBaseUrl(`${window.location.origin}/dashboard/owners/agreement/sign`);
+      // Auto-fetch the machine's LAN IP from our server-side API route
+      fetch('/api/local-ip')
+        .then(r => r.json())
+        .then(data => { if (data.ip) setLocalNetIp(data.ip); })
+        .catch(() => setLocalNetIp(window.location.hostname));
 
       // Initialize Socket connection to backend
       const backendUrl = `http://${window.location.hostname}:3001`;
@@ -402,10 +403,10 @@ export default function OwnerAgreementPage() {
       newSocket.on('signature_received', (data: { role: 'landlord' | 'tenant', signatureDataUrl: string }) => {
         if (data.role === 'landlord') {
           setLandlordSig(data.signatureDataUrl);
-          showToast("Landlord signature received from mobile!");
+          toast.success('Landlord signature received from mobile!');
         } else {
           setTenantSig(data.signatureDataUrl);
-          showToast("Tenant signature received from mobile!");
+          toast.success('Tenant signature received from mobile!');
         }
         setShowSigModal(null);
       });
@@ -416,15 +417,36 @@ export default function OwnerAgreementPage() {
     }
   }, [activeDraftId]);
 
-  // Compute final QR code URL (append draftId)
+  // Poll localStorage for signatures written by same-device QR tab
+  // (storage events only fire on OTHER windows, not the writer)
+  useEffect(() => {
+    if (!showSigModal) return;
+    const interval = setInterval(() => {
+      const landlordKey = localStorage.getItem('stayzo_landlord_sig');
+      if (landlordKey) {
+        setLandlordSig(landlordKey);
+        localStorage.removeItem('stayzo_landlord_sig');
+        toast.success('Landlord signature applied!');
+        setShowSigModal(null);
+        clearInterval(interval);
+        return;
+      }
+      const tenantKey = localStorage.getItem('stayzo_tenant_sig');
+      if (tenantKey) {
+        setTenantSig(tenantKey);
+        localStorage.removeItem('stayzo_tenant_sig');
+        toast.success('Tenant signature applied!');
+        setShowSigModal(null);
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showSigModal]);
+
+  // Build QR code URL using auto-detected LAN IP so phones on same Wi-Fi can reach it
   const getQrCodeUrl = () => {
-    if (customIp.trim()) {
-      // Clean custom IP input from protocols or trailing slashes
-      const cleanIp = customIp.trim().replace(/^(https?:\/\/)?/, '').replace(/\/$/, '');
-      const port = window.location.port ? `:${window.location.port}` : '';
-      return `http://${cleanIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}`;
-    }
-    return `${mobileBaseUrl}?role=${showSigModal}&draftId=${activeDraftId}`;
+    const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
+    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
   };
 
   // Listen to Storage events (fallback from phone signature pads on same device)
@@ -1569,26 +1591,18 @@ export default function OwnerAgreementPage() {
                       Scan this QR code with your mobile phone camera to open the secure signing pad. Draw your signature on your phone screen, and it will update here in real-time.
                     </p>
 
-                    {/* Local Network IP Input */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left space-y-1.5">
-                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                        🔌 Scanning with a real phone?
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter computer Local IP (e.g. 192.168.1.15)"
-                        value={customIp}
-                        onChange={(e) => setCustomIp(e.target.value)}
-                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded bg-white text-[11px] font-semibold text-slate-700 outline-none focus:border-slate-400"
-                      />
-                      <p className="text-[8px] text-slate-450 font-medium leading-normal">
-                        Tip: Open terminal on your computer and run <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-slate-800">ipconfig</code> to find your IPv4 Address. Ensure both devices are on the same Wi-Fi network.
-                      </p>
+                    {/* Auto-detected IP info badge */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#4F46E5] shrink-0" />
+                      <div>
+                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Scan with your phone camera</p>
+                        <p className="text-[8px] text-slate-400 font-medium mt-0.5">Make sure your phone is on the same Wi-Fi as this computer. The QR code is ready to scan.</p>
+                      </div>
                     </div>
-                    
+
                     {/* QR Code Container */}
                     <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
-                      {mobileBaseUrl ? (
+                      {localNetIp ? (
                         <img 
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
                           alt="Signature QR Code" 
@@ -1604,16 +1618,6 @@ export default function OwnerAgreementPage() {
                         <Smartphone className="w-4 h-4 text-[#4F46E5]" />
                         <span>Awaiting mobile signature...</span>
                       </div>
-                      
-                      {/* Desktop Sandbox Test Link */}
-                      <a
-                        href={getQrCodeUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-black text-[#4F46E5] hover:underline uppercase tracking-wider pt-2"
-                      >
-                        [Open mobile tab in new window for testing]
-                      </a>
                     </div>
                   </div>
                 ) : (

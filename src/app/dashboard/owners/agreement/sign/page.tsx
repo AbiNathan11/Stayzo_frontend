@@ -30,8 +30,10 @@ export default function MobileSignPage() {
         setDraftId(draftIdParam);
       }
 
-      // Connect to backend socket server using the current hostname to handle local IPs dynamically
-      const backendUrl = `http://${window.location.hostname}:3001`;
+      // Use backendIp param if provided (embedded in QR URL from LAN auto-detection)
+      // Falls back to window.location.hostname (works for same-device testing)
+      const backendIp = params.get('backendIp') || window.location.hostname;
+      const backendUrl = `http://${backendIp}:3001`;
       const newSocket = io(backendUrl);
       setSocket(newSocket);
 
