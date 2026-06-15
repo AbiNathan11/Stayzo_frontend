@@ -284,6 +284,33 @@ export default function TenantAgreementPage() {
     }
   };
 
+  const handleToggleWallet = async (id: string, currentSaved: boolean) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/agreements/${id}/wallet`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role: 'tenant', saved: !currentSaved })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle agreement wallet state');
+      }
+
+      toast.success(!currentSaved ? "Agreement saved to your Document Vault!" : "Agreement removed from your Document Vault.");
+      fetchAgreements(userEmail);
+      
+      // Update selected agreement if open in modal
+      if (selectedAgreement && selectedAgreement.id === id) {
+        setSelectedAgreement((prev: any) => prev ? { ...prev, savedInTenantWallet: !currentSaved } : null);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating vault status.');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <Toaster position="top-right" />
@@ -370,16 +397,30 @@ export default function TenantAgreementPage() {
                     </td>
                     <td className="py-4 px-4 text-center">
                       {agreement.status === 'Active' ? (
-                        <button
-                          onClick={() => {
-                            setSelectedAgreement(agreement);
-                            setTenantSig(agreement.tenantSig || null);
-                          }}
-                          className="bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition uppercase flex items-center space-x-1 mx-auto cursor-pointer"
-                        >
-                          <span>Inspect</span>
-                          <ExternalLink className="w-3 h-3 ml-0.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setSelectedAgreement(agreement);
+                              setTenantSig(agreement.tenantSig || null);
+                            }}
+                            className="bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition uppercase flex items-center space-x-1 cursor-pointer"
+                          >
+                            <span>Inspect</span>
+                            <ExternalLink className="w-3 h-3 ml-0.5" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleWallet(agreement.id, !!agreement.savedInTenantWallet)}
+                            className={`px-3 py-1.5 border rounded-lg text-[10px] font-extrabold transition uppercase flex items-center gap-1 cursor-pointer ${
+                              agreement.savedInTenantWallet
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                            }`}
+                            title={agreement.savedInTenantWallet ? "Saved in vault" : "Save to vault"}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>{agreement.savedInTenantWallet ? 'Vault' : 'Save'}</span>
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => {
@@ -479,6 +520,20 @@ export default function TenantAgreementPage() {
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        onClick={() => handleToggleWallet(selectedAgreement.id, !!selectedAgreement.savedInTenantWallet)}
+                        className={`px-4 py-2 border rounded-xl text-[10px] font-black uppercase transition-all tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                          selectedAgreement.savedInTenantWallet
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>{selectedAgreement.savedInTenantWallet ? 'Saved in Document Vault' : 'Save to Document Vault'}</span>
+                      </button>
                     </div>
                   </div>
                 ) : (
