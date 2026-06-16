@@ -6,6 +6,7 @@ import {
   Smartphone, CheckCircle2, FileText, ExternalLink, Scale, Clock, ShieldAlert
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+// @ts-ignore
 import { io } from 'socket.io-client';
 
 // ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────
@@ -168,6 +169,7 @@ export default function TenantAgreementPage() {
   const [tenantSig, setTenantSig] = useState<string | null>(null);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [socket, setSocket] = useState<any>(null);
+  const [localNetIp, setLocalNetIp] = useState<string>('localhost');
 
   // Tenant NIC States for renting
   const [nicFront, setNicFront] = useState<string | null>(null);
@@ -231,6 +233,15 @@ export default function TenantAgreementPage() {
     fetchAgreements(email);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      fetch('/api/local-ip')
+        .then(r => r.json())
+        .then(data => { if (data.ip) setLocalNetIp(data.ip); })
+        .catch(() => setLocalNetIp(window.location.hostname));
+    }
+  }, []);
+
   // Sync mobile signatures via socket
   useEffect(() => {
     if (!selectedAgreement) {
@@ -256,24 +267,30 @@ export default function TenantAgreementPage() {
       }
     });
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'stayzo_tenant_sig' && e.newValue) {
-        setTenantSig(e.newValue);
-        toast.success("Signature received locally!");
-        localStorage.removeItem('stayzo_tenant_sig');
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
     return () => {
       newSocket.disconnect();
-      window.removeEventListener('storage', handleStorageChange);
     };
+  }, [selectedAgreement]);
+
+  // Poll localStorage for signatures written by same-device QR tab
+  useEffect(() => {
+    if (!selectedAgreement) return;
+    const interval = setInterval(() => {
+      const tenantKey = localStorage.getItem('stayzo_tenant_sig');
+      if (tenantKey) {
+        setTenantSig(tenantKey);
+        localStorage.removeItem('stayzo_tenant_sig');
+        toast.success('Signature applied!');
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
   }, [selectedAgreement]);
 
   const getQrCodeUrl = () => {
     if (!selectedAgreement) return '';
-    return `${window.location.origin}/dashboard/owners/agreement/sign?role=tenant&draftId=${selectedAgreement.id}`;
+    const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
+    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=tenant&draftId=${selectedAgreement.id}&backendIp=${localNetIp}`;
   };
 
   const submitTenantSignature = async () => {
@@ -311,7 +328,7 @@ export default function TenantAgreementPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       {/* Header and Metainfo */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-200 pb-5">

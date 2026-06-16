@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+// @ts-ignore
 import { io } from 'socket.io-client';
 
 // ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────
@@ -362,7 +363,7 @@ export default function TenantOverviewPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       
       {/* Dashboard Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
@@ -433,9 +434,7 @@ export default function TenantOverviewPage() {
                 </h4>
                 <p className="text-gray-500 text-xs mt-1 font-semibold">Securely manage your agreements and KYC files.</p>
               </div>
-              <button className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition duration-200 flex items-center gap-2 shrink-0">
-                <UploadCloud className="w-4 h-4" /> Upload New
-              </button>
+
             </div>
             
             <div className="grid grid-cols-1 gap-6">

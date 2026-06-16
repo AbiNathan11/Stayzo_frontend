@@ -539,7 +539,7 @@ export default function StartListingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
         <Link href="/" className="flex items-center space-x-2 group">
