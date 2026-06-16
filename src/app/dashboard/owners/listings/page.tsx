@@ -209,7 +209,7 @@ export default function OwnerListings() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       {/* ── Page Content ── */}
       <div className="w-full">

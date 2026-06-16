@@ -1455,12 +1455,20 @@ export default function OwnerAgreementPage() {
       <div className="w-full">
         
         {/* Toast Notification Container */}
-        <Toaster position="top-right" />
+        <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
         {/* CUSTOM EXIT CONFIRMATION MODAL (TOASTER METHOD) */}
         {showExitConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200 relative">
+              {/* X close button top-right */}
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <div className="flex flex-col items-center text-center space-y-4">
                 {/* Icon wrapper */}
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
@@ -1475,28 +1483,22 @@ export default function OwnerAgreementPage() {
                   </p>
                 </div>
                 
-                {/* Actions */}
-                <div className="flex flex-col md:flex-row items-center gap-3 w-full pt-2">
-                  <button
-                    onClick={() => setShowExitConfirm(false)}
-                    className="flex-1 w-full py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+                {/* Actions — no Cancel button */}
+                <div className="flex items-center gap-3 w-full pt-2">
                   <button
                     onClick={handleConfirmExit}
-                    className="flex-1 w-full py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
+                    className="flex-1 py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Don't Save
+                    Don&apos;t Save
                   </button>
                   <button
                     onClick={() => {
                       handleSaveProgress();
                       handleConfirmExit();
                     }}
-                    className="flex-1 w-full py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
+                    className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Save & Exit
+                    Save &amp; Exit
                   </button>
                 </div>
               </div>

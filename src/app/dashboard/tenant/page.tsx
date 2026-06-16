@@ -362,7 +362,7 @@ export default function TenantOverviewPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       
       {/* Dashboard Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
