@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import {
   Heart, BedDouble, Bath, Maximize2,
   ChevronLeft, ChevronRight, Share2, HelpCircle,
@@ -73,6 +74,83 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserEmail(payload.email);
+      } catch (e) {}
+    }
+  }, []);
+
+  const isOwner = property?.owner?.email === currentUserEmail;
+
+  const handleBoostListing = async (propertyId: string) => {
+    try {
+      triggerToast('Initializing secure payment gateway...');
+      
+      const response = await fetch('/api/payments/generate-hash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, amount: '500.00', currency: 'LKR' })
+      });
+
+      if (!response.ok) throw new Error('Failed to initialize payment');
+      
+      const data = await response.json();
+
+      // @ts-ignore - payhere is injected globally by the script
+      if (typeof payhere === 'undefined') {
+        throw new Error('Payment gateway is still loading. Please try again in a moment.');
+      }
+
+      // @ts-ignore
+      payhere.onCompleted = function onCompleted(orderId) {
+        triggerToast('Payment successful! Your listing is now boosted.');
+        // Optionally refresh the property data here
+      };
+
+      // @ts-ignore
+      payhere.onDismissed = function onDismissed() {
+        triggerToast('Payment cancelled.');
+      };
+
+      // @ts-ignore
+      payhere.onError = function onError(error) {
+        triggerToast('An error occurred during payment: ' + error);
+      };
+
+      const payment = {
+        sandbox: true,
+        merchant_id: data.merchantId,
+        return_url: `${window.location.origin}/dashboard/owners/listings?payment=success`,
+        cancel_url: `${window.location.origin}/dashboard/owners/listings?payment=cancelled`,
+        notify_url: `${process.env.NEXT_PUBLIC_NGROK_URL || window.location.origin}/api/payments/payhere-notify`,
+        order_id: data.orderId,
+        items: "Property Listing Boost - Stayzo",
+        amount: data.amount,
+        currency: data.currency,
+        hash: data.hash,
+        first_name: property?.owner?.firstName || 'Owner',
+        last_name: property?.owner?.lastName || '',
+        email: property?.owner?.email || 'owner@example.com',
+        phone: "0771234567",
+        address: "Colombo",
+        city: "Colombo",
+        country: "Sri Lanka"
+      };
+
+      // @ts-ignore
+      payhere.startPayment(payment);
+      
+    } catch (error: any) {
+      triggerToast(error.message || 'Payment initialization failed.');
+      console.error(error);
+    }
+  };
 
   // ── Fetch property by ID ────────────────────────────────────────────────────
   useEffect(() => {
@@ -274,6 +352,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col relative">
+      <Script src="https://www.payhere.lk/lib/payhere.js" strategy="lazyOnload" />
 
       {/* Toast */}
       {toastMessage && (
@@ -504,6 +583,26 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
           {/* Right Column */}
           <div className="space-y-6 lg:sticky lg:top-24">
+
+            {/* Boost Listing Card (Owner Only) */}
+            {isOwner && (
+              <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 shadow-sm flex flex-col space-y-4">
+                <div>
+                  <h4 className="text-lg font-black text-indigo-900 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-500" /> Boost your listing
+                  </h4>
+                  <p className="text-xs text-indigo-700/80 font-semibold mt-2 leading-relaxed">
+                    Pay 500 LKR to boost your ad to the top of tenant search results for higher visibility and faster bookings.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleBoostListing(property.id)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-extrabold transition shadow-md hover:shadow-lg uppercase tracking-wider active:scale-[0.98]"
+                >
+                  Boost listing
+                </button>
+              </div>
+            )}
 
             {/* Owner Card */}
             <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
