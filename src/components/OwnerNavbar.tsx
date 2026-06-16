@@ -100,8 +100,8 @@ export default function OwnerNavbar() {
                 href={link.href}
                 className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
                   finalIsActive
-                    ? 'text-[#4F46E5] bg-[#EEF2FF]'
-                    : 'text-gray-500 hover:text-[#4F46E5] hover:bg-gray-50'
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 {link.label}
@@ -198,33 +198,36 @@ export default function OwnerNavbar() {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setShowProfileMenu(v => !v)}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#1A1A1A] text-white text-[15px] font-black uppercase hover:bg-black transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-[#1A1A1A] text-white text-xs font-bold uppercase hover:scale-105 active:scale-95 transition-all shrink-0"
             >
               {user?.profileImage ? (
-                <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                <img src={user.profileImage} alt="Profile" className="w-8 h-8 rounded-full object-cover shrink-0" />
               ) : (
                 user ? user.firstName.charAt(0) : 'U'
               )}
             </button>
             {showProfileMenu && user && (
-              <div className="absolute right-0 top-12 w-64 bg-white border border-gray-100 rounded-3xl shadow-xl z-50 overflow-hidden py-2">
-                <div className="px-5 py-4 border-b border-gray-50">
-                  <p className="text-[14px] font-extrabold text-[#1A1A1A]">{user.firstName} {user.lastName}</p>
-                  <p className="text-[12px] font-bold text-gray-400 truncate mt-0.5">{user.email}</p>
+              <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="px-4 py-2 border-b border-gray-50">
+                  <p className="text-xs font-bold text-gray-900 truncate">{user.firstName} {user.lastName}</p>
+                  <p className="text-[10px] text-gray-400 font-semibold truncate mt-0.5">{user.email}</p>
                 </div>
-                <div className="py-2">
+                <div className="py-1">
                   <button
                     onClick={() => {
                       setShowProfileMenu(false);
                       setShowEditModal(true);
                     }}
-                    className="w-full text-left px-5 py-2.5 text-[13px] font-bold text-indigo-600 hover:bg-gray-50 transition"
+                    className="flex w-full px-4 py-2.5 text-left text-xs font-bold text-[#4F46E5] hover:bg-[#EEF2FF] transition duration-150"
                   >
                     Edit Profile
                   </button>
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-5 py-2.5 text-[13px] font-bold text-red-600 hover:bg-gray-50 transition"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      handleLogout();
+                    }}
+                    className="flex w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition duration-150"
                   >
                     Logout
                   </button>
