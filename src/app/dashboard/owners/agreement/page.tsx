@@ -376,6 +376,7 @@ export default function OwnerAgreementPage() {
   const [showSigModal, setShowSigModal] = useState<'landlord' | 'tenant' | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [deleteConfirmAgreement, setDeleteConfirmAgreement] = useState<{ id: string; name: string } | null>(null);
+  const [isAgreementSent, setIsAgreementSent] = useState(false);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [localNetIp, setLocalNetIp] = useState<string>('localhost');
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -986,6 +987,7 @@ export default function OwnerAgreementPage() {
 
       const savedData = await response.json();
       showToast("Agreement signed and successfully sent to Tenant!");
+      setIsAgreementSent(true); // Lock the agreement from further editing
 
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
@@ -2030,6 +2032,12 @@ export default function OwnerAgreementPage() {
 
               {/* Progress and Autofill */}
               <div className="flex items-center gap-4 flex-wrap">
+                {isAgreementSent ? (
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase tracking-wider px-3 py-2 rounded-xl">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Agreement Sent — Content Locked</span>
+                  </div>
+                ) : (
                 <button
                   onClick={handleQuickFill}
                   className="bg-white border border-gray-200 hover:border-[#4F46E5] text-[#4F46E5] text-[10px] font-extrabold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 hover:scale-[1.01]"
@@ -2038,6 +2046,7 @@ export default function OwnerAgreementPage() {
                   <Sparkles className="w-3.5 h-3.5 text-[#4F46E5] animate-pulse" />
                   <span>Autofill Sample</span>
                 </button>
+                )}
 
                 <div className="flex items-center gap-2.5">
                   <div className="w-[100px] bg-gray-200 h-2 rounded-full overflow-hidden">
@@ -2108,6 +2117,12 @@ export default function OwnerAgreementPage() {
 
                 {/* Input Form Area */}
                 <div className="p-4 border-t border-gray-100 flex-shrink-0">
+                  {isAgreementSent ? (
+                    <div className="flex items-center justify-center gap-2 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 rounded-xl border border-emerald-200">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Agreement sent — editing is locked</span>
+                    </div>
+                  ) : (
                   <div className="flex items-center gap-2 border border-gray-200 focus-within:border-gray-400 rounded-xl p-1 bg-white transition-colors">
                     <input
                       type="text"
@@ -2130,6 +2145,7 @@ export default function OwnerAgreementPage() {
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
+                  )}
 
                   {/* Helper Suggestions */}
                   {currentFieldIdx < selectedTemplate.fields.length && (
@@ -2175,11 +2191,16 @@ export default function OwnerAgreementPage() {
                     </button>
                     <button
                       onClick={handleSaveToVault}
-                      className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-all flex items-center gap-1 shadow-sm cursor-pointer"
-                      title="Send to Tenant"
+                      disabled={isAgreementSent}
+                      className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all flex items-center gap-1 shadow-sm cursor-pointer ${
+                        isAgreementSent
+                          ? 'bg-emerald-600 text-white opacity-70 cursor-not-allowed'
+                          : 'bg-black hover:bg-neutral-800 text-white'
+                      }`}
+                      title={isAgreementSent ? 'Agreement already sent' : 'Send to Tenant'}
                     >
-                      <Send className="w-3 h-3" />
-                      <span>Send to Tenant</span>
+                      {isAgreementSent ? <CheckCircle2 className="w-3 h-3" /> : <Send className="w-3 h-3" />}
+                      <span>{isAgreementSent ? 'Sent' : 'Send to Tenant'}</span>
                     </button>
                   </div>
                 </div>
