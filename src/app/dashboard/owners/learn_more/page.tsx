@@ -92,19 +92,6 @@ export default function LearnMorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* ── Minimalist Header ── */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
-        <Link href="/dashboard/owners" className="flex items-center space-x-2.5">
-          <div className="flex items-end space-x-[3px] h-5">
-            <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-4 bg-[#1A1A1A] rounded-full" />
-            <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full" />
-          </div>
-          <span className="text-[15px] font-black tracking-tight text-[#1A1A1A] uppercase">Stayzo</span>
-        </Link>
-      </header>
-
       {/* ── Main Content Area ── */}
       <main className="flex-1 overflow-y-auto pt-24 pb-32 px-6">
         <div className="max-w-3xl mx-auto">

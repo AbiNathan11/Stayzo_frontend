@@ -16,12 +16,13 @@ export default function OwnerDashboardLayout({
   }
 
   const isChat = pathname.includes('/chat');
+  const isLearnMore = pathname.includes('/learn_more');
 
   return (
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col animate-in fade-in duration-300">
       
       {/* Top Header with Navigation */}
-      <OwnerNavbar />
+      <OwnerNavbar hideLinks={isLearnMore} />
 
       {/* Main Content Area */}
       <div className={`flex-1 w-full mx-auto flex flex-col ${isChat ? 'max-w-none px-4 py-4' : 'max-w-[1200px] px-6 sm:px-10 py-10'}`}>

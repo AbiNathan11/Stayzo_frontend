@@ -10,6 +10,8 @@ import {
   Send,
   Calendar,
   FileText,
+  SidebarClose,
+  SidebarOpen
 } from "lucide-react";
 
 // ─── Messages ────────────────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ function ChatPageContent() {
   const [threadDetails, setThreadDetails] = useState<any>(null);
   const [conversations, setConversations] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isContextOpen, setIsContextOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -300,6 +303,13 @@ function ChatPageContent() {
             >
               <MoreVertical className="w-4 h-4 text-gray-500" />
             </button>
+            <button
+              onClick={() => setIsContextOpen(!isContextOpen)}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isContextOpen ? 'bg-[#EEF2FF] text-[#1A1A1A]' : 'hover:bg-gray-100 text-gray-500'}`}
+              title="Toggle Subject Context"
+            >
+              {isContextOpen ? <SidebarClose className="w-4 h-4" /> : <SidebarOpen className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
@@ -358,7 +368,8 @@ function ChatPageContent() {
       </section>
 
       {/* ── Right Sidebar: Subject Context ── */}
-      <aside className="w-[180px] min-w-[180px] bg-[#F0EEF8] border-l border-gray-100 flex flex-col overflow-y-auto px-3 py-4 gap-4">
+      {isContextOpen && (
+      <aside className="w-[180px] min-w-[180px] bg-[#F0EEF8] border-l border-gray-100 flex flex-col overflow-y-auto px-3 py-4 gap-4 transition-all duration-300">
         <h3 className="text-[9px] font-black tracking-widest text-gray-500 uppercase">
           Subject Context
         </h3>
@@ -454,6 +465,7 @@ function ChatPageContent() {
           Reschedule Visit
         </button>
       </aside>
+      )}
     </div>
   );
 }

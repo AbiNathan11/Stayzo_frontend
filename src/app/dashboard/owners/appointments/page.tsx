@@ -217,10 +217,7 @@ export default function OwnerAppointmentsPage() {
   const confirmedBookings = bookings.filter(b => b.status === "CONFIRMED");
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans">
-      
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-8 py-10">
-        <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="animate-in fade-in duration-300 space-y-6">
           {/* Toast */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#4F46E5] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
@@ -238,7 +235,7 @@ export default function OwnerAppointmentsPage() {
         </div>
         <button
           onClick={() => { setShowCreateModal(true); setCreateMode("single"); }}
-          className="flex items-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+          className="flex items-center gap-2 bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Availability
         </button>
@@ -247,7 +244,7 @@ export default function OwnerAppointmentsPage() {
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Slots", value: slots.filter(s => !s.isBlocked).length, icon: Calendar, color: "bg-blue-50 text-blue-600" },
+          { label: "Total Slots", value: slots.filter(s => !s.isBlocked).length, icon: Calendar, color: "bg-blue-50 text-[#4F46E5]" },
           { label: "Pending", value: pendingBookings.length, icon: Clock4, color: "bg-amber-50 text-amber-600" },
           { label: "Confirmed", value: confirmedBookings.length, icon: CheckCircle2, color: "bg-emerald-50 text-emerald-600" },
           { label: "Blocked Dates", value: slots.filter(s => s.isBlocked).length, icon: CalendarOff, color: "bg-red-50 text-red-500" },
@@ -337,7 +334,7 @@ export default function OwnerAppointmentsPage() {
                     onClick={() => setSelectedDate(dateStr)}
                     className={`aspect-square flex flex-col items-center justify-center rounded-2xl border transition cursor-pointer ${
                       isSelected
-                        ? "bg-[#4F46E5] border-[#4F46E5] text-white"
+                        ? "bg-[#4F46E5]/10 border-[#4F46E5] text-[#4F46E5]"
                         : isBlocked
                         ? "bg-red-50 border-red-100 text-red-300"
                         : "border-transparent hover:bg-gray-50 text-gray-700 font-semibold"
@@ -347,7 +344,7 @@ export default function OwnerAppointmentsPage() {
                     {(hasSlots || isBooked || isBlocked) && (
                       <div className="flex gap-0.5 mt-0.5">
                         {hasSlots && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-emerald-400"}`} />}
-                        {isBooked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-[#4F46E5]"}`} />}
+                        {isBooked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-[#4F46E5]" : "bg-[#4F46E5]"}`} />}
                         {isBlocked && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-red-300"}`} />}
                       </div>
                     )}
@@ -370,7 +367,7 @@ export default function OwnerAppointmentsPage() {
                 <button
                   disabled={isPastSelected}
                   onClick={() => { setNewSlot(f => ({ ...f, date: selectedDate })); setShowCreateModal(true); setCreateMode("single"); }}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition ${isPastSelected ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#4F46E5] text-white hover:bg-[#4338CA]'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${isPastSelected ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#4F46E5] text-white hover:bg-[#4338CA]'}`}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -419,14 +416,14 @@ export default function OwnerAppointmentsPage() {
               <button
                 disabled={isPastSelected}
                 onClick={() => { setShowCreateModal(true); setCreateMode("recurring"); }}
-                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
+                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition cursor-pointer ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
               >
                 <RefreshCw className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-emerald-500'}`} /> Set Recurring Availability
               </button>
               <button
                 disabled={isPastSelected}
                 onClick={() => { setBlockForm(f => ({ ...f, startDate: selectedDate })); setShowCreateModal(true); setCreateMode("block"); }}
-                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
+                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition cursor-pointer ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
               >
                 <CalendarOff className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-red-400'}`} /> Block This Date
               </button>
@@ -678,7 +675,7 @@ export default function OwnerAppointmentsPage() {
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition">Cancel</button>
                   <button onClick={handleCreateSlot} disabled={actionLoading === "create"}
-                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition disabled:opacity-50 shadow-sm">
+                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition cursor-pointer disabled:opacity-50 shadow-sm">
                     {actionLoading === "create" ? "Creating…" : "Create Slots"}
                   </button>
                 </div>
@@ -733,7 +730,7 @@ export default function OwnerAppointmentsPage() {
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition">Cancel</button>
                   <button onClick={handleCreateRecurring} disabled={actionLoading === "recurring"}
-                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition disabled:opacity-50 shadow-sm">
+                    className="flex-1 py-3 bg-[#4F46E5] text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition cursor-pointer disabled:opacity-50 shadow-sm">
                     {actionLoading === "recurring" ? "Creating…" : `Create for ${recurringForm.weeksAhead} Weeks`}
                   </button>
                 </div>
@@ -791,7 +788,7 @@ export default function OwnerAppointmentsPage() {
             <p className="text-sm text-gray-500 font-medium mb-8">{successMessage}</p>
             <button
               onClick={() => setSuccessMessage(null)}
-              className="w-full py-3.5 bg-[#4F46E5] text-white rounded-xl text-sm font-bold hover:bg-[#4338CA] transition shadow-md"
+              className="w-full py-3.5 bg-[#4F46E5] text-white rounded-xl text-sm font-bold hover:bg-[#4338CA] transition cursor-pointer shadow-md"
             >
               Done
             </button>
@@ -817,8 +814,6 @@ export default function OwnerAppointmentsPage() {
           </div>
         </div>
       )}
-        </div>
-      </main>
     </div>
   );
 }
