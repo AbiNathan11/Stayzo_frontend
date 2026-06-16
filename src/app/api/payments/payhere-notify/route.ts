@@ -33,13 +33,19 @@ export async function POST(req: Request) {
         // Or better: BOOST_{PROPERTY_ID}_{TIMESTAMP}
         const propertyId = parts.slice(1, parts.length - 1).join('_');
         
-        // Notify Backend to mark property as boosted
+        // Notify Backend to mark property as boosted and create transaction
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
         const boostResponse = await fetch(`${backendUrl}/api/properties/${propertyId}/mark-boosted`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({
+            amount: payhere_amount,
+            reference: formData.get('payment_id') as string,
+            paymentMethod: formData.get('method') as string || 'PayHere Sandbox',
+            status: status_code === '2' ? 'Completed' : 'Pending',
+          })
         });
 
         if (!boostResponse.ok) {

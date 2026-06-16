@@ -3,15 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Send, 
-  FileText, 
-  Download, 
-  Check, 
-  Sparkles, 
-  CheckCircle2, 
-  Trash2, 
-  Copy, 
+import {
+  Send,
+  FileText,
+  Download,
+  Check,
+  Sparkles,
+  CheckCircle2,
+  Trash2,
+  Copy,
   FileSignature,
   Info,
   ArrowLeft,
@@ -231,7 +231,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Setup initial canvas styles
     ctx.strokeStyle = '#1A1A1A';
     ctx.lineWidth = 3;
@@ -350,7 +350,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
-  
+
   // App States
   const [selectedTemplate, setSelectedTemplate] = useState<AgreementTemplate | null>(null);
   const [currentFieldIdx, setCurrentFieldIdx] = useState<number>(0);
@@ -360,7 +360,7 @@ export default function OwnerAgreementPage() {
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'fields'>('chat');
   const [selectedTheme, setSelectedTheme] = useState<VisualTheme>('classic-legal');
-  
+
   const [savedAgreements, setSavedAgreements] = useState<SavedAgreement[]>([]);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
@@ -373,7 +373,7 @@ export default function OwnerAgreementPage() {
   const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
   const [customIp, setCustomIp] = useState<string>('');
   const [socket, setSocket] = useState<Socket | null>(null);
-  
+
   // Use a unique draft ID (timestamp-based) for the socket room
   const [activeDraftId] = useState<string>(`draft_${Date.now()}`);
 
@@ -475,7 +475,7 @@ export default function OwnerAgreementPage() {
           savedInLandlordWallet: item.savedInLandlordWallet || false
         }));
         setSavedAgreements(mapped);
-            }
+      }
     } catch (e) {
       console.error("Failed to fetch agreements from DB", e);
     }
@@ -538,7 +538,7 @@ export default function OwnerAgreementPage() {
     setCurrentFieldIdx(0);
     setLandlordSig(null);
     setTenantSig(null);
-    
+
     // Reset values
     const initialValues: Record<string, string> = {};
     template.fields.forEach(f => {
@@ -562,26 +562,26 @@ export default function OwnerAgreementPage() {
   // Exit current drafting
   const handleExitDraft = () => {
     if (window.confirm("Are you sure you want to exit the current draft? Your unsaved progress will be lost.")) {
-    setSelectedTemplate(null);
-    setChatHistory([]);
-    setFieldValues({});
-    setLandlordSig(null);
-    setTenantSig(null);
+      setSelectedTemplate(null);
+      setChatHistory([]);
+      setFieldValues({});
+      setLandlordSig(null);
+      setTenantSig(null);
     }
   };
 
   // Simulate bot typing delay
   const askNextQuestion = (nextIdx: number, currentVals: Record<string, string>, previousAnswer: string, prevFieldName: string) => {
     if (!selectedTemplate) return;
-    
+
     setIsTyping(true);
-    
+
     setTimeout(() => {
       setIsTyping(false);
-      
+
       const isFinished = nextIdx >= selectedTemplate.fields.length;
       let botText = '';
-      
+
       if (isFinished) {
         botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes on the right preview pane, click on the **Landlord Sign** or **Tenant Sign** buttons at the bottom of the document to sign, and click **"Save"** or **"Print PDF"** to complete.`;
       } else {
@@ -685,7 +685,7 @@ export default function OwnerAgreementPage() {
 
     setFieldValues(sampleVals);
     setCurrentFieldIdx(selectedTemplate.fields.length);
-    
+
     setChatHistory(prev => [
       ...prev,
       {
@@ -740,7 +740,7 @@ export default function OwnerAgreementPage() {
       alert("You must sign the agreement before sending it to the tenant! Please click the 'Sign Contract' button at the bottom of the document preview.");
       return;
     }
-    
+
     const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
     const tenantEmail = fieldValues.tenantEmail || '';
     const propertyAddress = fieldValues.propertyAddress || 'No Address Specified';
@@ -751,7 +751,7 @@ export default function OwnerAgreementPage() {
     const securityDeposit = parseFloat(depositAmountText.replace(/[^0-9.]/g, '')) || 0;
     const termLength = fieldValues.duration || '12 Months';
     const startDate = fieldValues.startDate || new Date().toLocaleDateString();
-    const endDate = fieldValues.endDate || ''; 
+    const endDate = fieldValues.endDate || '';
 
     // Generate contract text
     const contractText = selectedTemplate.generateText(fieldValues);
@@ -786,7 +786,7 @@ export default function OwnerAgreementPage() {
 
       const savedData = await response.json();
       showToast("Agreement signed and successfully sent to Tenant!");
-      
+
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
       }
@@ -800,8 +800,8 @@ export default function OwnerAgreementPage() {
     if (window.confirm(`Are you sure you want to delete the agreement for "${name}"?`)) {
       const filtered = savedAgreements.filter(a => a.id !== id);
       saveAgreementsToLocalStorage(filtered);
-        showToast("Agreement deleted successfully.");
-      }
+      showToast("Agreement deleted successfully.");
+    }
   };
 
   const showToast = (message: string) => {
@@ -827,7 +827,7 @@ export default function OwnerAgreementPage() {
     if (printWindow) {
       const templateTitle = selectedTemplate?.title || "Rental Agreement";
       const textHtml = printContent.innerHTML;
-      
+
       let themeStyles = '';
       if (selectedTheme === 'classic-legal') {
         themeStyles = `
@@ -959,9 +959,9 @@ export default function OwnerAgreementPage() {
           isActive
             ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
             : val
-            ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
-            : 'bg-[#EDE9FE] text-[#7C3AED] border-b-2 border-dashed border-[#8B5CF6] font-bold animate-pulse hover:bg-[#DDD6FE]'
-        }`}
+              ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
+              : 'bg-[#EDE9FE] text-[#7C3AED] border-b-2 border-dashed border-[#8B5CF6] font-bold animate-pulse hover:bg-[#DDD6FE]'
+          }`}
         title={`Click to edit ${label}`}
       >
         {val || `[Enter ${label}]`}
@@ -978,23 +978,23 @@ export default function OwnerAgreementPage() {
     return (
       <div>
         <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">{title}</p>
-        
+
         {signature ? (
           <div className="flex flex-col items-start space-y-1">
-            <img 
-              src={signature} 
-              alt={`${roleType} Signature`} 
-              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print" 
+            <img
+              src={signature}
+              alt={`${roleType} Signature`}
+              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print"
             />
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSig(null); }} 
-                className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
-              >
-                Remove
-              </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setSig(null); }}
+              className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
+            >
+              Remove
+            </button>
           </div>
         ) : (
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); setShowSigModal(roleType); setSigModalTab('qr'); }}
             className="text-[10px] border border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold px-3 py-2 rounded-lg flex items-center gap-1.5 mt-2 transition-all hover:scale-[1.01] hide-on-print"
           >
@@ -1002,7 +1002,7 @@ export default function OwnerAgreementPage() {
             <span>Sign Contract</span>
           </button>
         )}
-        
+
         <div className="signature-line border-b border-gray-400 w-full h-1 mt-1" />
         <p className="font-bold mt-1 text-[#1A1A1A]">{defaultName}</p>
       </div>
@@ -1023,7 +1023,7 @@ export default function OwnerAgreementPage() {
           <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
             SIMPLE TENANCY AGREEMENT
           </div>
-          
+
           <p className="text-[13px] md:text-[14px]">
             This Tenancy Agreement is created on this <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Properties</strong>, and the Tenant:
           </p>
@@ -1206,10 +1206,10 @@ export default function OwnerAgreementPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      
+
       {/* ── Page Content ── */}
       <div className="w-full">
-        
+
         {/* Toast Notification */}
         {successToast && (
           <div className="fixed top-20 right-6 bg-[#4F46E5] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -1222,7 +1222,7 @@ export default function OwnerAgreementPage() {
         {showSigModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-[430px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              
+
               {/* Modal Header */}
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -1231,7 +1231,7 @@ export default function OwnerAgreementPage() {
                   </h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Choose your signature method</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowSigModal(null)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"
                 >
@@ -1247,7 +1247,7 @@ export default function OwnerAgreementPage() {
                     sigModalTab === 'qr'
                       ? 'bg-white border-b-2 border-b-black text-black'
                       : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Scan QR Code</span>
@@ -1258,7 +1258,7 @@ export default function OwnerAgreementPage() {
                     sigModalTab === 'draw'
                       ? 'bg-white border-b-2 border-b-black text-black'
                       : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <MousePointerClick className="w-4 h-4" />
                   <span>Draw on Screen</span>
@@ -1294,9 +1294,9 @@ export default function OwnerAgreementPage() {
                     {/* QR Code Container */}
                     <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
                       {mobileBaseUrl ? (
-                        <img 
+                        <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
-                          alt="Signature QR Code" 
+                          alt="Signature QR Code"
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -1309,7 +1309,7 @@ export default function OwnerAgreementPage() {
                         <Smartphone className="w-4 h-4 text-purple-600" />
                         <span>Awaiting mobile signature...</span>
                       </div>
-                      
+
                       {/* Desktop Sandbox Test Link */}
                       <a
                         href={getQrCodeUrl()}
@@ -1323,7 +1323,7 @@ export default function OwnerAgreementPage() {
                   </div>
                 ) : (
                   /* METHOD B: DESKTOP DRAWING BOARD */
-                  <DesktopCanvasPad 
+                  <DesktopCanvasPad
                     onSave={(dataUrl) => {
                       if (showSigModal === 'landlord') {
                         setLandlordSig(dataUrl);
@@ -1333,7 +1333,7 @@ export default function OwnerAgreementPage() {
                         showToast("Tenant signature applied!");
                       }
                       setShowSigModal(null);
-                    }} 
+                    }}
                   />
                 )}
               </div>
@@ -1346,26 +1346,26 @@ export default function OwnerAgreementPage() {
              1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
              ────────────────────────────────────────────────────────────────── */
           <div className="space-y-10 animate-in fade-in duration-300">
-            
+
             {/* Page Header */}
-              <div>
+            <div>
               <h1 className="text-[32px] md:text-[40px] font-black text-[#1A1A1A] uppercase tracking-tight leading-none">
                 Smart Agreement Hub
               </h1>
               <p className="text-[14px] text-gray-500 font-medium mt-2 max-w-2xl">
-                  Draft binding lease agreements. Select a template based on the complexity you need, and the chatbot assistant will walk you through the details to build the contract.
-                </p>
+                Draft binding lease agreements. Select a template based on the complexity you need, and the chatbot assistant will walk you through the details to build the contract.
+              </p>
               <div className="w-8 h-[3px] bg-[#4F46E5] mt-4" />
             </div>
 
             {/* Template Selection Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {AGREEMENT_TEMPLATES.map((tmpl) => (
-                <div 
+                <div
                   key={tmpl.id}
                   className="relative w-full h-[520px] bg-[#F8FAFB] border border-gray-200 rounded-[28px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between"
                 >
-                  
+
                   {/* DEFAULT STATE: Shows the actual exact agreement document preview */}
                   <div className="absolute inset-0 p-6 flex flex-col bg-white overflow-hidden transition-all duration-700 ease-in-out group-hover:opacity-10 group-hover:scale-95">
                     {tmpl.id === 'simple-agreement' && (
@@ -1379,12 +1379,12 @@ export default function OwnerAgreementPage() {
                             <span className="text-[5px] font-black text-yellow-600/20 tracking-wider">APPROVED</span>
                           </div>
                         </div>
-                        
+
                         <div className="text-center font-black tracking-wider uppercase text-[9px] text-slate-900 border-b border-slate-300 pb-1.5 mb-2">
                           SIMPLE TENANCY AGREEMENT
                         </div>
                         <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        
+
                         <div className="space-y-2">
                           <p><strong>1. PARTIES:</strong><br />This Agreement is made between Stayzo Properties (Landlord) and the Tenant:<br />TENANT Name: ___________________________<br />TENANT Email: ___________________________</p>
                           <p><strong>2. PROPERTY PREMISES:</strong><br />The Landlord agrees to rent to the Tenant the property located at:<br />ADDRESS: ___________________________</p>
@@ -1392,7 +1392,7 @@ export default function OwnerAgreementPage() {
                           <p><strong>4. START DATE:</strong><br />The tenancy commences on the following start date:<br />START DATE: ___________________________</p>
                           <p><strong>5. AGREEMENT TERMS:</strong><br />The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.</p>
                         </div>
-                        
+
                         <div className="mt-6 flex justify-between border-t border-dashed border-slate-200 pt-3 text-[6px]">
                           <div>
                             <p className="font-bold">LANDLORD:</p>
@@ -1512,9 +1512,9 @@ export default function OwnerAgreementPage() {
                           tmpl.complexity === 'Simple'
                             ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                             : tmpl.complexity === 'Standard'
-                            ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                            : 'bg-purple-50 text-purple-600 border border-purple-200'
-                        }`}>
+                              ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                              : 'bg-purple-50 text-purple-600 border border-purple-200'
+                          }`}>
                           {tmpl.complexity === 'Detailed' ? 'DETAILED' : tmpl.complexity.toUpperCase()} VERSION
                         </span>
                         <span className="text-[10px] text-gray-400 font-bold font-mono">
@@ -1589,7 +1589,7 @@ export default function OwnerAgreementPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {savedAgreements.map((ag) => (
-                    <div 
+                    <div
                       key={ag.id}
                       className="border border-gray-200 rounded-xl p-5 hover:border-gray-400 transition-colors flex flex-col justify-between bg-gray-50/50"
                     >
@@ -1600,9 +1600,9 @@ export default function OwnerAgreementPage() {
                               ag.complexity === 'Simple'
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                                 : ag.complexity === 'Standard'
-                                ? 'bg-blue-50 border-blue-200 text-blue-600'
-                                : 'bg-purple-50 border-purple-200 text-purple-600'
-                            }`}>
+                                  ? 'bg-blue-50 border-blue-200 text-blue-600'
+                                  : 'bg-purple-50 border-purple-200 text-purple-600'
+                              }`}>
                               {ag.complexity} Version
                             </span>
                             <h4 className="text-[14px] font-black text-[#1A1A1A] mt-2.5 truncate max-w-[220px]">
@@ -1673,7 +1673,7 @@ export default function OwnerAgreementPage() {
              2. ACTIVE DRAFTING SPLIT INTERFACE
              ────────────────────────────────────────────────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-300">
-            
+
             {/* Breadcrumb / Top Bar */}
             <div className="lg:col-span-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex items-center gap-3">
@@ -1705,7 +1705,7 @@ export default function OwnerAgreementPage() {
 
                 <div className="flex items-center gap-2.5">
                   <div className="w-[100px] bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="bg-black h-full transition-all duration-300"
                       style={{ width: `${getProgressPercentage()}%` }}
                     />
@@ -1719,7 +1719,7 @@ export default function OwnerAgreementPage() {
 
             {/* Left side: Interactive Chatbot / Manual Form */}
             <div className="lg:col-span-5 flex flex-col h-[650px] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-              
+
               {/* Tab Header */}
               <div className="flex border-b border-gray-100 bg-gray-50 flex-shrink-0">
                 <button
@@ -1728,7 +1728,7 @@ export default function OwnerAgreementPage() {
                     activeTab === 'chat'
                       ? 'bg-white border-b-2 border-b-black text-black'
                       : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
-                  }`}
+                    }`}
                 >
                   🤖 Chatbot Assistant
                 </button>
@@ -1738,7 +1738,7 @@ export default function OwnerAgreementPage() {
                     activeTab === 'fields'
                       ? 'bg-white border-b-2 border-b-black text-black'
                       : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
-                  }`}
+                    }`}
                 >
                   📝 Manual Form
                 </button>
@@ -1746,97 +1746,97 @@ export default function OwnerAgreementPage() {
 
               {activeTab === 'chat' ? (
                 /* CHATBOT VIEW */
-              <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                
-                {/* Chat Assistant Header Info */}
+                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+
+                  {/* Chat Assistant Header Info */}
                   <div className="bg-[#EDE9FE]/50 border-b border-[#DDD6FE] p-3 px-4 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5">
                       <div className="relative w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm text-white">
                         <Sparkles className="w-4 h-4" />
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
-                    </div>
-                    <div>
+                        <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                      </div>
+                      <div>
                         <div className="text-[11px] font-black text-purple-950 uppercase tracking-wider">Stayzo Assistant</div>
                         <div className="text-[9px] text-purple-600 font-bold uppercase tracking-widest">Active Drafting Process</div>
+                      </div>
                     </div>
-                  </div>
                     <span className="text-[9px] font-mono text-purple-700 bg-white border border-purple-200 px-2 py-0.5 rounded">
-                    Step {Math.min(currentFieldIdx + 1, selectedTemplate.fields.length)} of {selectedTemplate.fields.length}
-                  </span>
-                </div>
-
-                {/* Message Bubble Log */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-                  {chatHistory.map((msg) => (
-                    <div 
-                      key={msg.id}
-                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                    >
-                      <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${
-                        msg.sender === 'user'
-                          ? 'bg-[#4F46E5] text-white rounded-tr-sm'
-                          : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
-                      }`}>
-                        <p className="whitespace-pre-line">{msg.text}</p>
-                      </div>
-                      <span className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{msg.time}</span>
-                    </div>
-                  ))}
-
-                  {/* Typing Indicator */}
-                  {isTyping && (
-                    <div className="flex flex-col items-start">
-                      <div className="bg-gray-100 text-gray-400 px-4 py-3 rounded-2xl rounded-tl-sm border border-gray-100 flex items-center gap-1 shadow-sm">
-                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input Form Area */}
-                <div className="p-4 border-t border-gray-100 flex-shrink-0">
-                  <div className="flex items-center gap-2 border border-gray-200 focus-within:border-gray-400 rounded-xl p-1 bg-white transition-colors">
-                    <input
-                      type="text"
-                      placeholder={
-                        currentFieldIdx < selectedTemplate.fields.length
-                          ? `Type ${selectedTemplate.fields[currentFieldIdx].label}...`
-                          : "Draft completed! Review right pane."
-                      }
-                      disabled={currentFieldIdx >= selectedTemplate.fields.length}
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={handleInputKeyDown}
-                      className="flex-1 px-3 py-2.5 text-[12px] font-bold tracking-wide text-black placeholder-gray-300 bg-transparent outline-none disabled:opacity-50"
-                    />
-                    <button
-                      onClick={() => handleSendChat()}
-                      disabled={!chatInput.trim() || currentFieldIdx >= selectedTemplate.fields.length}
-                      className="bg-[#4F46E5] hover:bg-[#4338CA] text-white p-2.5 rounded-lg disabled:opacity-30 disabled:hover:bg-[#4F46E5] transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                      Step {Math.min(currentFieldIdx + 1, selectedTemplate.fields.length)} of {selectedTemplate.fields.length}
+                    </span>
                   </div>
 
-                  {/* Helper Suggestions */}
-                  {currentFieldIdx < selectedTemplate.fields.length && (
-                    <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
-                      <span>Answer assistant prompts to compile agreement clauses.</span>
-                      {selectedTemplate.fields[currentFieldIdx].placeholder && (
-                        <button 
-                          onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
-                            className="text-purple-600 font-bold hover:underline"
-                        >
-                          Use Suggestion
-                        </button>
-                      )}
+                  {/* Message Bubble Log */}
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                    {chatHistory.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${
+                          msg.sender === 'user'
+                            ? 'bg-[#4F46E5] text-white rounded-tr-sm'
+                            : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
+                          }`}>
+                          <p className="whitespace-pre-line">{msg.text}</p>
+                        </div>
+                        <span className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{msg.time}</span>
+                      </div>
+                    ))}
+
+                    {/* Typing Indicator */}
+                    {isTyping && (
+                      <div className="flex flex-col items-start">
+                        <div className="bg-gray-100 text-gray-400 px-4 py-3 rounded-2xl rounded-tl-sm border border-gray-100 flex items-center gap-1 shadow-sm">
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Input Form Area */}
+                  <div className="p-4 border-t border-gray-100 flex-shrink-0">
+                    <div className="flex items-center gap-2 border border-gray-200 focus-within:border-gray-400 rounded-xl p-1 bg-white transition-colors">
+                      <input
+                        type="text"
+                        placeholder={
+                          currentFieldIdx < selectedTemplate.fields.length
+                            ? `Type ${selectedTemplate.fields[currentFieldIdx].label}...`
+                            : "Draft completed! Review right pane."
+                        }
+                        disabled={currentFieldIdx >= selectedTemplate.fields.length}
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                        className="flex-1 px-3 py-2.5 text-[12px] font-bold tracking-wide text-black placeholder-gray-300 bg-transparent outline-none disabled:opacity-50"
+                      />
+                      <button
+                        onClick={() => handleSendChat()}
+                        disabled={!chatInput.trim() || currentFieldIdx >= selectedTemplate.fields.length}
+                        className="bg-[#4F46E5] hover:bg-[#4338CA] text-white p-2.5 rounded-lg disabled:opacity-30 disabled:hover:bg-[#4F46E5] transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
+
+                    {/* Helper Suggestions */}
+                    {currentFieldIdx < selectedTemplate.fields.length && (
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
+                        <span>Answer assistant prompts to compile agreement clauses.</span>
+                        {selectedTemplate.fields[currentFieldIdx].placeholder && (
+                          <button
+                            onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
+                            className="text-purple-600 font-bold hover:underline"
+                          >
+                            Use Suggestion
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
               ) : (
                 /* MANUAL FIELDS VIEW */
                 <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -1858,7 +1858,7 @@ export default function OwnerAgreementPage() {
                           activePreviewField === field.id
                             ? 'border-black ring-2 ring-black/10 text-black'
                             : 'border-gray-200 text-gray-700 hover:border-gray-400'
-                        }`}
+                          }`}
                       />
                     </div>
                   ))}
@@ -1868,17 +1868,17 @@ export default function OwnerAgreementPage() {
 
             {/* Right side: Live Agreement Preview with Theme Selector */}
             <div className="lg:col-span-7 flex flex-col h-[650px] overflow-hidden">
-              
+
               {/* Layout Switcher Toolbar */}
               <div className="bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm space-y-3">
-                
+
                 {/* Visual Theme Selector Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <span className="flex items-center gap-2 text-[10px] font-black text-[#4F46E5] uppercase tracking-wider">
                     <Layout className="w-4 h-4 text-gray-500" />
                     Select Layout Design Style (CV-Style Templates):
                   </span>
-                  
+
                   {/* Action Group */}
                   <div className="flex items-center gap-1.5">
                     <button
@@ -1919,7 +1919,7 @@ export default function OwnerAgreementPage() {
                           isActive
                             ? 'border-black bg-black text-white ring-2 ring-black/10'
                             : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
-                        }`}
+                          }`}
                       >
                         <div className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-gray-900'}`}>
                           {theme.label}
@@ -1935,10 +1935,10 @@ export default function OwnerAgreementPage() {
 
               {/* Document Paper Canvas */}
               <div className="flex-1 bg-white border border-gray-200 shadow-md rounded-xl overflow-y-auto p-8 md:p-12 relative no-scrollbar">
-                
+
                 {/* Printable Paper Wrapper with Theme classes applied */}
-                <div 
-                  id="contract-printable-area" 
+                <div
+                  id="contract-printable-area"
                   className={`mx-auto max-w-[620px] transition-all duration-300 ${getThemeClass()}`}
                 >
                   {renderInteractiveDocument()}

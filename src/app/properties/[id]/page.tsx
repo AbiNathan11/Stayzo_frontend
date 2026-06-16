@@ -34,6 +34,7 @@ interface Property {
   sqft: number;
   type: string;
   status: string;
+  isBoosted: boolean;
   images: string[];
   panoramaImage: string | null;
   waterBillImage: string | null;
@@ -91,7 +92,17 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const handleBoostListing = async (propertyId: string) => {
     try {
       triggerToast('Initializing secure payment gateway...');
-      
+
+      // Step 1: Fetch the runtime Ngrok URL from the server process.
+      // We can't use process.env.NEXT_PUBLIC_NGROK_URL on the client because
+      // Next.js bakes NEXT_PUBLIC_* vars at compile time, but the Ngrok URL
+      // is only known at runtime (after the tunnel is created by dev-with-ngrok.ts).
+      const ngrokRes = await fetch('/api/payments/ngrok-url');
+      const { ngrokUrl } = await ngrokRes.json();
+      const notifyBaseUrl = ngrokUrl || window.location.origin;
+      console.log(`[PayHere] Using notify_url base: ${notifyBaseUrl}`);
+
+      // Step 2: Generate the secure MD5 hash on the server
       const response = await fetch('/api/payments/generate-hash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,18 +110,17 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       });
 
       if (!response.ok) throw new Error('Failed to initialize payment');
-      
+
       const data = await response.json();
 
-      // @ts-ignore - payhere is injected globally by the script
+      // @ts-ignore - payhere is injected globally by the SDK script
       if (typeof payhere === 'undefined') {
         throw new Error('Payment gateway is still loading. Please try again in a moment.');
       }
 
       // @ts-ignore
-      payhere.onCompleted = function onCompleted(orderId) {
-        triggerToast('Payment successful! Your listing is now boosted.');
-        // Optionally refresh the property data here
+      payhere.onCompleted = function onCompleted(orderId: string) {
+        triggerToast('Payment successful! Your listing is now boosted. ✨');
       };
 
       // @ts-ignore
@@ -119,7 +129,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       };
 
       // @ts-ignore
-      payhere.onError = function onError(error) {
+      payhere.onError = function onError(error: string) {
         triggerToast('An error occurred during payment: ' + error);
       };
 
@@ -128,7 +138,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
         merchant_id: data.merchantId,
         return_url: `${window.location.origin}/dashboard/owners/listings?payment=success`,
         cancel_url: `${window.location.origin}/dashboard/owners/listings?payment=cancelled`,
-        notify_url: `${process.env.NEXT_PUBLIC_NGROK_URL || window.location.origin}/api/payments/payhere-notify`,
+        // Step 3: Use the runtime Ngrok URL so PayHere can POST to our local server
+        notify_url: `${notifyBaseUrl}/api/payments/payhere-notify`,
         order_id: data.orderId,
         items: "Property Listing Boost - Stayzo",
         amount: data.amount,
@@ -145,7 +156,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
       // @ts-ignore
       payhere.startPayment(payment);
-      
+
     } catch (error: any) {
       triggerToast(error.message || 'Payment initialization failed.');
       console.error(error);
@@ -589,17 +600,24 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
               <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 shadow-sm flex flex-col space-y-4">
                 <div>
                   <h4 className="text-lg font-black text-indigo-900 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500" /> Boost your listing
+                    <Sparkles className="w-5 h-5 text-indigo-500" /> {property.isBoosted ? 'Listing Boosted' : 'Boost your listing'}
                   </h4>
                   <p className="text-xs text-indigo-700/80 font-semibold mt-2 leading-relaxed">
-                    Pay 500 LKR to boost your ad to the top of tenant search results for higher visibility and faster bookings.
+                    {property.isBoosted 
+                      ? 'Your listing is currently boosted and appearing at the top of tenant search results.'
+                      : 'Pay 500 LKR to boost your ad to the top of tenant search results for higher visibility and faster bookings.'}
                   </p>
                 </div>
                 <button
                   onClick={() => handleBoostListing(property.id)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-extrabold transition shadow-md hover:shadow-lg uppercase tracking-wider active:scale-[0.98]"
+                  disabled={property.isBoosted}
+                  className={`w-full py-3 rounded-xl text-xs font-extrabold transition shadow-md uppercase tracking-wider ${
+                    property.isBoosted 
+                      ? 'bg-indigo-300 text-white cursor-not-allowed shadow-none' 
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg active:scale-[0.98]'
+                  }`}
                 >
-                  Boost listing
+                  {property.isBoosted ? 'Already Boosted' : 'Boost listing'}
                 </button>
               </div>
             )}
