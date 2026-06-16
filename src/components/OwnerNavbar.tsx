@@ -13,7 +13,7 @@ const navLinks = [
   { label: 'Appointments', href: '/dashboard/owners/appointments' },
   { label: 'Chat', href: '/dashboard/owners/chat' },
   { label: 'Agreement', href: '/dashboard/owners/agreement' },
-  { label: 'Profile', href: '/dashboard/owners/profile' },
+  { label: 'Overview', href: '/dashboard/owners/profile' },
 ];
 
 export default function OwnerNavbar() {
