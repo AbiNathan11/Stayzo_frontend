@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, RotateCcw, Check, ArrowLeft, PenTool } from 'lucide-react';
+// @ts-ignore
 import { io, Socket } from 'socket.io-client';
 
 export default function MobileSignPage() {
@@ -15,8 +16,10 @@ export default function MobileSignPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -43,28 +46,47 @@ export default function MobileSignPage() {
     }
   }, []);
 
-  // Setup canvas high DPI rendering
-  useEffect(() => {
+  // Setup canvas to fill its container with correct HiDPI scaling
+  const setupCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear and draw initial background/guide line
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+    const w = rect.width || 340;
+    const h = 240;
+
+    // Set actual canvas pixel size
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    // Set display size via CSS
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    // Scale context
+    ctx.scale(dpr, dpr);
+
+    // Draw guide line
     ctx.strokeStyle = '#94A3B8';
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
-    ctx.moveTo(20, canvas.height - 40);
-    ctx.lineTo(canvas.width - 20, canvas.height - 40);
+    ctx.moveTo(20, h - 40);
+    ctx.lineTo(w - 20, h - 40);
     ctx.stroke();
-    
-    // Reset path style for actual drawing
     ctx.setLineDash([]);
     ctx.strokeStyle = '#1A1A1A';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+  };
+
+  useEffect(() => {
+    setupCanvas();
+    window.addEventListener('resize', setupCanvas);
+    return () => window.removeEventListener('resize', setupCanvas);
   }, [isSubmitted]);
 
   // Coordinate math
@@ -111,6 +133,7 @@ export default function MobileSignPage() {
     const { x, y } = getCoordinates(e.nativeEvent);
     ctx.lineTo(x, y);
     ctx.stroke();
+    setHasDrawn(true);
   };
 
   const stopDrawing = () => {
@@ -118,24 +141,8 @@ export default function MobileSignPage() {
   };
 
   const handleClear = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Redraw dotted line guide
-    ctx.strokeStyle = '#94A3B8';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(20, canvas.height - 40);
-    ctx.lineTo(canvas.width - 20, canvas.height - 40);
-    ctx.stroke();
-    
-    ctx.setLineDash([]);
-    ctx.strokeStyle = '#1A1A1A';
-    ctx.lineWidth = 3;
+    setHasDrawn(false);
+    setupCanvas();
   };
 
   const handleSubmit = () => {
@@ -180,9 +187,9 @@ export default function MobileSignPage() {
         <div className="flex-1 flex flex-col justify-center my-6 space-y-4">
           
           {/* Canvas Wrapper */}
-          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col items-center">
+          <div ref={containerRef} className="bg-white border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col items-center w-full">
             <div className="w-full bg-slate-50 border-b border-slate-100 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Draw your signature in the box below
+              {hasDrawn ? '✓ Signature drawn — tap Confirm Sign' : 'Draw your signature in the box below'}
             </div>
             
             <canvas
@@ -194,9 +201,8 @@ export default function MobileSignPage() {
               onTouchStart={startDrawing}
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
-              width={340}
-              height={260}
-              className="bg-white touch-none cursor-crosshair"
+              className="bg-white touch-none cursor-crosshair w-full"
+              style={{ display: 'block' }}
             />
           </div>
 
