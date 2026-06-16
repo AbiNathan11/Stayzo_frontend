@@ -25,6 +25,7 @@ import {
   X,
   ShieldCheck
 } from 'lucide-react';
+// @ts-ignore
 import { io, Socket } from 'socket.io-client';
 import toast, { Toaster } from 'react-hot-toast';
 
