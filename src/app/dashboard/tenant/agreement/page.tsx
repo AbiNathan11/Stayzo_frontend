@@ -6,6 +6,7 @@ import {
   Smartphone, CheckCircle2, FileText, ExternalLink, Scale, Clock, ShieldAlert
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+// @ts-ignore
 import { io } from 'socket.io-client';
 
 // ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────

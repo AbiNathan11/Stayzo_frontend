@@ -3,15 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Send, 
-  FileText, 
-  Download, 
-  Check, 
-  Sparkles, 
-  CheckCircle2, 
-  Trash2, 
-  Copy, 
+import {
+  Send,
+  FileText,
+  Download,
+  Check,
+  Sparkles,
+  CheckCircle2,
+  Trash2,
+  Copy,
   FileSignature,
   Info,
   ArrowLeft,
@@ -27,7 +27,9 @@ import {
   ShieldAlert,
   ShieldCheck
 } from 'lucide-react';
+// @ts-ignore
 import { io, Socket } from 'socket.io-client';
+import toast, { Toaster } from 'react-hot-toast';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface TemplateField {
@@ -60,6 +62,7 @@ interface SavedAgreement {
   landlordSig?: string;
   tenantSig?: string;
   savedInLandlordWallet?: boolean;
+  isDraft?: boolean;
 }
 
 // ─── TEMPLATES DATA ─────────────────────────────────────────────────────────
@@ -234,7 +237,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Setup initial canvas styles
     ctx.strokeStyle = '#1A1A1A';
     ctx.lineWidth = 3;
@@ -353,7 +356,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
-  
+
   // App States
   const [selectedTemplate, setSelectedTemplate] = useState<AgreementTemplate | null>(null);
   const [currentFieldIdx, setCurrentFieldIdx] = useState<number>(0);
@@ -361,33 +364,35 @@ export default function OwnerAgreementPage() {
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; sender: 'bot' | 'user'; text: string; time: string }>>([]);
   const [chatInput, setChatInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'fields'>('chat');
   const [selectedTheme, setSelectedTheme] = useState<VisualTheme>('classic-legal');
-  
+
   const [savedAgreements, setSavedAgreements] = useState<SavedAgreement[]>([]);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
 
   // Signatures State
   const [landlordSig, setLandlordSig] = useState<string | null>(null);
   const [tenantSig, setTenantSig] = useState<string | null>(null);
   const [showSigModal, setShowSigModal] = useState<'landlord' | 'tenant' | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [deleteConfirmAgreement, setDeleteConfirmAgreement] = useState<{ id: string; name: string } | null>(null);
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
-  const [mobileBaseUrl, setMobileBaseUrl] = useState<string>('');
-  const [customIp, setCustomIp] = useState<string>('');
+  const [localNetIp, setLocalNetIp] = useState<string>('localhost');
   const [socket, setSocket] = useState<Socket | null>(null);
-  
+
   // Use a unique draft ID (timestamp-based) for the socket room
   const [activeDraftId] = useState<string>(`draft_${Date.now()}`);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Set mobile URL for QR code and init Socket.io
+  // Auto-detect local network IP and init Socket.io
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('stayzo_landlord_sig');
-      localStorage.removeItem('stayzo_tenant_sig');
-      setMobileBaseUrl(`${window.location.origin}/dashboard/owners/agreement/sign`);
+      // Auto-fetch the machine's LAN IP from our server-side API route
+      fetch('/api/local-ip')
+        .then(r => r.json())
+        .then(data => { if (data.ip) setLocalNetIp(data.ip); })
+        .catch(() => setLocalNetIp(window.location.hostname));
 
       // Initialize Socket connection to backend
       const backendUrl = `http://${window.location.hostname}:3001`;
@@ -401,10 +406,10 @@ export default function OwnerAgreementPage() {
       newSocket.on('signature_received', (data: { role: 'landlord' | 'tenant', signatureDataUrl: string }) => {
         if (data.role === 'landlord') {
           setLandlordSig(data.signatureDataUrl);
-          showToast("Landlord signature received from mobile!");
+          toast.success('Landlord signature received from mobile!');
         } else {
           setTenantSig(data.signatureDataUrl);
-          showToast("Tenant signature received from mobile!");
+          toast.success('Tenant signature received from mobile!');
         }
         setShowSigModal(null);
       });
@@ -415,15 +420,36 @@ export default function OwnerAgreementPage() {
     }
   }, [activeDraftId]);
 
-  // Compute final QR code URL (append draftId)
+  // Poll localStorage for signatures written by same-device QR tab
+  // (storage events only fire on OTHER windows, not the writer)
+  useEffect(() => {
+    if (!showSigModal) return;
+    const interval = setInterval(() => {
+      const landlordKey = localStorage.getItem('stayzo_landlord_sig');
+      if (landlordKey) {
+        setLandlordSig(landlordKey);
+        localStorage.removeItem('stayzo_landlord_sig');
+        toast.success('Landlord signature applied!');
+        setShowSigModal(null);
+        clearInterval(interval);
+        return;
+      }
+      const tenantKey = localStorage.getItem('stayzo_tenant_sig');
+      if (tenantKey) {
+        setTenantSig(tenantKey);
+        localStorage.removeItem('stayzo_tenant_sig');
+        toast.success('Tenant signature applied!');
+        setShowSigModal(null);
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showSigModal]);
+
+  // Build QR code URL using auto-detected LAN IP so phones on same Wi-Fi can reach it
   const getQrCodeUrl = () => {
-    if (customIp.trim()) {
-      // Clean custom IP input from protocols or trailing slashes
-      const cleanIp = customIp.trim().replace(/^(https?:\/\/)?/, '').replace(/\/$/, '');
-      const port = window.location.port ? `:${window.location.port}` : '';
-      return `http://${cleanIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}`;
-    }
-    return `${mobileBaseUrl}?role=${showSigModal}&draftId=${activeDraftId}`;
+    const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
+    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
   };
 
   // Listen to Storage events (fallback from phone signature pads on same device)
@@ -452,9 +478,11 @@ export default function OwnerAgreementPage() {
   const fetchAgreementsFromDb = async (email: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/agreements?landlordEmail=${encodeURIComponent(email)}`);
+      let mapped: SavedAgreement[] = [];
       if (response.ok) {
         const data = await response.json();
-        const mapped: SavedAgreement[] = data.map((item: any) => ({
+        const activeAgreements = data.filter((item: any) => item.status === 'Active');
+        mapped = activeAgreements.map((item: any) => ({
           id: item.id,
           templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
           templateTitle: 'Rental Lease Agreement',
@@ -477,8 +505,40 @@ export default function OwnerAgreementPage() {
           tenantSig: item.tenantSig || undefined,
           savedInLandlordWallet: item.savedInLandlordWallet || false
         }));
-        setSavedAgreements(mapped);
+      }
+
+      // Check if we have an ongoing local draft and append it to the vault!
+      if (typeof window !== 'undefined') {
+        const localDraftStr = localStorage.getItem('stayzo_ongoing_agreement_draft');
+        if (localDraftStr) {
+          try {
+            const parsed = JSON.parse(localDraftStr);
+            const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === parsed.templateId);
+            if (tmpl) {
+              const draftAgreement: SavedAgreement = {
+                id: 'local_draft_ongoing',
+                templateId: parsed.templateId,
+                templateTitle: tmpl.title,
+                complexity: tmpl.complexity,
+                tenantName: parsed.fieldValues?.tenantName || 'Draft Tenant',
+                propertyAddress: parsed.fieldValues?.propertyAddress || 'Draft Address',
+                rentAmount: parsed.fieldValues?.rentAmount || 'N/A',
+                dateCreated: 'Ongoing Draft',
+                visualTheme: parsed.selectedTheme || 'classic-legal',
+                values: parsed.fieldValues || {},
+                landlordSig: parsed.landlordSig || undefined,
+                savedInLandlordWallet: true,
+                isDraft: true
+              };
+              mapped.unshift(draftAgreement);
             }
+          } catch (err) {
+            console.error("Error parsing local draft for vault", err);
+          }
+        }
+      }
+
+      setSavedAgreements(mapped);
     } catch (e) {
       console.error("Failed to fetch agreements from DB", e);
     }
@@ -497,13 +557,67 @@ export default function OwnerAgreementPage() {
         };
         setLandlordUser(u);
         email = u.email;
-      } catch (e) {}
+      } catch (e) { }
     } else {
       setLandlordUser({ firstName: 'Owner', lastName: '', email: 'landlord@example.com' });
     }
 
     fetchAgreementsFromDb(email);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stayzo_ongoing_agreement_draft');
+      if (saved) {
+        setHasSavedDraft(true);
+      }
+    }
+  }, []);
+
+  const handleSaveProgress = () => {
+    if (!selectedTemplate) return;
+    const progressData = {
+      templateId: selectedTemplate.id,
+      fieldValues,
+      chatHistory,
+      currentFieldIdx,
+      landlordSig,
+      selectedTheme
+    };
+    localStorage.setItem('stayzo_ongoing_agreement_draft', JSON.stringify(progressData));
+    showToast("Ongoing activity saved successfully!");
+    if (landlordUser?.email) {
+      fetchAgreementsFromDb(landlordUser.email);
+    }
+  };
+
+  const handleRestoreDraft = () => {
+    const saved = localStorage.getItem('stayzo_ongoing_agreement_draft');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === parsed.templateId);
+        if (tmpl) {
+          setSelectedTemplate(tmpl);
+          setFieldValues(parsed.fieldValues || {});
+          setChatHistory(parsed.chatHistory || []);
+          setCurrentFieldIdx(parsed.currentFieldIdx ?? 0);
+          setLandlordSig(parsed.landlordSig || null);
+          if (parsed.selectedTheme) setSelectedTheme(parsed.selectedTheme);
+          setHasSavedDraft(false);
+          showToast("Saved progress restored successfully!");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const handleClearSavedDraft = () => {
+    localStorage.removeItem('stayzo_ongoing_agreement_draft');
+    setHasSavedDraft(false);
+    showToast("Saved progress cleared.");
+  };
 
   // Save agreements to localStorage helper (unused now, but kept to prevent TS warnings)
   const saveAgreementsToLocalStorage = (agreements: SavedAgreement[]) => {
@@ -541,7 +655,7 @@ export default function OwnerAgreementPage() {
     setCurrentFieldIdx(0);
     setLandlordSig(null);
     setTenantSig(null);
-    
+
     // Reset values
     const initialValues: Record<string, string> = {};
     template.fields.forEach(f => {
@@ -554,42 +668,44 @@ export default function OwnerAgreementPage() {
     const initialMessage = {
       id: 'welcome',
       sender: 'bot' as const,
-      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your **${template.title}** (${template.complexity} version). \n\nI will ask you a few simple questions one by one. \n\nTo start: **${firstField.question}**`,
+      text: `Hello! I am your Stayzo Agreement Assistant. Let's draft your ${template.title} (${template.complexity} version). \n\nI will ask you a few simple questions one by one. \n\nTo start: ${firstField.question}`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setChatHistory([initialMessage]);
     setChatInput('');
-    setActiveTab('chat');
   };
 
   // Exit current drafting
   const handleExitDraft = () => {
-    if (window.confirm("Are you sure you want to exit the current draft? Your unsaved progress will be lost.")) {
+    setShowExitConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
     setSelectedTemplate(null);
     setChatHistory([]);
     setFieldValues({});
     setLandlordSig(null);
     setTenantSig(null);
-    }
+    setShowExitConfirm(false);
   };
 
   // Simulate bot typing delay
   const askNextQuestion = (nextIdx: number, currentVals: Record<string, string>, previousAnswer: string, prevFieldName: string) => {
     if (!selectedTemplate) return;
-    
+
     setIsTyping(true);
-    
+
     setTimeout(() => {
       setIsTyping(false);
-      
+
       const isFinished = nextIdx >= selectedTemplate.fields.length;
       let botText = '';
-      
+
       if (isFinished) {
-        botText = `Excellent! I have recorded the **${prevFieldName}** as **"${previousAnswer}"**.\n\n🎉 **All details for the agreement have been filled!** \n\nYou can now switch between visual themes on the right preview pane, click on the **Landlord Sign** or **Tenant Sign** buttons at the bottom of the document to sign, and click **"Save"** or **"Print PDF"** to complete.`;
+        botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
-        botText = `Got it. Registered **${prevFieldName}** as **"${previousAnswer}"**.\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: **${nextField.question}**`;
+        botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
       }
 
       setChatHistory(prev => [
@@ -610,6 +726,55 @@ export default function OwnerAgreementPage() {
     }, 900);
   };
 
+  // Validate chatbot field answers
+  const validateField = (fieldId: string, value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Input cannot be empty. Please provide an answer.";
+    }
+
+    if (fieldId === 'tenantName') {
+      const nameRegex = /^[A-Za-z\s.'-]{2,}$/;
+      if (!nameRegex.test(trimmed)) {
+        return "Please enter a valid tenant name (at least 2 characters, alphabetic letters only).";
+      }
+    }
+
+    if (fieldId === 'tenantEmail') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        return "Please enter a valid email address (e.g., tenant@example.com).";
+      }
+    }
+
+    if (fieldId === 'propertyAddress') {
+      if (trimmed.length < 5) {
+        return "Please enter a valid property address (at least 5 characters).";
+      }
+    }
+
+    if (['rentAmount', 'advancePayment', 'depositAmount', 'lateFee'].includes(fieldId)) {
+      // Must contain at least one digit
+      if (!/\d/.test(trimmed)) {
+        return "Please include a numeric amount in your response (e.g., Rs 30,000).";
+      }
+    }
+
+    if (fieldId === 'startDate') {
+      if (trimmed.length < 4) {
+        return "Please enter a valid starting date (e.g., June 1, 2026).";
+      }
+    }
+
+    if (fieldId === 'duration') {
+      if (trimmed.length < 2) {
+        return "Please enter a valid lease duration (e.g., 12 Months).";
+      }
+    }
+
+    return null;
+  };
+
   // Handle Send Chat
   const handleSendChat = (textToSend?: string) => {
     const text = (textToSend !== undefined ? textToSend : chatInput).trim();
@@ -626,6 +791,30 @@ export default function OwnerAgreementPage() {
     }
 
     const currentField = selectedTemplate.fields[currentFieldIdx];
+
+    // Validate answer!
+    const validationError = validateField(currentField.id, text);
+    if (validationError) {
+      const userMsg = {
+        id: Math.random().toString(),
+        sender: 'user' as const,
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatHistory(prev => [
+        ...prev,
+        userMsg,
+        {
+          id: Math.random().toString(),
+          sender: 'bot' as const,
+          text: `⚠️ Invalid Input: ${validationError}\n\nPrompt: ${currentField.question}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      if (textToSend === undefined) setChatInput('');
+      return;
+    }
+
     const nextVals = { ...fieldValues, [currentField.id]: text };
     setFieldValues(nextVals);
 
@@ -688,7 +877,7 @@ export default function OwnerAgreementPage() {
 
     setFieldValues(sampleVals);
     setCurrentFieldIdx(selectedTemplate.fields.length);
-    
+
     setChatHistory(prev => [
       ...prev,
       {
@@ -700,7 +889,7 @@ export default function OwnerAgreementPage() {
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `✨ I have successfully auto-filled the **${selectedTemplate.title}** with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or sign it at the bottom.`,
+        text: `✨ I have successfully auto-filled the ${selectedTemplate.title} with demo details! \n\nYou can now see it loaded in the preview pane. Swap styles, make changes, or apply your signature.`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -713,7 +902,6 @@ export default function OwnerAgreementPage() {
     if (idx === -1) return;
 
     setCurrentFieldIdx(idx);
-    setActiveTab('chat');
     setActivePreviewField(fieldId);
 
     const field = selectedTemplate.fields[idx];
@@ -722,7 +910,7 @@ export default function OwnerAgreementPage() {
       {
         id: Math.random().toString(),
         sender: 'bot',
-        text: `Let's edit the **${field.label}** (currently: "${fieldValues[fieldId] || 'Not set'}"). \n\nPlease provide the new value:`,
+        text: `Let's edit the ${field.label} (currently: "${fieldValues[fieldId] || 'Not set'}"). \n\nPlease provide the new value:`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -739,11 +927,19 @@ export default function OwnerAgreementPage() {
   const handleSaveToVault = async () => {
     if (!selectedTemplate) return;
 
-    if (!landlordSig) {
-      alert("You must sign the agreement before sending it to the tenant! Please click the 'Sign Contract' button at the bottom of the document preview.");
+    if (getProgressPercentage() < 100) {
+      toast.error("Please fill in all details via the assistant before sending the contract.");
       return;
     }
-    
+
+    if (!landlordSig) {
+      // Automatically open the signature modal for the landlord
+      setShowSigModal('landlord');
+      setSigModalTab('qr');
+      toast.error("Please sign the agreement first to send it to the tenant.");
+      return;
+    }
+
     const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
     const tenantEmail = fieldValues.tenantEmail || '';
     const propertyAddress = fieldValues.propertyAddress || 'No Address Specified';
@@ -754,7 +950,7 @@ export default function OwnerAgreementPage() {
     const securityDeposit = parseFloat(depositAmountText.replace(/[^0-9.]/g, '')) || 0;
     const termLength = fieldValues.duration || '12 Months';
     const startDate = fieldValues.startDate || new Date().toLocaleDateString();
-    const endDate = fieldValues.endDate || ''; 
+    const endDate = fieldValues.endDate || '';
 
     // Generate contract text
     const contractText = selectedTemplate.generateText(fieldValues);
@@ -771,7 +967,8 @@ export default function OwnerAgreementPage() {
       endDate,
       listingName: propertyAddress,
       contractText,
-      landlordSig: landlordSig || ''
+      landlordSig: landlordSig || '',
+      visualTheme: selectedTheme
     };
 
     try {
@@ -789,29 +986,48 @@ export default function OwnerAgreementPage() {
 
       const savedData = await response.json();
       showToast("Agreement signed and successfully sent to Tenant!");
-      
+
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
       }
     } catch (err) {
       console.error(err);
-      alert('Error saving agreement to database. Please check your network connection.');
+      toast.error('Error saving agreement to database. Please check your network connection.');
+    }
+  };
+
+  const handleConfirmDelete = async (id: string) => {
+    try {
+      if (id === 'local_draft_ongoing') {
+        localStorage.removeItem('stayzo_ongoing_agreement_draft');
+        setHasSavedDraft(false);
+        showToast("Ongoing draft deleted successfully.");
+      } else {
+        const response = await fetch(`http://localhost:3001/api/agreements/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete agreement from database');
+        }
+        showToast("Agreement deleted successfully.");
+      }
+
+      if (landlordUser?.email) {
+        fetchAgreementsFromDb(landlordUser.email);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error deleting agreement from database.');
     }
   };
 
   const handleDeleteAgreement = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete the agreement for "${name}"?`)) {
-      const filtered = savedAgreements.filter(a => a.id !== id);
-      saveAgreementsToLocalStorage(filtered);
-        showToast("Agreement deleted successfully.");
-      }
+    setDeleteConfirmAgreement({ id, name });
   };
 
+
   const showToast = (message: string) => {
-    setSuccessToast(message);
-    setTimeout(() => {
-      setSuccessToast(null);
-    }, 4000);
+    toast.success(message);
   };
 
   const handleCopyText = () => {
@@ -830,116 +1046,116 @@ export default function OwnerAgreementPage() {
     if (printWindow) {
       const templateTitle = selectedTemplate?.title || "Rental Agreement";
       const textHtml = printContent.innerHTML;
-      
+
       let themeStyles = '';
       if (selectedTheme === 'classic-legal') {
         themeStyles = `
-          body {
-            font-family: 'Times New Roman', Times, serif;
-            line-height: 1.8;
-            padding: 50px;
-            color: #000;
-            background-color: #fff;
-          }
-          .printable-paper {
-            border: 4px double #000;
-            padding: 40px;
-          }
-          h1, h2, h3, .doc-title {
-            text-align: center;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-          }
-          p { margin-bottom: 1.2rem; text-align: justify; }
-          .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-        `;
+         body {
+           font-family: 'Times New Roman', Times, serif;
+           line-height: 1.8;
+           padding: 50px;
+           color: #000;
+           background-color: #fff;
+         }
+         .printable-paper {
+           border: 4px double #000;
+           padding: 40px;
+         }
+         h1, h2, h3, .doc-title {
+           text-align: center;
+           font-weight: bold;
+           text-transform: uppercase;
+           letter-spacing: 1px;
+           margin-bottom: 25px;
+           border-bottom: 2px solid #000;
+           padding-bottom: 10px;
+         }
+         p { margin-bottom: 1.2rem; text-align: justify; }
+         .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+       `;
       } else if (selectedTheme === 'modern-clean') {
         themeStyles = `
-          body {
-            font-family: 'Inter', system-ui, sans-serif;
-            line-height: 1.6;
-            padding: 40px;
-            color: #2D3748;
-            background-color: #fff;
-          }
-          .doc-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: #1A1A1A;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            border-left: 5px solid #1A1A1A;
-            padding-left: 15px;
-          }
-          p { margin-bottom: 1rem; }
-          .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
-          .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
-        `;
+         body {
+           font-family: 'Inter', system-ui, sans-serif;
+           line-height: 1.6;
+           padding: 40px;
+           color: #2D3748;
+           background-color: #fff;
+         }
+         .doc-title {
+           font-size: 24px;
+           font-weight: 800;
+           color: #1A1A1A;
+           margin-bottom: 30px;
+           text-transform: uppercase;
+           border-left: 5px solid #1A1A1A;
+           padding-left: 15px;
+         }
+         p { margin-bottom: 1rem; }
+         .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+         .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+       `;
       } else { // executive-elite
         themeStyles = `
-          body {
-            font-family: 'Georgia', serif;
-            line-height: 1.7;
-            padding: 45px;
-            color: #1A202C;
-            background-color: #fff;
-          }
-          .doc-title {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 900;
-            color: #0F172A;
-            letter-spacing: 0.05em;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 3px double #0F172A;
-          }
-          p { margin-bottom: 1.1rem; text-align: justify; }
-          .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
-          .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-        `;
+         body {
+           font-family: 'Georgia', serif;
+           line-height: 1.7;
+           padding: 45px;
+           color: #1A202C;
+           background-color: #fff;
+         }
+         .doc-title {
+           text-align: center;
+           font-size: 20px;
+           font-weight: 900;
+           color: #0F172A;
+           letter-spacing: 0.05em;
+           margin-bottom: 30px;
+           padding-bottom: 15px;
+           border-bottom: 3px double #0F172A;
+         }
+         p { margin-bottom: 1.1rem; text-align: justify; }
+         .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
+         .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+       `;
       }
 
       printWindow.document.write(`
-        <html>
-          <head>
-            <title>${templateTitle} - Stayzo</title>
-            <style>
-              ${themeStyles}
-              .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
-              .sig-img-print { max-height: 45px; object-fit: contain; }
-              .hide-on-print { display: none !important; }
-              span {
-                font-family: inherit !important;
-                font-size: inherit !important;
-                font-weight: bold !important;
-                background: none !important;
-                border: none !important;
-                padding: 0 !important;
-                color: inherit !important;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="printable-paper">
-              ${textHtml}
-            </div>
-            <script>
-              window.onload = function() {
-                window.print();
-                window.close();
-              }
-            </script>
-          </body>
-        </html>
-      `);
+       <html>
+         <head>
+           <title>${templateTitle} - Stayzo</title>
+           <style>
+             ${themeStyles}
+             .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
+             .sig-img-print { max-height: 45px; object-fit: contain; }
+             .hide-on-print { display: none !important; }
+             span {
+               font-family: inherit !important;
+               font-size: inherit !important;
+               font-weight: bold !important;
+               background: none !important;
+               border: none !important;
+               padding: 0 !important;
+               color: inherit !important;
+             }
+           </style>
+         </head>
+         <body>
+           <div class="printable-paper">
+             ${textHtml}
+           </div>
+           <script>
+             window.onload = function() {
+               window.print();
+               window.close();
+             }
+           </script>
+         </body>
+       </html>
+     `);
       printWindow.document.close();
     }
   };
@@ -951,6 +1167,13 @@ export default function OwnerAgreementPage() {
     return Math.round((filled / total) * 100);
   };
 
+  // Helper to render inline placeholders inside select layout cards
+  const getCardPlaceholder = (label: string) => (
+    <span className="inline-block bg-[#EEF2FF] text-[#4F46E5] border border-dashed border-[#C7D2FE] px-1.5 py-0.5 rounded font-mono text-[6px] font-extrabold mx-0.5 uppercase tracking-wider leading-none select-none">
+      {label}
+    </span>
+  );
+
   // Dynamic Highlight Field Span
   const getFieldSpan = (fieldId: string, label: string) => {
     const val = fieldValues[fieldId];
@@ -958,16 +1181,15 @@ export default function OwnerAgreementPage() {
     return (
       <span
         onClick={() => handleJumpToField(fieldId)}
-        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${
-          isActive
-            ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
-            : val
+        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${isActive
+          ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
+          : val
             ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
-            : 'bg-[#EDE9FE] text-[#7C3AED] border-b-2 border-dashed border-[#8B5CF6] font-bold animate-pulse hover:bg-[#DDD6FE]'
-        }`}
+            : 'bg-[#EEF2FF] text-[#4F46E5] border-b-2 border-dashed border-[#C7D2FE] font-bold animate-pulse hover:bg-[#E0E7FF]'
+          }`}
         title={`Click to edit ${label}`}
       >
-        {val || `[Enter ${label}]`}
+        {val || label}
       </span>
     );
   };
@@ -981,33 +1203,51 @@ export default function OwnerAgreementPage() {
     return (
       <div>
         <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">{title}</p>
-        
+
         {signature ? (
           <div className="flex flex-col items-start space-y-1">
-            <img 
-              src={signature} 
-              alt={`${roleType} Signature`} 
-              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print" 
+            <img
+              src={signature}
+              alt={`${roleType} Signature`}
+              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print"
             />
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSig(null); }} 
+            {roleType === 'landlord' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setSig(null); }}
                 className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
               >
                 Remove
               </button>
+            )}
           </div>
-        ) : (
-          <button 
-            onClick={(e) => { e.stopPropagation(); setShowSigModal(roleType); setSigModalTab('qr'); }}
-            className="text-[10px] border border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold px-3 py-2 rounded-lg flex items-center gap-1.5 mt-2 transition-all hover:scale-[1.01] hide-on-print"
+        ) : roleType === 'landlord' ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (getProgressPercentage() < 100) {
+                toast.error("Please fill in all details via the assistant before signing.");
+                return;
+              }
+              setShowSigModal('landlord');
+              setSigModalTab('qr');
+            }}
+            className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${getProgressPercentage() < 100
+              ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
+              : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
+              }`}
           >
             <FileSignature className="w-3.5 h-3.5" />
-            <span>Sign Contract</span>
+            <span>Click to Sign Contract</span>
           </button>
+        ) : (
+          <div className="text-[10px] font-bold text-gray-400 italic py-2 mt-2 flex items-center gap-1.5 hide-on-print">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span>Awaiting Tenant Signature</span>
+          </div>
         )}
-        
+
         <div className="signature-line border-b border-gray-400 w-full h-1 mt-1" />
-        <p className="font-bold mt-1 text-[#1A1A1A]">{defaultName}</p>
+        <p className={`font-bold mt-1 text-[11px] ${defaultName === 'Tenant Full Name' ? 'text-[#4F46E5] bg-[#EEF2FF] px-1.5 py-0.5 rounded border border-dashed border-[#C7D2FE] font-mono text-[9px] w-max uppercase tracking-wider' : 'text-[#1A1A1A]'}`}>{defaultName}</p>
       </div>
     );
   };
@@ -1026,7 +1266,7 @@ export default function OwnerAgreementPage() {
           <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
             SIMPLE TENANCY AGREEMENT
           </div>
-          
+
           <p className="text-[13px] md:text-[14px]">
             This Tenancy Agreement is created on this <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Properties</strong>, and the Tenant:
           </p>
@@ -1209,16 +1449,18 @@ export default function OwnerAgreementPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      
+
       {/* ── Page Content ── */}
       <div className="w-full">
-        
+
         {/* Toast Notification Container */}
+
         <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
         {/* CUSTOM EXIT CONFIRMATION MODAL (TOASTER METHOD) */}
         {showExitConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200 relative">
               {/* X close button top-right */}
               <button
@@ -1233,7 +1475,7 @@ export default function OwnerAgreementPage() {
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
                   <ArrowLeft className="w-6 h-6" />
                 </div>
-                
+
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Exit Current Draft?</h3>
@@ -1241,13 +1483,16 @@ export default function OwnerAgreementPage() {
                     Are you sure you want to exit? Any unsaved progress will be permanently lost.
                   </p>
                 </div>
-                
+
+
                 {/* Actions — no Cancel button */}
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
                     onClick={handleConfirmExit}
+
                     className="flex-1 py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
+
                     Don&apos;t Save
                   </button>
                   <button
@@ -1255,8 +1500,10 @@ export default function OwnerAgreementPage() {
                       handleSaveProgress();
                       handleConfirmExit();
                     }}
+
                     className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
+
                     Save &amp; Exit
                   </button>
                 </div>
@@ -1274,7 +1521,7 @@ export default function OwnerAgreementPage() {
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
                   <Trash2 className="w-6 h-6" />
                 </div>
-                
+
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Delete Agreement?</h3>
@@ -1282,7 +1529,7 @@ export default function OwnerAgreementPage() {
                     Are you sure you want to delete the agreement for <strong>"{deleteConfirmAgreement.name}"</strong>? This will permanently remove it from your vault.
                   </p>
                 </div>
-                
+
                 {/* Actions */}
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
@@ -1311,7 +1558,7 @@ export default function OwnerAgreementPage() {
         {showSigModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-[430px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              
+
               {/* Modal Header */}
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -1320,7 +1567,7 @@ export default function OwnerAgreementPage() {
                   </h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Choose your signature method</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowSigModal(null)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"
                 >
@@ -1332,22 +1579,20 @@ export default function OwnerAgreementPage() {
               <div className="flex border-b border-slate-100">
                 <button
                   onClick={() => setSigModalTab('qr')}
-                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
-                    sigModalTab === 'qr'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${sigModalTab === 'qr'
+                    ? 'bg-white border-b-2 border-b-black text-black'
+                    : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Scan QR Code</span>
                 </button>
                 <button
                   onClick={() => setSigModalTab('draw')}
-                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
-                    sigModalTab === 'draw'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${sigModalTab === 'draw'
+                    ? 'bg-white border-b-2 border-b-black text-black'
+                    : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                 >
                   <MousePointerClick className="w-4 h-4" />
                   <span>Draw on Screen</span>
@@ -1363,29 +1608,21 @@ export default function OwnerAgreementPage() {
                       Scan this QR code with your mobile phone camera to open the secure signing pad. Draw your signature on your phone screen, and it will update here in real-time.
                     </p>
 
-                    {/* Local Network IP Input */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left space-y-1.5">
-                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                        🔌 Scanning with a real phone?
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter computer Local IP (e.g. 192.168.1.15)"
-                        value={customIp}
-                        onChange={(e) => setCustomIp(e.target.value)}
-                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded bg-white text-[11px] font-semibold text-slate-700 outline-none focus:border-slate-400"
-                      />
-                      <p className="text-[8px] text-slate-450 font-medium leading-normal">
-                        Tip: Open terminal on your computer and run <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-slate-800">ipconfig</code> to find your IPv4 Address. Ensure both devices are on the same Wi-Fi network.
-                      </p>
+                    {/* Auto-detected IP info badge */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#4F46E5] shrink-0" />
+                      <div>
+                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Scan with your phone camera</p>
+                        <p className="text-[8px] text-slate-400 font-medium mt-0.5">Make sure your phone is on the same Wi-Fi as this computer. The QR code is ready to scan.</p>
+                      </div>
                     </div>
 
                     {/* QR Code Container */}
                     <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
-                      {mobileBaseUrl ? (
-                        <img 
+                      {localNetIp ? (
+                        <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
-                          alt="Signature QR Code" 
+                          alt="Signature QR Code"
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -1395,24 +1632,14 @@ export default function OwnerAgreementPage() {
 
                     <div className="flex flex-col items-center space-y-2">
                       <div className="flex items-center gap-1.5 justify-center text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">
-                        <Smartphone className="w-4 h-4 text-purple-600" />
+                        <Smartphone className="w-4 h-4 text-[#4F46E5]" />
                         <span>Awaiting mobile signature...</span>
                       </div>
-                      
-                      {/* Desktop Sandbox Test Link */}
-                      <a
-                        href={getQrCodeUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-black text-purple-700 hover:underline uppercase tracking-wider pt-2"
-                      >
-                        [Open mobile tab in new window for testing]
-                      </a>
                     </div>
                   </div>
                 ) : (
                   /* METHOD B: DESKTOP DRAWING BOARD */
-                  <DesktopCanvasPad 
+                  <DesktopCanvasPad
                     onSave={(dataUrl) => {
                       if (showSigModal === 'landlord') {
                         setLandlordSig(dataUrl);
@@ -1422,7 +1649,7 @@ export default function OwnerAgreementPage() {
                         showToast("Tenant signature applied!");
                       }
                       setShowSigModal(null);
-                    }} 
+                    }}
                   />
                 )}
               </div>
@@ -1432,29 +1659,29 @@ export default function OwnerAgreementPage() {
 
         {!selectedTemplate ? (
           /* ──────────────────────────────────────────────────────────────────
-             1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
-             ────────────────────────────────────────────────────────────────── */
+                      1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
+                      ────────────────────────────────────────────────────────────────── */
           <div className="space-y-10 animate-in fade-in duration-300">
-            
+
             {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
               <div>
-              <h1 className="text-[32px] md:text-[40px] font-black text-[#1A1A1A] uppercase tracking-tight leading-none">
-                Smart Agreement Hub
-              </h1>
-              <p className="text-[14px] text-gray-500 font-medium mt-2 max-w-2xl">
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#1A1A1A]">Smart Agreement Hub</h2>
+                <p className="text-gray-500 text-xs font-semibold mt-1 max-w-3xl">
                   Draft binding lease agreements. Select a template based on the complexity you need, and the chatbot assistant will walk you through the details to build the contract.
                 </p>
-              <div className="w-8 h-[3px] bg-[#4F46E5] mt-4" />
+              </div>
             </div>
+
 
             {/* Template Selection Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {AGREEMENT_TEMPLATES.map((tmpl) => (
-                <div 
+                <div
                   key={tmpl.id}
                   className="relative w-full h-[520px] bg-[#F8FAFB] border border-gray-200 rounded-[28px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between"
                 >
-                  
+
                   {/* DEFAULT STATE: Shows the actual exact agreement document preview */}
                   <div className="absolute inset-0 p-6 flex flex-col bg-white overflow-hidden transition-all duration-700 ease-in-out group-hover:opacity-10 group-hover:scale-95">
                     {tmpl.id === 'simple-agreement' && (
@@ -1468,20 +1695,20 @@ export default function OwnerAgreementPage() {
                             <span className="text-[5px] font-black text-yellow-600/20 tracking-wider">APPROVED</span>
                           </div>
                         </div>
-                        
+
                         <div className="text-center font-black tracking-wider uppercase text-[9px] text-slate-900 border-b border-slate-300 pb-1.5 mb-2">
                           SIMPLE TENANCY AGREEMENT
                         </div>
                         <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        
+
                         <div className="space-y-2">
-                          <p><strong>1. PARTIES:</strong><br />This Agreement is made between Stayzo Properties (Landlord) and the Tenant:<br />TENANT Name: ___________________________<br />TENANT Email: ___________________________</p>
-                          <p><strong>2. PROPERTY PREMISES:</strong><br />The Landlord agrees to rent to the Tenant the property located at:<br />ADDRESS: ___________________________</p>
-                          <p><strong>3. RENT & PAYMENT:</strong><br />The Tenant agrees to pay a Monthly Rent of:<br />RENT: ___________________________<br />payable on the first day of each calendar month.</p>
-                          <p><strong>4. START DATE:</strong><br />The tenancy commences on the following start date:<br />START DATE: ___________________________</p>
+                          <p><strong>1. PARTIES:</strong><br />This Agreement is made between Stayzo Properties (Landlord) and the Tenant:<br />TENANT Name: {getCardPlaceholder('Tenant Name')}<br />TENANT Email: {getCardPlaceholder('Tenant Email')}</p>
+                          <p><strong>2. PROPERTY PREMISES:</strong><br />The Landlord agrees to rent to the Tenant the property located at:<br />ADDRESS: {getCardPlaceholder('Property Address')}</p>
+                          <p><strong>3. RENT & PAYMENT:</strong><br />The Tenant agrees to pay a Monthly Rent of:<br />RENT: {getCardPlaceholder('Rent Amount')}<br />payable on the first day of each calendar month.</p>
+                          <p><strong>4. START DATE:</strong><br />The tenancy commences on the following start date:<br />START DATE: {getCardPlaceholder('Start Date')}</p>
                           <p><strong>5. AGREEMENT TERMS:</strong><br />The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.</p>
                         </div>
-                        
+
                         <div className="mt-6 flex justify-between border-t border-dashed border-slate-200 pt-3 text-[6px]">
                           <div>
                             <p className="font-bold">LANDLORD:</p>
@@ -1514,12 +1741,12 @@ export default function OwnerAgreementPage() {
                         <p className="text-[6px] text-[#8C846C] italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
                         <div className="space-y-2">
-                          <p>THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into by and between Stayzo Premier Properties (Landlord) and:<br />TENANT: ___________________________<br />TENANT Email: ___________________________</p>
-                          <p><strong>1. PREMISES:</strong> Landlord hereby leases to Tenant the real property located at:<br />PROPERTY ADDRESS: ___________________________</p>
-                          <p><strong>2. LEASE TERM:</strong> The lease shall commence on ___________ and shall remain in effect for a period of ___________.</p>
-                          <p><strong>3. PAYMENT OF RENT:</strong> Tenant agrees to pay monthly rent in the amount of ___________ on or before the first day of each calendar month.</p>
-                          <p><strong>4. ADVANCED PAYMENT:</strong> Tenant agrees to make an advanced payment of ___________ upon signing, to be applied towards the rental term.</p>
-                          <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall deposit the sum of ___________ with Landlord as a security deposit for damages or default under this Agreement.</p>
+                          <p>THIS LEASE AGREEMENT (hereinafter referred to as the "Agreement") is entered into by and between Stayzo Premier Properties (Landlord) and:<br />TENANT: {getCardPlaceholder('Tenant Name')}<br />TENANT Email: {getCardPlaceholder('Tenant Email')}</p>
+                          <p><strong>1. PREMISES:</strong> Landlord hereby leases to Tenant the real property located at:<br />PROPERTY ADDRESS: {getCardPlaceholder('Property Address')}</p>
+                          <p><strong>2. LEASE TERM:</strong> The lease shall commence on {getCardPlaceholder('Start Date')} and shall remain in effect for a period of {getCardPlaceholder('Duration')}.</p>
+                          <p><strong>3. PAYMENT OF RENT:</strong> Tenant agrees to pay monthly rent in the amount of {getCardPlaceholder('Monthly Rent')} on or before the first day of each calendar month.</p>
+                          <p><strong>4. ADVANCED PAYMENT:</strong> Tenant agrees to make an advanced payment of {getCardPlaceholder('Advanced Rent')} upon signing, to be applied towards the rental term.</p>
+                          <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall deposit the sum of {getCardPlaceholder('Security Deposit')} with Landlord as a security deposit for damages or default under this Agreement.</p>
                           <p><strong>6. CONDITION & COVENANTS:</strong> Tenant agrees to keep the premises in a sanitary and good condition and comply with all housing regulations.</p>
                           <p className="text-[5.5px] italic text-[#8C846C] mt-2">IN WITNESS WHEREOF, the Landlord and Tenant have executed this Agreement on the day and year first above written.</p>
                         </div>
@@ -1543,40 +1770,40 @@ export default function OwnerAgreementPage() {
                       <div className="border border-slate-300 rounded-xl p-5 bg-white h-full shadow-inner overflow-hidden font-serif text-[7px] leading-relaxed text-slate-800 select-none relative text-left">
                         {/* Navy crest watermark */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-                          <div className="w-20 h-20 rounded-full border-2 border-indigo-900/10 flex flex-col items-center justify-center rotate-45 bg-white/5 shadow-xs">
-                            <span className="text-[5px] font-black text-indigo-900/15 tracking-wider">EXECUTIVE</span>
-                            <Scale className="w-6 h-6 text-indigo-900/10 my-0.5" />
-                            <span className="text-[5px] font-black text-indigo-900/15 tracking-wider">COMPREHENSIVE</span>
+                          <div className="w-20 h-20 rounded-full border-2 border-[#4F46E5]/10 flex flex-col items-center justify-center rotate-45 bg-white/5 shadow-xs">
+                            <span className="text-[5px] font-black text-[#4F46E5]/20 tracking-wider">EXECUTIVE</span>
+                            <Scale className="w-6 h-6 text-[#4F46E5]/10 my-0.5" />
+                            <span className="text-[5px] font-black text-[#4F46E5]/20 tracking-wider">COMPREHENSIVE</span>
                           </div>
                         </div>
 
                         {/* Blue side rules */}
-                        <div className="absolute left-2.5 top-0 bottom-0 border-l border-indigo-900/15" />
-                        <div className="absolute right-2.5 top-0 bottom-0 border-r border-indigo-900/15" />
+                        <div className="absolute left-2.5 top-0 bottom-0 border-l border-[#4F46E5]/15" />
+                        <div className="absolute right-2.5 top-0 bottom-0 border-r border-[#4F46E5]/15" />
 
                         <div className="pl-3 pr-3 h-full flex flex-col justify-between overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
                           <div>
-                            <div className="text-center font-black tracking-wider uppercase text-[8.5px] text-indigo-950 border-b border-indigo-900/20 pb-1.5 mb-2">
+                            <div className="text-center font-black tracking-wider uppercase text-[8.5px] text-[#1A1A1A] border-b border-[#C7D2FE]/40 pb-1.5 mb-2">
                               COMPREHENSIVE LEASE AGREEMENT
                             </div>
                             <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
                             <div className="space-y-1.5">
-                              <p>THIS LEASE AGREEMENT is executed by and between Stayzo Executive Properties (Landlord) and:<br />TENANT: ___________________________<br />TENANT Email: ___________________________</p>
-                              <p><strong>1. DESCRIPTION OF PREMISES:</strong> Landlord leases to Tenant the premises located at:<br />PROPERTY ADDRESS: ___________________________</p>
-                              <p><strong>2. DURATION & TERM:</strong> The lease commences on ___________ and runs for a term of ___________.</p>
-                              <p><strong>3. MONTHLY RENT:</strong> Rent is set at ___________ per month, due in advance on the 1st day of the month.</p>
-                              <p><strong>4. ADVANCED RENT PAYMENT:</strong> Tenant shall pay an advanced sum of ___________ to be credited towards the initial months.</p>
-                              <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall pay a security deposit of ___________ held as security for damages.</p>
-                              <p><strong>6. UTILITIES PAYMENT:</strong> ___________________________</p>
-                              <p><strong>7. PET POLICY:</strong> ___________________________</p>
-                              <p><strong>8. LATE FEE PENALTIES:</strong> ___________________________</p>
-                              <p><strong>9. MAINTENANCE & REPAIRS:</strong> ___________________________</p>
+                              <p>THIS LEASE AGREEMENT is executed by and between Stayzo Executive Properties (Landlord) and:<br />TENANT: {getCardPlaceholder('Tenant Name')}<br />TENANT Email: {getCardPlaceholder('Tenant Email')}</p>
+                              <p><strong>1. DESCRIPTION OF PREMISES:</strong> Landlord leases to Tenant the premises located at:<br />PROPERTY ADDRESS: {getCardPlaceholder('Property Address')}</p>
+                              <p><strong>2. DURATION & TERM:</strong> The lease commences on {getCardPlaceholder('Start Date')} and runs for a term of {getCardPlaceholder('Duration')}.</p>
+                              <p><strong>3. MONTHLY RENT:</strong> Rent is set at {getCardPlaceholder('Monthly Rent')} per month, due in advance on the 1st day of the month.</p>
+                              <p><strong>4. ADVANCED RENT PAYMENT:</strong> Tenant shall pay an advanced sum of {getCardPlaceholder('Advanced Rent')} to be credited towards the initial months.</p>
+                              <p><strong>5. SECURITY DEPOSIT:</strong> Tenant shall pay a security deposit of {getCardPlaceholder('Security Deposit')} held as security for damages.</p>
+                              <p><strong>6. UTILITIES PAYMENT:</strong> {getCardPlaceholder('Utilities')}</p>
+                              <p><strong>7. PET POLICY:</strong> {getCardPlaceholder('Pet Policy')}</p>
+                              <p><strong>8. LATE FEE PENALTIES:</strong> {getCardPlaceholder('Late Fee')}</p>
+                              <p><strong>9. MAINTENANCE & REPAIRS:</strong> {getCardPlaceholder('Maintenance')}</p>
                               <p className="text-[5.5px] italic text-slate-400 mt-1">IN WITNESS WHEREOF, the Landlord and Tenant have executed this Agreement on the day and year first above written.</p>
                             </div>
                           </div>
 
-                          <div className="flex justify-between border-t border-indigo-900/20 pt-2 text-[6px] mt-4">
+                          <div className="flex justify-between border-t border-[#C7D2FE]/40 pt-2 text-[6px] mt-4">
                             <div>
                               <p className="font-bold">LANDLORD:</p>
                               <p className="text-slate-500">Stayzo Executive Properties</p>
@@ -1597,13 +1824,12 @@ export default function OwnerAgreementPage() {
                     <div className="space-y-5">
                       {/* Top badges */}
                       <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                        <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded ${
-                          tmpl.complexity === 'Simple'
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                            : tmpl.complexity === 'Standard'
+                        <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded ${tmpl.complexity === 'Simple'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : tmpl.complexity === 'Standard'
                             ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                            : 'bg-purple-50 text-purple-600 border border-purple-200'
-                        }`}>
+                            : 'bg-indigo-50 text-indigo-600 border border-indigo-200'
+                          }`}>
                           {tmpl.complexity === 'Detailed' ? 'DETAILED' : tmpl.complexity.toUpperCase()} VERSION
                         </span>
                         <span className="text-[10px] text-gray-400 font-bold font-mono">
@@ -1659,7 +1885,7 @@ export default function OwnerAgreementPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-5">
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wider flex items-center gap-2">
-<Scale className="w-5 h-5 text-gray-500" />
+                    <Scale className="w-5 h-5 text-gray-500" />
                     Digital Vault: Saved Agreements
                   </h3>
                   <p className="text-[12px] text-gray-400 font-medium">Drafted legal documents stored in local session storage.</p>
@@ -1678,34 +1904,32 @@ export default function OwnerAgreementPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {savedAgreements.map((ag) => (
-                    <div 
+                    <div
                       key={ag.id}
                       className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-[#4F46E5]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform"></div>
-                      
+
                       <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
-                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
-                                ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
+                              ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
                                 'bg-indigo-50 text-indigo-600'
-                             }`}>
-                                <FileSignature className="w-5 h-5" />
-                             </div>
-                             <div>
-                                <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
-                                  {ag.tenantName}
-                                </h4>
-                                <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${
-                                  ag.complexity === 'Simple' ? 'text-emerald-600' :
-                                  ag.complexity === 'Standard' ? 'text-blue-600' :
+                              }`}>
+                              <FileSignature className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
+                                {ag.tenantName}
+                              </h4>
+                              <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${ag.complexity === 'Simple' ? 'text-emerald-600' :
+                                ag.complexity === 'Standard' ? 'text-blue-600' :
                                   'text-indigo-600'
                                 }`}>
-                                  {ag.complexity} Agreement
-                                </span>
-                             </div>
+                                {ag.complexity} Agreement
+                              </span>
+                            </div>
                           </div>
                           <span className="text-[10px] text-gray-500 font-bold bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">{ag.dateCreated}</span>
                         </div>
@@ -1722,20 +1946,24 @@ export default function OwnerAgreementPage() {
                         </div>
 
                         <div className="flex items-center gap-2 pt-1">
-                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                              {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                              Owner
-                           </div>
-                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                              {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                              Tenant
-                           </div>
+                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                            {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                            Owner
+                          </div>
+                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                            {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                            Tenant
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5 relative z-10">
                         <button
                           onClick={() => {
+                            if (ag.id === 'local_draft_ongoing') {
+                              handleRestoreDraft();
+                              return;
+                            }
                             const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === ag.templateId);
                             if (tmpl) {
                               setSelectedTemplate(tmpl);
@@ -1748,7 +1976,7 @@ export default function OwnerAgreementPage() {
                                 {
                                   id: 'reopen',
                                   sender: 'bot',
-                                  text: `Loaded saved **${ag.complexity}** agreement for **${ag.tenantName}**. You can preview, edit details, and add or clear signatures.`,
+                                  text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. You can preview, edit details, or manage your landlord signature.`,
                                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 }
                               ]);
@@ -1759,6 +1987,7 @@ export default function OwnerAgreementPage() {
                           <Info className="w-3.5 h-3.5" />
                           <span>Workspace</span>
                         </button>
+
 
                         <button
                           onClick={() => handleDeleteAgreement(ag.id, ag.tenantName)}
@@ -1777,10 +2006,10 @@ export default function OwnerAgreementPage() {
           </div>
         ) : (
           /* ──────────────────────────────────────────────────────────────────
-             2. ACTIVE DRAFTING SPLIT INTERFACE
-             ────────────────────────────────────────────────────────────────── */
+                      2. ACTIVE DRAFTING SPLIT INTERFACE
+                      ────────────────────────────────────────────────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-300">
-            
+
             {/* Breadcrumb / Top Bar */}
             <div className="lg:col-span-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex items-center gap-3">
@@ -1806,13 +2035,13 @@ export default function OwnerAgreementPage() {
                   className="bg-white border border-gray-200 hover:border-[#4F46E5] text-[#4F46E5] text-[10px] font-extrabold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 hover:scale-[1.01]"
                   title="Fill with dummy data"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#4F46E5] animate-pulse" />
                   <span>Autofill Sample</span>
                 </button>
 
                 <div className="flex items-center gap-2.5">
                   <div className="w-[100px] bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="bg-black h-full transition-all duration-300"
                       style={{ width: `${getProgressPercentage()}%` }}
                     />
@@ -1824,50 +2053,25 @@ export default function OwnerAgreementPage() {
               </div>
             </div>
 
-            {/* Left side: Interactive Chatbot / Manual Form */}
+            {/* Left side: Interactive Chatbot */}
             <div className="lg:col-span-5 flex flex-col h-[650px] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-              
-              {/* Tab Header */}
-              <div className="flex border-b border-gray-100 bg-gray-50 flex-shrink-0">
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`flex-1 py-4 text-center text-[11px] font-black tracking-widest uppercase transition-all ${
-                    activeTab === 'chat'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
-                  }`}
-                >
-                  🤖 Chatbot Assistant
-                </button>
-                <button
-                  onClick={() => setActiveTab('fields')}
-                  className={`flex-1 py-4 text-center text-[11px] font-black tracking-widest uppercase transition-all ${
-                    activeTab === 'fields'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-950 hover:bg-white/50'
-                  }`}
-                >
-                  📝 Manual Form
-                </button>
-              </div>
 
-              {activeTab === 'chat' ? (
-                /* CHATBOT VIEW */
+              {/* CHATBOT VIEW */}
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                
+
                 {/* Chat Assistant Header Info */}
-                  <div className="bg-[#EDE9FE]/50 border-b border-[#DDD6FE] p-3 px-4 flex items-center justify-between flex-shrink-0">
+                <div className="bg-[#EEF2FF]/50 border-b border-[#C7D2FE] p-3 px-4 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2.5">
-                      <div className="relative w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm text-white">
-                        <Sparkles className="w-4 h-4" />
+                    <div className="relative w-8 h-8 rounded-full bg-[#4F46E5] flex items-center justify-center flex-shrink-0 shadow-sm text-white">
+                      <Sparkles className="w-4 h-4 text-white" />
                       <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
                     </div>
                     <div>
-                        <div className="text-[11px] font-black text-purple-950 uppercase tracking-wider">Stayzo Assistant</div>
-                        <div className="text-[9px] text-purple-600 font-bold uppercase tracking-widest">Active Drafting Process</div>
+                      <div className="text-[11px] font-black text-[#1A1A1A] uppercase tracking-wider">Stayzo Assistant</div>
+                      <div className="text-[9px] text-[#4F46E5] font-bold uppercase tracking-widest">Active Drafting Process</div>
                     </div>
                   </div>
-                    <span className="text-[9px] font-mono text-purple-700 bg-white border border-purple-200 px-2 py-0.5 rounded">
+                  <span className="text-[9px] font-mono text-[#4F46E5] bg-white border border-[#C7D2FE] px-2 py-0.5 rounded">
                     Step {Math.min(currentFieldIdx + 1, selectedTemplate.fields.length)} of {selectedTemplate.fields.length}
                   </span>
                 </div>
@@ -1875,15 +2079,14 @@ export default function OwnerAgreementPage() {
                 {/* Message Bubble Log */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                   {chatHistory.map((msg) => (
-                    <div 
+                    <div
                       key={msg.id}
                       className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                     >
-                      <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${
-                        msg.sender === 'user'
-                          ? 'bg-[#4F46E5] text-white rounded-tr-sm'
-                          : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
-                      }`}>
+                      <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${msg.sender === 'user'
+                        ? 'bg-[#4F46E5] text-white rounded-tr-sm'
+                        : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
+                        }`}>
                         <p className="whitespace-pre-line">{msg.text}</p>
                       </div>
                       <span className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{msg.time}</span>
@@ -1933,9 +2136,9 @@ export default function OwnerAgreementPage() {
                     <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
                       <span>Answer assistant prompts to compile agreement clauses.</span>
                       {selectedTemplate.fields[currentFieldIdx].placeholder && (
-                        <button 
+                        <button
                           onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
-                            className="text-purple-600 font-bold hover:underline"
+                          className="text-[#4F46E5] font-bold hover:underline"
                         >
                           Use Suggestion
                         </button>
@@ -1944,48 +2147,21 @@ export default function OwnerAgreementPage() {
                   )}
                 </div>
               </div>
-              ) : (
-                /* MANUAL FIELDS VIEW */
-                <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                  <div className="text-[11px] font-semibold text-gray-400 pb-3 border-b border-gray-100">
-                    Adjust specific parameters manually. Updates render live in the selected design theme.
-                  </div>
-                  {selectedTemplate.fields.map((field, index) => (
-                    <div key={field.id} className="space-y-1.5">
-                      <label className="block text-[11px] font-black text-gray-700 uppercase tracking-widest">
-                        {index + 1}. {field.label}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={field.placeholder}
-                        value={fieldValues[field.id] || ''}
-                        onChange={(e) => handleManualFieldChange(field.id, e.target.value)}
-                        onFocus={() => setActivePreviewField(field.id)}
-                        className={`w-full px-4 py-3 border rounded-xl text-[12px] font-semibold outline-none transition-all ${
-                          activePreviewField === field.id
-                            ? 'border-black ring-2 ring-black/10 text-black'
-                            : 'border-gray-200 text-gray-700 hover:border-gray-400'
-                        }`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Right side: Live Agreement Preview with Theme Selector */}
             <div className="lg:col-span-7 flex flex-col h-[650px] overflow-hidden">
-              
+
               {/* Layout Switcher Toolbar */}
               <div className="bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm space-y-3">
-                
+
                 {/* Visual Theme Selector Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <span className="flex items-center gap-2 text-[10px] font-black text-[#4F46E5] uppercase tracking-wider">
-                    <Layout className="w-4 h-4 text-gray-500" />
-                    Select Layout Design Style (CV-Style Templates):
+                    <Layout className="w-4 h-4 text-[#4F46E5]" />
+                    Select Layout Style:
                   </span>
-                  
+
                   {/* Action Group */}
                   <div className="flex items-center gap-1.5 font-bold">
 
@@ -1999,11 +2175,11 @@ export default function OwnerAgreementPage() {
                     </button>
                     <button
                       onClick={handleSaveToVault}
-                      className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-black text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1 shadow-sm animate-pulse"
-                      title="Sign & Send to Tenant"
+                      className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-white text-[9px] font-black uppercase tracking-wider rounded-md transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+                      title="Send to Tenant"
                     >
                       <Send className="w-3 h-3" />
-                      <span>Sign & Send to Tenant</span>
+                      <span>Send to Tenant</span>
                     </button>
                   </div>
                 </div>
@@ -2016,11 +2192,10 @@ export default function OwnerAgreementPage() {
                       <button
                         key={theme.id}
                         onClick={() => setSelectedTheme(theme.id)}
-                        className={`p-2.5 rounded-lg border text-left transition-all ${
-                          isActive
-                            ? 'border-black bg-black text-white ring-2 ring-black/10'
-                            : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
-                        }`}
+                        className={`p-2.5 rounded-lg border text-left transition-all ${isActive
+                          ? 'border-black bg-black text-white ring-2 ring-black/10'
+                          : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
+                          }`}
                       >
                         <div className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-gray-900'}`}>
                           {theme.label}
@@ -2036,10 +2211,10 @@ export default function OwnerAgreementPage() {
 
               {/* Document Paper Canvas */}
               <div className="flex-1 bg-white border border-gray-200 shadow-md rounded-xl overflow-y-auto p-8 md:p-12 relative no-scrollbar">
-                
+
                 {/* Printable Paper Wrapper with Theme classes applied */}
-                <div 
-                  id="contract-printable-area" 
+                <div
+                  id="contract-printable-area"
                   className={`mx-auto max-w-[620px] transition-all duration-300 ${getThemeClass()}`}
                 >
                   {renderInteractiveDocument()}

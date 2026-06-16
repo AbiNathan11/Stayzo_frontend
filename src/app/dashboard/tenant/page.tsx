@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+// @ts-ignore
 import { io } from 'socket.io-client';
 
 // ─── SUB-COMPONENT: DESKTOP DRAWING PAD ─────────────────────────────────────
