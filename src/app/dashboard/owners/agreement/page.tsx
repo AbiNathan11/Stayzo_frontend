@@ -3,15 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Send, 
-  FileText, 
-  Download, 
-  Check, 
-  Sparkles, 
-  CheckCircle2, 
-  Trash2, 
-  Copy, 
+import {
+  Send,
+  FileText,
+  Download,
+  Check,
+  Sparkles,
+  CheckCircle2,
+  Trash2,
+  Copy,
   FileSignature,
   Info,
   ArrowLeft,
@@ -237,7 +237,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Setup initial canvas styles
     ctx.strokeStyle = '#1A1A1A';
     ctx.lineWidth = 3;
@@ -356,7 +356,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
-  
+
   // App States
   const [selectedTemplate, setSelectedTemplate] = useState<AgreementTemplate | null>(null);
   const [currentFieldIdx, setCurrentFieldIdx] = useState<number>(0);
@@ -365,7 +365,7 @@ export default function OwnerAgreementPage() {
   const [chatInput, setChatInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [selectedTheme, setSelectedTheme] = useState<VisualTheme>('classic-legal');
-  
+
   const [savedAgreements, setSavedAgreements] = useState<SavedAgreement[]>([]);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
@@ -379,7 +379,7 @@ export default function OwnerAgreementPage() {
   const [sigModalTab, setSigModalTab] = useState<'qr' | 'draw'>('qr');
   const [localNetIp, setLocalNetIp] = useState<string>('localhost');
   const [socket, setSocket] = useState<Socket | null>(null);
-  
+
   // Use a unique draft ID (timestamp-based) for the socket room
   const [activeDraftId] = useState<string>(`draft_${Date.now()}`);
 
@@ -557,7 +557,7 @@ export default function OwnerAgreementPage() {
         };
         setLandlordUser(u);
         email = u.email;
-      } catch (e) {}
+      } catch (e) { }
     } else {
       setLandlordUser({ firstName: 'Owner', lastName: '', email: 'landlord@example.com' });
     }
@@ -655,7 +655,7 @@ export default function OwnerAgreementPage() {
     setCurrentFieldIdx(0);
     setLandlordSig(null);
     setTenantSig(null);
-    
+
     // Reset values
     const initialValues: Record<string, string> = {};
     template.fields.forEach(f => {
@@ -692,15 +692,15 @@ export default function OwnerAgreementPage() {
   // Simulate bot typing delay
   const askNextQuestion = (nextIdx: number, currentVals: Record<string, string>, previousAnswer: string, prevFieldName: string) => {
     if (!selectedTemplate) return;
-    
+
     setIsTyping(true);
-    
+
     setTimeout(() => {
       setIsTyping(false);
-      
+
       const isFinished = nextIdx >= selectedTemplate.fields.length;
       let botText = '';
-      
+
       if (isFinished) {
         botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
       } else {
@@ -791,7 +791,7 @@ export default function OwnerAgreementPage() {
     }
 
     const currentField = selectedTemplate.fields[currentFieldIdx];
-    
+
     // Validate answer!
     const validationError = validateField(currentField.id, text);
     if (validationError) {
@@ -877,7 +877,7 @@ export default function OwnerAgreementPage() {
 
     setFieldValues(sampleVals);
     setCurrentFieldIdx(selectedTemplate.fields.length);
-    
+
     setChatHistory(prev => [
       ...prev,
       {
@@ -939,7 +939,7 @@ export default function OwnerAgreementPage() {
       toast.error("Please sign the agreement first to send it to the tenant.");
       return;
     }
-    
+
     const tenantName = fieldValues.tenantName || 'Unnamed Tenant';
     const tenantEmail = fieldValues.tenantEmail || '';
     const propertyAddress = fieldValues.propertyAddress || 'No Address Specified';
@@ -950,7 +950,7 @@ export default function OwnerAgreementPage() {
     const securityDeposit = parseFloat(depositAmountText.replace(/[^0-9.]/g, '')) || 0;
     const termLength = fieldValues.duration || '12 Months';
     const startDate = fieldValues.startDate || new Date().toLocaleDateString();
-    const endDate = fieldValues.endDate || ''; 
+    const endDate = fieldValues.endDate || '';
 
     // Generate contract text
     const contractText = selectedTemplate.generateText(fieldValues);
@@ -986,7 +986,7 @@ export default function OwnerAgreementPage() {
 
       const savedData = await response.json();
       showToast("Agreement signed and successfully sent to Tenant!");
-      
+
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
       }
@@ -1011,7 +1011,7 @@ export default function OwnerAgreementPage() {
         }
         showToast("Agreement deleted successfully.");
       }
-      
+
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
       }
@@ -1046,116 +1046,116 @@ export default function OwnerAgreementPage() {
     if (printWindow) {
       const templateTitle = selectedTemplate?.title || "Rental Agreement";
       const textHtml = printContent.innerHTML;
-      
+
       let themeStyles = '';
       if (selectedTheme === 'classic-legal') {
         themeStyles = `
-          body {
-            font-family: 'Times New Roman', Times, serif;
-            line-height: 1.8;
-            padding: 50px;
-            color: #000;
-            background-color: #fff;
-          }
-          .printable-paper {
-            border: 4px double #000;
-            padding: 40px;
-          }
-          h1, h2, h3, .doc-title {
-            text-align: center;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-          }
-          p { margin-bottom: 1.2rem; text-align: justify; }
-          .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-        `;
+         body {
+           font-family: 'Times New Roman', Times, serif;
+           line-height: 1.8;
+           padding: 50px;
+           color: #000;
+           background-color: #fff;
+         }
+         .printable-paper {
+           border: 4px double #000;
+           padding: 40px;
+         }
+         h1, h2, h3, .doc-title {
+           text-align: center;
+           font-weight: bold;
+           text-transform: uppercase;
+           letter-spacing: 1px;
+           margin-bottom: 25px;
+           border-bottom: 2px solid #000;
+           padding-bottom: 10px;
+         }
+         p { margin-bottom: 1.2rem; text-align: justify; }
+         .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+       `;
       } else if (selectedTheme === 'modern-clean') {
         themeStyles = `
-          body {
-            font-family: 'Inter', system-ui, sans-serif;
-            line-height: 1.6;
-            padding: 40px;
-            color: #2D3748;
-            background-color: #fff;
-          }
-          .doc-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: #1A1A1A;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            border-left: 5px solid #1A1A1A;
-            padding-left: 15px;
-          }
-          p { margin-bottom: 1rem; }
-          .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
-          .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
-        `;
+         body {
+           font-family: 'Inter', system-ui, sans-serif;
+           line-height: 1.6;
+           padding: 40px;
+           color: #2D3748;
+           background-color: #fff;
+         }
+         .doc-title {
+           font-size: 24px;
+           font-weight: 800;
+           color: #1A1A1A;
+           margin-bottom: 30px;
+           text-transform: uppercase;
+           border-left: 5px solid #1A1A1A;
+           padding-left: 15px;
+         }
+         p { margin-bottom: 1rem; }
+         .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+         .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+       `;
       } else { // executive-elite
         themeStyles = `
-          body {
-            font-family: 'Georgia', serif;
-            line-height: 1.7;
-            padding: 45px;
-            color: #1A202C;
-            background-color: #fff;
-          }
-          .doc-title {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 900;
-            color: #0F172A;
-            letter-spacing: 0.05em;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 3px double #0F172A;
-          }
-          p { margin-bottom: 1.1rem; text-align: justify; }
-          .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
-          .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
-          .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-        `;
+         body {
+           font-family: 'Georgia', serif;
+           line-height: 1.7;
+           padding: 45px;
+           color: #1A202C;
+           background-color: #fff;
+         }
+         .doc-title {
+           text-align: center;
+           font-size: 20px;
+           font-weight: 900;
+           color: #0F172A;
+           letter-spacing: 0.05em;
+           margin-bottom: 30px;
+           padding-bottom: 15px;
+           border-bottom: 3px double #0F172A;
+         }
+         p { margin-bottom: 1.1rem; text-align: justify; }
+         .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
+         .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
+         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
+       `;
       }
 
       printWindow.document.write(`
-        <html>
-          <head>
-            <title>${templateTitle} - Stayzo</title>
-            <style>
-              ${themeStyles}
-              .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
-              .sig-img-print { max-height: 45px; object-fit: contain; }
-              .hide-on-print { display: none !important; }
-              span {
-                font-family: inherit !important;
-                font-size: inherit !important;
-                font-weight: bold !important;
-                background: none !important;
-                border: none !important;
-                padding: 0 !important;
-                color: inherit !important;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="printable-paper">
-              ${textHtml}
-            </div>
-            <script>
-              window.onload = function() {
-                window.print();
-                window.close();
-              }
-            </script>
-          </body>
-        </html>
-      `);
+       <html>
+         <head>
+           <title>${templateTitle} - Stayzo</title>
+           <style>
+             ${themeStyles}
+             .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
+             .sig-img-print { max-height: 45px; object-fit: contain; }
+             .hide-on-print { display: none !important; }
+             span {
+               font-family: inherit !important;
+               font-size: inherit !important;
+               font-weight: bold !important;
+               background: none !important;
+               border: none !important;
+               padding: 0 !important;
+               color: inherit !important;
+             }
+           </style>
+         </head>
+         <body>
+           <div class="printable-paper">
+             ${textHtml}
+           </div>
+           <script>
+             window.onload = function() {
+               window.print();
+               window.close();
+             }
+           </script>
+         </body>
+       </html>
+     `);
       printWindow.document.close();
     }
   };
@@ -1181,13 +1181,12 @@ export default function OwnerAgreementPage() {
     return (
       <span
         onClick={() => handleJumpToField(fieldId)}
-        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${
-          isActive
-            ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
-            : val
+        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${isActive
+          ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
+          : val
             ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
             : 'bg-[#EEF2FF] text-[#4F46E5] border-b-2 border-dashed border-[#C7D2FE] font-bold animate-pulse hover:bg-[#E0E7FF]'
-        }`}
+          }`}
         title={`Click to edit ${label}`}
       >
         {val || label}
@@ -1204,17 +1203,17 @@ export default function OwnerAgreementPage() {
     return (
       <div>
         <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">{title}</p>
-        
+
         {signature ? (
           <div className="flex flex-col items-start space-y-1">
-            <img 
-              src={signature} 
-              alt={`${roleType} Signature`} 
-              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print" 
+            <img
+              src={signature}
+              alt={`${roleType} Signature`}
+              className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print"
             />
             {roleType === 'landlord' && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSig(null); }} 
+              <button
+                onClick={(e) => { e.stopPropagation(); setSig(null); }}
                 className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
               >
                 Remove
@@ -1222,7 +1221,7 @@ export default function OwnerAgreementPage() {
             )}
           </div>
         ) : roleType === 'landlord' ? (
-          <button 
+          <button
             type="button"
             onClick={() => {
               if (getProgressPercentage() < 100) {
@@ -1232,11 +1231,10 @@ export default function OwnerAgreementPage() {
               setShowSigModal('landlord');
               setSigModalTab('qr');
             }}
-            className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${
-              getProgressPercentage() < 100 
-                ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
-                : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
-            }`}
+            className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${getProgressPercentage() < 100
+              ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
+              : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
+              }`}
           >
             <FileSignature className="w-3.5 h-3.5" />
             <span>Click to Sign Contract</span>
@@ -1247,7 +1245,7 @@ export default function OwnerAgreementPage() {
             <span>Awaiting Tenant Signature</span>
           </div>
         )}
-        
+
         <div className="signature-line border-b border-gray-400 w-full h-1 mt-1" />
         <p className={`font-bold mt-1 text-[11px] ${defaultName === 'Tenant Full Name' ? 'text-[#4F46E5] bg-[#EEF2FF] px-1.5 py-0.5 rounded border border-dashed border-[#C7D2FE] font-mono text-[9px] w-max uppercase tracking-wider' : 'text-[#1A1A1A]'}`}>{defaultName}</p>
       </div>
@@ -1268,7 +1266,7 @@ export default function OwnerAgreementPage() {
           <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
             SIMPLE TENANCY AGREEMENT
           </div>
-          
+
           <p className="text-[13px] md:text-[14px]">
             This Tenancy Agreement is created on this <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Properties</strong>, and the Tenant:
           </p>
@@ -1451,16 +1449,18 @@ export default function OwnerAgreementPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      
+
       {/* ── Page Content ── */}
       <div className="w-full">
-        
+
         {/* Toast Notification Container */}
+
         <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
         {/* CUSTOM EXIT CONFIRMATION MODAL (TOASTER METHOD) */}
         {showExitConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200 relative">
               {/* X close button top-right */}
               <button
@@ -1475,7 +1475,7 @@ export default function OwnerAgreementPage() {
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
                   <ArrowLeft className="w-6 h-6" />
                 </div>
-                
+
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Exit Current Draft?</h3>
@@ -1483,13 +1483,16 @@ export default function OwnerAgreementPage() {
                     Are you sure you want to exit? Any unsaved progress will be permanently lost.
                   </p>
                 </div>
-                
+
+
                 {/* Actions — no Cancel button */}
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
                     onClick={handleConfirmExit}
+
                     className="flex-1 py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
+
                     Don&apos;t Save
                   </button>
                   <button
@@ -1497,8 +1500,10 @@ export default function OwnerAgreementPage() {
                       handleSaveProgress();
                       handleConfirmExit();
                     }}
+
                     className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
+
                     Save &amp; Exit
                   </button>
                 </div>
@@ -1516,7 +1521,7 @@ export default function OwnerAgreementPage() {
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
                   <Trash2 className="w-6 h-6" />
                 </div>
-                
+
                 {/* Title & Description */}
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A]">Delete Agreement?</h3>
@@ -1524,7 +1529,7 @@ export default function OwnerAgreementPage() {
                     Are you sure you want to delete the agreement for <strong>"{deleteConfirmAgreement.name}"</strong>? This will permanently remove it from your vault.
                   </p>
                 </div>
-                
+
                 {/* Actions */}
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
@@ -1553,7 +1558,7 @@ export default function OwnerAgreementPage() {
         {showSigModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-[430px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              
+
               {/* Modal Header */}
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -1562,7 +1567,7 @@ export default function OwnerAgreementPage() {
                   </h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Choose your signature method</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowSigModal(null)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"
                 >
@@ -1574,22 +1579,20 @@ export default function OwnerAgreementPage() {
               <div className="flex border-b border-slate-100">
                 <button
                   onClick={() => setSigModalTab('qr')}
-                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
-                    sigModalTab === 'qr'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${sigModalTab === 'qr'
+                    ? 'bg-white border-b-2 border-b-black text-black'
+                    : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Scan QR Code</span>
                 </button>
                 <button
                   onClick={() => setSigModalTab('draw')}
-                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
-                    sigModalTab === 'draw'
-                      ? 'bg-white border-b-2 border-b-black text-black'
-                      : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                  className={`flex-1 py-3 text-center text-[10px] font-black tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${sigModalTab === 'draw'
+                    ? 'bg-white border-b-2 border-b-black text-black'
+                    : 'text-gray-400 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                 >
                   <MousePointerClick className="w-4 h-4" />
                   <span>Draw on Screen</span>
@@ -1617,9 +1620,9 @@ export default function OwnerAgreementPage() {
                     {/* QR Code Container */}
                     <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
                       {localNetIp ? (
-                        <img 
+                        <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
-                          alt="Signature QR Code" 
+                          alt="Signature QR Code"
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -1636,7 +1639,7 @@ export default function OwnerAgreementPage() {
                   </div>
                 ) : (
                   /* METHOD B: DESKTOP DRAWING BOARD */
-                  <DesktopCanvasPad 
+                  <DesktopCanvasPad
                     onSave={(dataUrl) => {
                       if (showSigModal === 'landlord') {
                         setLandlordSig(dataUrl);
@@ -1646,7 +1649,7 @@ export default function OwnerAgreementPage() {
                         showToast("Tenant signature applied!");
                       }
                       setShowSigModal(null);
-                    }} 
+                    }}
                   />
                 )}
               </div>
@@ -1656,10 +1659,10 @@ export default function OwnerAgreementPage() {
 
         {!selectedTemplate ? (
           /* ──────────────────────────────────────────────────────────────────
-             1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
-             ────────────────────────────────────────────────────────────────── */
+                      1. TEMPLATE SELECTION PAGE (Simple vs Standard vs Detailed)
+                      ────────────────────────────────────────────────────────────────── */
           <div className="space-y-10 animate-in fade-in duration-300">
-            
+
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
               <div>
@@ -1674,11 +1677,11 @@ export default function OwnerAgreementPage() {
             {/* Template Selection Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {AGREEMENT_TEMPLATES.map((tmpl) => (
-                <div 
+                <div
                   key={tmpl.id}
                   className="relative w-full h-[520px] bg-[#F8FAFB] border border-gray-200 rounded-[28px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between"
                 >
-                  
+
                   {/* DEFAULT STATE: Shows the actual exact agreement document preview */}
                   <div className="absolute inset-0 p-6 flex flex-col bg-white overflow-hidden transition-all duration-700 ease-in-out group-hover:opacity-10 group-hover:scale-95">
                     {tmpl.id === 'simple-agreement' && (
@@ -1692,12 +1695,12 @@ export default function OwnerAgreementPage() {
                             <span className="text-[5px] font-black text-yellow-600/20 tracking-wider">APPROVED</span>
                           </div>
                         </div>
-                        
+
                         <div className="text-center font-black tracking-wider uppercase text-[9px] text-slate-900 border-b border-slate-300 pb-1.5 mb-2">
                           SIMPLE TENANCY AGREEMENT
                         </div>
                         <p className="text-[6px] text-slate-400 italic mb-2">Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        
+
                         <div className="space-y-2">
                           <p><strong>1. PARTIES:</strong><br />This Agreement is made between Stayzo Properties (Landlord) and the Tenant:<br />TENANT Name: {getCardPlaceholder('Tenant Name')}<br />TENANT Email: {getCardPlaceholder('Tenant Email')}</p>
                           <p><strong>2. PROPERTY PREMISES:</strong><br />The Landlord agrees to rent to the Tenant the property located at:<br />ADDRESS: {getCardPlaceholder('Property Address')}</p>
@@ -1705,7 +1708,7 @@ export default function OwnerAgreementPage() {
                           <p><strong>4. START DATE:</strong><br />The tenancy commences on the following start date:<br />START DATE: {getCardPlaceholder('Start Date')}</p>
                           <p><strong>5. AGREEMENT TERMS:</strong><br />The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.</p>
                         </div>
-                        
+
                         <div className="mt-6 flex justify-between border-t border-dashed border-slate-200 pt-3 text-[6px]">
                           <div>
                             <p className="font-bold">LANDLORD:</p>
@@ -1821,13 +1824,12 @@ export default function OwnerAgreementPage() {
                     <div className="space-y-5">
                       {/* Top badges */}
                       <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                        <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded ${
-                          tmpl.complexity === 'Simple'
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                            : tmpl.complexity === 'Standard'
+                        <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded ${tmpl.complexity === 'Simple'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : tmpl.complexity === 'Standard'
                             ? 'bg-blue-50 text-blue-600 border border-blue-200'
                             : 'bg-indigo-50 text-indigo-600 border border-indigo-200'
-                        }`}>
+                          }`}>
                           {tmpl.complexity === 'Detailed' ? 'DETAILED' : tmpl.complexity.toUpperCase()} VERSION
                         </span>
                         <span className="text-[10px] text-gray-400 font-bold font-mono">
@@ -1883,7 +1885,7 @@ export default function OwnerAgreementPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-5">
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wider flex items-center gap-2">
-<Scale className="w-5 h-5 text-gray-500" />
+                    <Scale className="w-5 h-5 text-gray-500" />
                     Digital Vault: Saved Agreements
                   </h3>
                   <p className="text-[12px] text-gray-400 font-medium">Drafted legal documents stored in local session storage.</p>
@@ -1902,34 +1904,32 @@ export default function OwnerAgreementPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {savedAgreements.map((ag) => (
-                    <div 
+                    <div
                       key={ag.id}
                       className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-[#4F46E5]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform"></div>
-                      
+
                       <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
-                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
-                                ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
+                              ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
                                 'bg-indigo-50 text-indigo-600'
-                             }`}>
-                                <FileSignature className="w-5 h-5" />
-                             </div>
-                             <div>
-                                <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
-                                  {ag.tenantName}
-                                </h4>
-                                <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${
-                                  ag.complexity === 'Simple' ? 'text-emerald-600' :
-                                  ag.complexity === 'Standard' ? 'text-blue-600' :
+                              }`}>
+                              <FileSignature className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
+                                {ag.tenantName}
+                              </h4>
+                              <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${ag.complexity === 'Simple' ? 'text-emerald-600' :
+                                ag.complexity === 'Standard' ? 'text-blue-600' :
                                   'text-indigo-600'
                                 }`}>
-                                  {ag.complexity} Agreement
-                                </span>
-                             </div>
+                                {ag.complexity} Agreement
+                              </span>
+                            </div>
                           </div>
                           <span className="text-[10px] text-gray-500 font-bold bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">{ag.dateCreated}</span>
                         </div>
@@ -1946,14 +1946,14 @@ export default function OwnerAgreementPage() {
                         </div>
 
                         <div className="flex items-center gap-2 pt-1">
-                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                              {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                              Owner
-                           </div>
-                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                              {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                              Tenant
-                           </div>
+                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                            {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                            Owner
+                          </div>
+                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                            {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                            Tenant
+                          </div>
                         </div>
                       </div>
 
@@ -2006,10 +2006,10 @@ export default function OwnerAgreementPage() {
           </div>
         ) : (
           /* ──────────────────────────────────────────────────────────────────
-             2. ACTIVE DRAFTING SPLIT INTERFACE
-             ────────────────────────────────────────────────────────────────── */
+                      2. ACTIVE DRAFTING SPLIT INTERFACE
+                      ────────────────────────────────────────────────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-300">
-            
+
             {/* Breadcrumb / Top Bar */}
             <div className="lg:col-span-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
               <div className="flex items-center gap-3">
@@ -2041,7 +2041,7 @@ export default function OwnerAgreementPage() {
 
                 <div className="flex items-center gap-2.5">
                   <div className="w-[100px] bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="bg-black h-full transition-all duration-300"
                       style={{ width: `${getProgressPercentage()}%` }}
                     />
@@ -2055,10 +2055,10 @@ export default function OwnerAgreementPage() {
 
             {/* Left side: Interactive Chatbot */}
             <div className="lg:col-span-5 flex flex-col h-[650px] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-              
+
               {/* CHATBOT VIEW */}
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                
+
                 {/* Chat Assistant Header Info */}
                 <div className="bg-[#EEF2FF]/50 border-b border-[#C7D2FE] p-3 px-4 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2.5">
@@ -2079,15 +2079,14 @@ export default function OwnerAgreementPage() {
                 {/* Message Bubble Log */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                   {chatHistory.map((msg) => (
-                    <div 
+                    <div
                       key={msg.id}
                       className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                     >
-                      <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${
-                        msg.sender === 'user'
-                          ? 'bg-[#4F46E5] text-white rounded-tr-sm'
-                          : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
-                      }`}>
+                      <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed font-semibold shadow-sm ${msg.sender === 'user'
+                        ? 'bg-[#4F46E5] text-white rounded-tr-sm'
+                        : 'bg-gray-100 text-[#1A1A1A] rounded-tl-sm border border-gray-100'
+                        }`}>
                         <p className="whitespace-pre-line">{msg.text}</p>
                       </div>
                       <span className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{msg.time}</span>
@@ -2137,7 +2136,7 @@ export default function OwnerAgreementPage() {
                     <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
                       <span>Answer assistant prompts to compile agreement clauses.</span>
                       {selectedTemplate.fields[currentFieldIdx].placeholder && (
-                        <button 
+                        <button
                           onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
                           className="text-[#4F46E5] font-bold hover:underline"
                         >
@@ -2152,17 +2151,17 @@ export default function OwnerAgreementPage() {
 
             {/* Right side: Live Agreement Preview with Theme Selector */}
             <div className="lg:col-span-7 flex flex-col h-[650px] overflow-hidden">
-              
+
               {/* Layout Switcher Toolbar */}
               <div className="bg-white border border-gray-200 rounded-xl p-3 px-4 mb-4 flex-shrink-0 shadow-sm space-y-3">
-                
+
                 {/* Visual Theme Selector Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <span className="flex items-center gap-2 text-[10px] font-black text-[#4F46E5] uppercase tracking-wider">
                     <Layout className="w-4 h-4 text-[#4F46E5]" />
                     Select Layout Style:
                   </span>
-                  
+
                   {/* Action Group */}
                   <div className="flex items-center gap-1.5 font-bold">
 
@@ -2193,11 +2192,10 @@ export default function OwnerAgreementPage() {
                       <button
                         key={theme.id}
                         onClick={() => setSelectedTheme(theme.id)}
-                        className={`p-2.5 rounded-lg border text-left transition-all ${
-                          isActive
-                            ? 'border-black bg-black text-white ring-2 ring-black/10'
-                            : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
-                        }`}
+                        className={`p-2.5 rounded-lg border text-left transition-all ${isActive
+                          ? 'border-black bg-black text-white ring-2 ring-black/10'
+                          : 'border-gray-200 hover:border-gray-400 bg-gray-50 text-gray-700'
+                          }`}
                       >
                         <div className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-gray-900'}`}>
                           {theme.label}
@@ -2213,10 +2211,10 @@ export default function OwnerAgreementPage() {
 
               {/* Document Paper Canvas */}
               <div className="flex-1 bg-white border border-gray-200 shadow-md rounded-xl overflow-y-auto p-8 md:p-12 relative no-scrollbar">
-                
+
                 {/* Printable Paper Wrapper with Theme classes applied */}
-                <div 
-                  id="contract-printable-area" 
+                <div
+                  id="contract-printable-area"
                   className={`mx-auto max-w-[620px] transition-all duration-300 ${getThemeClass()}`}
                 >
                   {renderInteractiveDocument()}

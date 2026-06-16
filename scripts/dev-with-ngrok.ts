@@ -11,14 +11,48 @@ async function startDev(): Promise<void> {
   try {
     const port: number = 3000;
 
+    // Kill any existing ngrok processes and disconnect tunnels before starting to prevent tunnel collision
+    await ngrok.disconnect().catch(() => {});
+    await ngrok.kill().catch(() => {});
+
     // Connect to Ngrok
-    const url: string = await ngrok.connect({
-      addr: port,
-      authtoken: process.env.NGROK_AUTH_TOKEN
-    });
+    let url: string = '';
+    try {
+      url = await ngrok.connect({
+        addr: port,
+        authtoken: process.env.NGROK_AUTH_TOKEN
+      });
+    } catch (err: any) {
+      const errMsg = err?.body?.details?.err || err?.message || err?.body?.msg || '';
+      if (typeof errMsg === 'string' && (errMsg.includes('already exists') || errMsg.includes('invalid tunnel configuration'))) {
+        // ngrok library race condition: tunnel was created but request timed out and retried
+        // Poll the local API until the tunnel actually appears
+        let attempts = 0;
+        while (attempts < 5) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await fetch('http://127.0.0.1:4040/api/tunnels');
+            const data = await response.json();
+            if (data && data.tunnels && data.tunnels.length > 0) {
+              url = data.tunnels[0].public_url;
+              break;
+            }
+          } catch (e) {
+            // Ignore fetch errors during polling
+          }
+          attempts++;
+        }
+        
+        if (!url) {
+          throw new Error('Failed to retrieve ngrok tunnel URL after race condition.');
+        }
+      } else {
+        throw err;
+      }
+    }
 
     console.log('\n======================================================');
-    console.log(`🚀 NGROK TUNNEL CREATED!`);
+    console.log(`🚀 NGROK TUNNEL READY!`);
     console.log(`🔗 Public URL: ${url}`);
     console.log('======================================================\n');
 
@@ -32,7 +66,8 @@ async function startDev(): Promise<void> {
       ['run', 'next-dev'],
       {
         stdio: 'inherit',
-        env: { ...process.env }
+        env: { ...process.env },
+        shell: true
       }
     );
 
