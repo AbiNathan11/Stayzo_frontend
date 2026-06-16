@@ -445,11 +445,11 @@ export default function TenantOverviewPage() {
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Agreements</h3>
                 </div>
                 <div className="space-y-3">
-                  {agreements.length === 0 ? (
-                    <p className="text-xs text-gray-400 font-semibold italic">No tenancy agreements assigned to your email.</p>
+                  {agreements.filter((a: any) => a.status === 'Active').length === 0 ? (
+                    <p className="text-xs text-gray-400 font-semibold italic">No signed agreements stored in your vault.</p>
                   ) : (
                     <>
-                      {agreements.slice(0, 2).map((agreement) => (
+                      {agreements.filter((a: any) => a.status === 'Active').slice(0, 2).map((agreement) => (
                         <div key={agreement.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-gray-100 transition gap-3">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
@@ -458,7 +458,7 @@ export default function TenantOverviewPage() {
                             <div>
                               <h4 className="text-sm font-bold text-[#1A1A1A]">{agreement.listingName}</h4>
                               <p className="text-xs text-gray-500 mt-0.5 font-medium">
-                                Rent: Rs {agreement.monthlyRent?.toLocaleString()} | Status: <span className={`font-bold uppercase text-[10px] ${agreement.status === 'Active' ? 'text-emerald-600' : 'text-amber-500'}`}>{agreement.status}</span>
+                                Rent: Rs {agreement.monthlyRent?.toLocaleString()} | Status: <span className="font-bold uppercase text-[10px] text-emerald-600">Active</span>
                               </p>
                             </div>
                           </div>
@@ -466,16 +466,16 @@ export default function TenantOverviewPage() {
                             href="/dashboard/tenant/agreement"
                             className="bg-[#1A1A1A] text-white hover:bg-black text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition duration-200"
                           >
-                            {agreement.status === 'Active' ? 'View' : 'Sign'}
+                            View
                           </Link>
                         </div>
                       ))}
-                      {agreements.length > 2 && (
+                      {agreements.filter((a: any) => a.status === 'Active').length > 2 && (
                         <Link 
                           href="/dashboard/tenant/agreement"
                           className="block text-center text-[10px] font-black text-[#4F46E5] hover:underline uppercase tracking-wider pt-1"
                         >
-                          View all {agreements.length} agreements
+                          View all {agreements.filter((a: any) => a.status === 'Active').length} agreements
                         </Link>
                       )}
                     </>
