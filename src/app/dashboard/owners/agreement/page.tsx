@@ -23,6 +23,8 @@ import {
   Smartphone,
   MousePointerClick,
   X,
+  Home,
+  ShieldAlert,
   ShieldCheck
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
@@ -1453,12 +1455,20 @@ export default function OwnerAgreementPage() {
       <div className="w-full">
         
         {/* Toast Notification Container */}
-        <Toaster position="top-right" />
+        <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
         {/* CUSTOM EXIT CONFIRMATION MODAL (TOASTER METHOD) */}
         {showExitConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 transform transition-all animate-in zoom-in-95 duration-200 relative">
+              {/* X close button top-right */}
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <div className="flex flex-col items-center text-center space-y-4">
                 {/* Icon wrapper */}
                 <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
@@ -1473,19 +1483,22 @@ export default function OwnerAgreementPage() {
                   </p>
                 </div>
                 
-                {/* Actions */}
+                {/* Actions — no Cancel button */}
                 <div className="flex items-center gap-3 w-full pt-2">
                   <button
-                    onClick={() => setShowExitConfirm(false)}
-                    className="flex-1 py-2 px-4 border border-gray-200 hover:border-gray-300 text-gray-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors bg-white cursor-pointer"
+                    onClick={handleConfirmExit}
+                    className="flex-1 py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Cancel
+                    Don&apos;t Save
                   </button>
                   <button
-                    onClick={handleConfirmExit}
+                    onClick={() => {
+                      handleSaveProgress();
+                      handleConfirmExit();
+                    }}
                     className="flex-1 py-2 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Yes, Exit
+                    Save &amp; Exit
                   </button>
                 </div>
               </div>
@@ -1869,7 +1882,7 @@ export default function OwnerAgreementPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-5">
                 <div>
                   <h3 className="text-[16px] font-black text-[#1A1A1A] uppercase tracking-wider flex items-center gap-2">
-                    <Scale className="w-5 h-5 text-gray-500" />
+<Scale className="w-5 h-5 text-gray-500" />
                     Digital Vault: Saved Agreements
                   </h3>
                   <p className="text-[12px] text-gray-400 font-medium">Drafted legal documents stored in local session storage.</p>
@@ -1886,46 +1899,64 @@ export default function OwnerAgreementPage() {
                   <p className="text-[12px] text-gray-400 mt-1 max-w-sm mx-auto">Select a template above to generate your first agreement.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {savedAgreements.map((ag) => (
                     <div 
                       key={ag.id}
-                      className="border border-gray-200 rounded-xl p-5 hover:border-gray-400 transition-colors flex flex-col justify-between bg-gray-50/50"
+                      className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-[#4F46E5]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
                     >
-                      <div className="space-y-3">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform"></div>
+                      
+                      <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-start">
-                          <div>
-                            <span className={`text-[9px] font-bold uppercase tracking-widest border px-2 py-0.5 rounded ${
-                              ag.complexity === 'Simple'
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                                : ag.complexity === 'Standard'
-                                ? 'bg-blue-50 border-blue-200 text-blue-600'
-                                : 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                            }`}>
-                              {ag.complexity} Version
-                            </span>
-                            <h4 className="text-[14px] font-black text-[#1A1A1A] mt-2.5 truncate max-w-[220px]">
-                              {ag.tenantName}
-                            </h4>
+                          <div className="flex items-center gap-3">
+                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
+                                ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
+                                'bg-indigo-50 text-indigo-600'
+                             }`}>
+                                <FileSignature className="w-5 h-5" />
+                             </div>
+                             <div>
+                                <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
+                                  {ag.tenantName}
+                                </h4>
+                                <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${
+                                  ag.complexity === 'Simple' ? 'text-emerald-600' :
+                                  ag.complexity === 'Standard' ? 'text-blue-600' :
+                                  'text-indigo-600'
+                                }`}>
+                                  {ag.complexity} Agreement
+                                </span>
+                             </div>
                           </div>
-                          <span className="text-[10px] text-gray-400 font-medium font-mono">{ag.dateCreated}</span>
+                          <span className="text-[10px] text-gray-500 font-bold bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">{ag.dateCreated}</span>
                         </div>
 
-                        <div className="text-[11px] space-y-1.5 text-gray-500 font-medium">
-                          <div className="truncate">
-                            <span className="font-bold text-gray-400">Address:</span> {ag.propertyAddress}
+                        <div className="text-[11px] space-y-2 text-gray-500 font-medium bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="flex items-center gap-2 truncate">
+                            <Home className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            <span className="truncate">{ag.propertyAddress}</span>
                           </div>
-                          <div>
-                            <span className="font-bold text-gray-400">Rent:</span> {ag.rentAmount}
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 font-black px-1">💰</span>
+                            <span>{ag.rentAmount}/mo</span>
                           </div>
-                          <div className="flex gap-4 pt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <span>Landlord: {ag.landlordSig ? '✍️ Signed' : '❌ Unsigned'}</span>
-                            <span>Tenant: {ag.tenantSig ? '✍️ Signed' : '❌ Unsigned'}</span>
-                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                              {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                              Owner
+                           </div>
+                           <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                              {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                              Tenant
+                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5">
+                      <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5 relative z-10">
                         <button
                           onClick={() => {
                             if (ag.id === 'local_draft_ongoing') {
@@ -2133,14 +2164,7 @@ export default function OwnerAgreementPage() {
                   
                   {/* Action Group */}
                   <div className="flex items-center gap-1.5 font-bold">
-                    <button
-                      onClick={handleSaveProgress}
-                      className="px-2.5 py-1.5 bg-white border border-[#4F46E5]/30 hover:border-[#4F46E5] text-[#4F46E5] text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1"
-                      title="Save ongoing activity"
-                    >
-                      <Check className="w-3 h-3 text-[#4F46E5]" />
-                      <span>Save Draft</span>
-                    </button>
+
                     <button
                       onClick={handlePrint}
                       className="px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#4F46E5] text-gray-700 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors flex items-center gap-1"
