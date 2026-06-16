@@ -9,14 +9,14 @@ import EditProfileModal, { UserProfile } from './EditProfileModal';
 
 const navLinks = [
   { label: 'Home', href: '/dashboard/owners' },
+  { label: 'Profile', href: '/dashboard/owners/profile' },
   { label: 'Listings', href: '/dashboard/owners/listings' },
   { label: 'Appointments', href: '/dashboard/owners/appointments' },
   { label: 'Chat', href: '/dashboard/owners/chat' },
   { label: 'Agreement', href: '/dashboard/owners/agreement' },
-  { label: 'Overview', href: '/dashboard/owners/profile' },
 ];
 
-export default function OwnerNavbar() {
+export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -91,33 +91,37 @@ export default function OwnerNavbar() {
         </div>
 
         {/* Center Nav */}
-        <nav className="hidden lg:flex items-center space-x-1 flex-none">
-          {navLinks.map((link) => {
-            const finalIsActive = link.href === '/dashboard/owners' ? pathname === link.href : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
-                  finalIsActive
-                    ? 'bg-[#1A1A1A] text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {!hideLinks && (
+          <nav className="hidden lg:flex items-center space-x-1 flex-none">
+            {navLinks.map((link) => {
+              const finalIsActive = link.href === '/dashboard/owners' ? pathname === link.href : pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`px-4 py-2 text-[13px] font-semibold rounded-full transition-colors ${
+                    finalIsActive
+                      ? 'bg-[#1A1A1A] text-white'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Right side */}
         <div className="flex-1 flex justify-end items-center space-x-4">
-          <Link
-            href="/dashboard/tenant"
-            className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
-          >
-            Switch to tenant
-          </Link>
+          {!hideLinks && (
+            <Link
+              href="/dashboard/tenant"
+              className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
+            >
+              Switch to tenant
+            </Link>
+          )}
           <div className="relative" ref={notifRef}>
             <button
               id="owner-notifications-btn"

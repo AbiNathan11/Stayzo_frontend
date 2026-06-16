@@ -1904,103 +1904,107 @@ export default function OwnerAgreementPage() {
                   <p className="text-[12px] text-gray-400 mt-1 max-w-sm mx-auto">Select a template above to generate your first agreement.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {savedAgreements.map((ag) => (
-                    <div
-                      key={ag.id}
-                      className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-[#4F46E5]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform"></div>
-
-                      <div className="space-y-4 relative z-10">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
-                              ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
-                                'bg-indigo-50 text-indigo-600'
-                              }`}>
-                              <FileSignature className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h4 className="text-[14px] font-black text-[#1A1A1A] truncate max-w-[140px]">
-                                {ag.tenantName}
-                              </h4>
-                              <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 block ${ag.complexity === 'Simple' ? 'text-emerald-600' :
-                                ag.complexity === 'Standard' ? 'text-blue-600' :
-                                  'text-indigo-600'
+                <div className="overflow-x-auto rounded-xl border border-gray-100">
+                  <table className="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        <th className="px-5 py-4">Tenant / Type</th>
+                        <th className="px-5 py-4">Property Address</th>
+                        <th className="px-5 py-4">Monthly Rent</th>
+                        <th className="px-5 py-4">Date Created</th>
+                        <th className="px-5 py-4 text-center">Status</th>
+                        <th className="px-5 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-[12px] font-semibold text-[#1A1A1A]">
+                      {savedAgreements.map((ag) => (
+                        <tr key={ag.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${ag.complexity === 'Simple' ? 'bg-emerald-50 text-emerald-600' :
+                                ag.complexity === 'Standard' ? 'bg-blue-50 text-blue-600' :
+                                  'bg-indigo-50 text-indigo-600'
                                 }`}>
-                                {ag.complexity} Agreement
-                              </span>
+                                <FileSignature className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="font-black text-[#1A1A1A]">{ag.tenantName}</div>
+                                <div className={`text-[9px] font-bold uppercase tracking-widest ${ag.complexity === 'Simple' ? 'text-emerald-600' :
+                                  ag.complexity === 'Standard' ? 'text-blue-600' :
+                                    'text-indigo-600'
+                                  }`}>
+                                  {ag.complexity}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <span className="text-[10px] text-gray-500 font-bold bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">{ag.dateCreated}</span>
-                        </div>
-
-                        <div className="text-[11px] space-y-2 text-gray-500 font-medium bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                          <div className="flex items-center gap-2 truncate">
-                            <Home className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                            <span className="truncate">{ag.propertyAddress}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400 font-black px-1">💰</span>
-                            <span>{ag.rentAmount}/mo</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-1">
-                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                            {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                            Owner
-                          </div>
-                          <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                            {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                            Tenant
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-5 relative z-10">
-                        <button
-                          onClick={() => {
-                            if (ag.id === 'local_draft_ongoing') {
-                              handleRestoreDraft();
-                              return;
-                            }
-                            const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === ag.templateId);
-                            if (tmpl) {
-                              setSelectedTemplate(tmpl);
-                              setFieldValues(ag.values);
-                              setCurrentFieldIdx(tmpl.fields.length);
-                              setLandlordSig(ag.landlordSig || null);
-                              setTenantSig(ag.tenantSig || null);
-                              if (ag.visualTheme) setSelectedTheme(ag.visualTheme as VisualTheme);
-                              setChatHistory([
-                                {
-                                  id: 'reopen',
-                                  sender: 'bot',
-                                  text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. You can preview, edit details, or manage your landlord signature.`,
-                                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                }
-                              ]);
-                            }
-                          }}
-                          className="flex items-center gap-1 text-[11px] font-black text-[#1A1A1A] hover:underline"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                          <span>Workspace</span>
-                        </button>
-
-
-                        <button
-                          onClick={() => handleDeleteAgreement(ag.id, ag.tenantName)}
-                          className="text-red-500 hover:text-red-700 flex items-center justify-center p-1 hover:bg-red-50 rounded transition-colors"
-                          title="Delete Contract"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                          <td className="px-5 py-4 text-gray-500 font-medium">
+                            <div className="flex items-center gap-2">
+                              <Home className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate max-w-[150px]" title={ag.propertyAddress}>{ag.propertyAddress}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 font-black">
+                            {ag.rentAmount}/mo
+                          </td>
+                          <td className="px-5 py-4 text-[10px] text-gray-500 font-bold uppercase">
+                            {ag.dateCreated}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${ag.landlordSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`} title="Owner Signature">
+                                {ag.landlordSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                                Owner
+                              </div>
+                              <div className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${ag.tenantSig ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`} title="Tenant Signature">
+                                {ag.tenantSig ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                                Tenant
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  if (ag.id === 'local_draft_ongoing') {
+                                    handleRestoreDraft();
+                                    return;
+                                  }
+                                  const tmpl = AGREEMENT_TEMPLATES.find(t => t.id === ag.templateId);
+                                  if (tmpl) {
+                                    setSelectedTemplate(tmpl);
+                                    setFieldValues(ag.values);
+                                    setCurrentFieldIdx(tmpl.fields.length);
+                                    setLandlordSig(ag.landlordSig || null);
+                                    setTenantSig(ag.tenantSig || null);
+                                    if (ag.visualTheme) setSelectedTheme(ag.visualTheme as VisualTheme);
+                                    setChatHistory([
+                                      {
+                                        id: 'reopen',
+                                        sender: 'bot',
+                                        text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. You can preview, edit details, or manage your landlord signature.`,
+                                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                      }
+                                    ]);
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>Open</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAgreement(ag.id, ag.tenantName)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                title="Delete Contract"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

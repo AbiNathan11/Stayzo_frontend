@@ -211,10 +211,10 @@ export default function VisitsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
         {/* ── Calendar ── */}
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
+        <div className="lg:col-span-3 bg-white border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xl font-bold text-[#1A1A1A]">{MONTHS[calMonth]} {calYear}</h3>
             <div className="flex items-center space-x-2">
@@ -327,7 +327,7 @@ export default function VisitsPage() {
         </div>
 
         {/* ── Bookings Sidebar ── */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Tabs */}
           <div className="flex items-center gap-1 border-b border-gray-200 pb-2">
             {([

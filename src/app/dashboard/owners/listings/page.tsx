@@ -220,14 +220,16 @@ export default function OwnerListings() {
         {/* Page Title & Action */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-[32px] md:text-[40px] font-black text-[#1A1A1A] uppercase tracking-tight leading-none">
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">
               Property Listings
-            </h1>
-            <div className="w-8 h-[3px] bg-[#1A1A1A] mt-2" />
+            </h2>
+            <p className="text-gray-500 text-xs font-semibold mt-1">
+              Manage your active properties and view incomplete drafts.
+            </p>
           </div>
           <Link 
             href="/dashboard/owners/start_listing"
-            className="bg-[#4F46E5] text-white px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-[#4338CA] transition-colors rounded-xl shadow-sm"
+            className="bg-[#EEF2FF] text-[#4F46E5] px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-[#E0E7FF] transition-colors rounded-xl shadow-sm"
           >
             + Create New Listing
           </Link>
@@ -301,12 +303,6 @@ export default function OwnerListings() {
                 <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Active Properties Found</p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Deploy a high-fidelity property listing today to start receiving lease applications.</p>
-                <Link 
-                  href="/dashboard/owners/start_listing"
-                  className="mt-5 inline-block bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full shadow-sm transition"
-                >
-                  Start Listing Wizard
-                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -394,7 +390,7 @@ export default function OwnerListings() {
                           View Details
                         </Link>
                         <button 
-                          className="px-3 border border-gray-200 hover:border-[#4F46E5] hover:text-[#4F46E5] rounded-xl text-[#1A1A1A] transition flex items-center justify-center animate-pulse"
+                          className="px-3 border border-gray-200 hover:border-blue-600 hover:text-blue-600 rounded-xl text-[#1A1A1A] transition flex items-center justify-center"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
