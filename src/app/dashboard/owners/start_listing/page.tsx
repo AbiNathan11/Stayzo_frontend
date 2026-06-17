@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import toast, { Toaster } from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/services/google/geocode";
@@ -463,11 +464,13 @@ export default function StartListingPage() {
       setIsSubmitting(true);
       try {
         let ownerId = "owner-123";
+        let ownerEmail = "owner@example.com";
         const token = sessionStorage.getItem('stayzo_token');
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             if (payload.id) ownerId = payload.id;
+            if (payload.email) ownerEmail = payload.email;
           } catch {
             // ignore
           }
@@ -481,7 +484,7 @@ export default function StartListingPage() {
         // Filter out empty strings from images array
         const filteredImages = formData.images.filter((img) => img !== "");
 
-        const body = {
+        const body: any = {
           ownerId,
           title,
           description,
@@ -502,26 +505,104 @@ export default function StartListingPage() {
           amenities: ["Kitchen", "Bathroom", "Water facilities"]
         };
 
-        const res = await fetch("http://localhost:3001/api/properties", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
+        const submitToBackend = async (transactionData?: any) => {
+          if (transactionData) {
+            body.transactionData = transactionData;
+          }
+          const res = await fetch("http://localhost:3001/api/properties", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(body),
+          });
 
-        if (res.ok) {
-          localStorage.removeItem('stayzo_listing_draft');
-          toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
-          router.push("/dashboard/owners/listings");
+          if (res.ok) {
+            localStorage.removeItem('stayzo_listing_draft');
+            toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
+            router.push("/dashboard/owners/listings");
+          } else {
+            const errData = await res.json();
+            toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
+          }
+          setIsSubmitting(false);
+        };
+
+        const advanceAmount = formData.advanceMoney ? parseFloat(formData.advanceMoney) : 0;
+        const listingFeeAmount = advanceAmount < 10000 ? 500 : advanceAmount * 0.05;
+
+        if (listingFeeAmount > 0) {
+          toast.loading("Initializing secure payment gateway...", { id: "payhere" });
+          const response = await fetch('/api/payments/generate-hash', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ propertyId: 'NEW', amount: listingFeeAmount.toString(), currency: 'LKR', orderPrefix: 'LISTING_FEE' })
+          });
+
+          if (!response.ok) throw new Error('Failed to initialize payment');
+          
+          const data = await response.json();
+          toast.dismiss("payhere");
+
+          // @ts-ignore
+          if (typeof payhere === 'undefined') {
+            throw new Error('Payment gateway is still loading. Please try again in a moment.');
+          }
+
+          // @ts-ignore
+          payhere.onCompleted = function onCompleted(orderId) {
+            toast.success('Payment successful! Creating listing...');
+            submitToBackend({
+              amount: listingFeeAmount,
+              reference: orderId,
+              paymentMethod: 'PayHere Sandbox',
+              email: ownerEmail
+            });
+          };
+
+          // @ts-ignore
+          payhere.onDismissed = function onDismissed() {
+            toast.error('Payment cancelled. Listing was not submitted.');
+            setIsSubmitting(false);
+          };
+
+          // @ts-ignore
+          payhere.onError = function onError(error) {
+            toast.error('An error occurred during payment: ' + error);
+            setIsSubmitting(false);
+          };
+
+          const payment = {
+            sandbox: true,
+            merchant_id: data.merchantId,
+            return_url: `${window.location.origin}/dashboard/owners/listings`,
+            cancel_url: `${window.location.origin}/dashboard/owners/start_listing`,
+            notify_url: `${process.env.NEXT_PUBLIC_NGROK_URL || window.location.origin}/api/payments/payhere-notify`,
+            order_id: data.orderId,
+            items: "Property Listing Fee - Stayzo",
+            amount: data.amount,
+            currency: data.currency,
+            hash: data.hash,
+            first_name: formData.realOwnerName || 'Owner',
+            last_name: '',
+            email: ownerEmail,
+            phone: "0771234567",
+            address: formData.street,
+            city: formData.city,
+            country: "Sri Lanka"
+          };
+
+          // @ts-ignore
+          payhere.startPayment(payment);
         } else {
-          const errData = await res.json();
-          toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
+          await submitToBackend();
         }
-      } catch (err) {
+
+      } catch (err: any) {
+        toast.dismiss("payhere");
         console.error("Error submitting listing:", err);
-        toast.error("An error occurred while submitting. Please check your network and try again.");
-      } finally {
+        toast.error(err.message || "An error occurred while submitting. Please check your network and try again.");
         setIsSubmitting(false);
       }
     }
@@ -539,6 +620,7 @@ export default function StartListingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
+      <Script src="https://www.payhere.lk/lib/payhere.js" strategy="lazyOnload" />
       <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
@@ -1264,6 +1346,22 @@ export default function StartListingPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all resize-none"
                     placeholder="e.g. Shopping mall 2km away often hiring part-time staff..."
                   />
+                </div>
+
+                <div className="mt-8 p-5 bg-[#EEF2FF] border border-[#4F46E5]/20 rounded-xl">
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">Listing Fee Information</h3>
+                  {(!formData.advanceMoney || parseFloat(formData.advanceMoney) < 10000) ? (
+                    <p className="text-xs text-gray-600 mb-2">
+                      Your advance amount is below Rs. 10,000, so your listing fee is fixed at Rs. 500.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-600 mb-2">
+                      You must pay a listing fee, which is 5% of your property's advance amount.
+                    </p>
+                  )}
+                  <p className="text-sm font-black text-[#4F46E5] mt-3 tracking-wide">
+                    Listing Fee = Rs. {(!formData.advanceMoney || parseFloat(formData.advanceMoney) < 10000) ? "500.00" : (parseFloat(formData.advanceMoney) * 0.05).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 </div>
               </div>
             </div>
