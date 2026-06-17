@@ -22,11 +22,12 @@ type Message = {
   translatedText?: string;
   translatedLanguage?: string;
   time: string;
+  date?: string;
   status?: string;
 };
 
 // ─── Shared Documents ────────────────────────────────────────────────────────
-const sharedDocs = ["FLOOR_PLANS_V2.PDF", "STRUCT_REPORT_01.PDF"];
+// (Removed)
 
 export default function ChatPage() {
   return (
@@ -118,14 +119,15 @@ function ChatPageContent() {
               translatedText: m.translatedText,
               translatedLanguage: m.translatedLanguage,
               time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              date: new Date(m.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
               status: m.isRead ? "READ" : "DELIVERED"
             }));
             setMessages(formattedMsgs);
             
             // Dynamic Initial Dropdown Value
-            const lastTranslatedMsg = [...formattedMsgs].reverse().find(m => m.translatedLanguage);
-            if (lastTranslatedMsg) {
-              setLanguage(lastTranslatedMsg.translatedLanguage);
+            const lastReceivedTranslatedMsg = [...formattedMsgs].reverse().find(m => m.from === "them" && m.translatedLanguage);
+            if (lastReceivedTranslatedMsg) {
+              setLanguage(lastReceivedTranslatedMsg.translatedLanguage);
             } else {
               setLanguage("Original");
             }
@@ -152,6 +154,7 @@ function ChatPageContent() {
         from: "me",
         originalText: text,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         status: "SENDING...",
       },
     ]);
@@ -181,6 +184,7 @@ function ChatPageContent() {
                   translatedText: m.translatedText,
                   translatedLanguage: m.translatedLanguage,
                   time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  date: new Date(m.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                   status: m.isRead ? "READ" : "DELIVERED"
                 }));
                 setMessages(formattedMsgs);
@@ -314,24 +318,28 @@ function ChatPageContent() {
 
         {/* Scrollable: Message Bubbles */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4">
-          {/* Date Divider */}
-          <div className="flex items-center gap-3 my-2">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase whitespace-nowrap">
-              October 28, 2024
-            </span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
           {/* Message Bubbles */}
-          {messages.map((msg) => (
-            <MessageBubble 
-              key={msg.id} 
-              msg={msg} 
-              globalLanguage={language} 
-              setMessages={setMessages} 
-            />
-          ))}
+          {messages.map((msg, index) => {
+            const showDate = index === 0 || messages[index - 1].date !== msg.date;
+            return (
+              <React.Fragment key={msg.id}>
+                {showDate && msg.date && (
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase whitespace-nowrap">
+                      {msg.date}
+                    </span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                )}
+                <MessageBubble 
+                  msg={msg} 
+                  globalLanguage={language} 
+                  setMessages={setMessages} 
+                />
+              </React.Fragment>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
@@ -409,53 +417,6 @@ function ChatPageContent() {
           </div>
         </div>
 
-        {/* Last Inspection */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Last Inspection
-          </p>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-[11px] font-bold text-[#1A1A1A]">
-              OCT 24, 2024
-            </span>
-          </div>
-        </div>
-
-        {/* Status */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Status
-          </p>
-          <div className="flex items-center gap-2">
-            <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-[11px] font-bold text-[#1A1A1A] uppercase tracking-wide">
-              Structural Review
-            </span>
-          </div>
-        </div>
-
-        {/* Shared Documents */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Shared Documents (4)
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {sharedDocs.map((doc) => (
-              <button
-                key={doc}
-                id={`chat-doc-${doc.replace(/\./g, "-").toLowerCase()}`}
-                className="flex items-center gap-2 bg-white rounded-lg px-2.5 py-1.5 shadow-sm hover:shadow-md transition-shadow text-left w-full"
-              >
-                <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span className="text-[9px] font-bold text-[#1A1A1A] tracking-wide truncate">
-                  {doc}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Schedule Site Visit */}
         <button
           id="chat-schedule-visit-btn"
@@ -470,8 +431,8 @@ function ChatPageContent() {
 }
 
 function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, globalLanguage: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>> }) {
-  // Initialize to true if a translation already exists in the database
-  const [showTranslation, setShowTranslation] = useState(!!msg.translatedText);
+  // Initialize to true if a translation already exists in the database and it's a received message
+  const [showTranslation, setShowTranslation] = useState(msg.from === "them" && !!msg.translatedText);
   const [isTranslating, setIsTranslating] = useState(false);
 
   const handleTranslate = async (targetLang: string) => {
@@ -520,10 +481,13 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     }
   };
 
-  const displayedText = showTranslation && msg.translatedText ? msg.translatedText : msg.originalText;
+  // Sent messages must ONLY get from the text column (originalText). Received messages use translatedText if available.
+  const displayedText = msg.from === "me" 
+    ? msg.originalText 
+    : (showTranslation && msg.translatedText ? msg.translatedText : msg.originalText);
   
-  // Only show the toggle button if it's not a temp message ID and a target language is selected, or if we already have a translation
-  const canTranslate = msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
+  // Only allow translating received messages
+  const canTranslate = msg.from === "them" && msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
 
   return (
     <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"}`}>
