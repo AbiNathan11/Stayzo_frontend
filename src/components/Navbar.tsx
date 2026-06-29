@@ -111,7 +111,7 @@ export default function Navbar() {
     return '/dashboard/tenant';
   };
 
-  const isSearchPage = pathname === '/search';
+  const isSearchPage = pathname === '/search' || pathname.includes('/services/food');
 
   return (
     <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none ${isSearchPage ? 'top-0' : 'top-6 px-4 md:px-6'}`}>
@@ -156,10 +156,10 @@ export default function Navbar() {
         {(isSearchPage && isLoggedIn) ? (
           <div className="flex items-center space-x-5">
             <a 
-              href={getDashboardLink()} 
+              href="/dashboard/tenant" 
               onClick={(e) => {
                 e.preventDefault();
-                window.location.href = getDashboardLink();
+                window.location.href = "/dashboard/tenant";
               }}
               className="relative transition flex items-center group/profile" 
               title="Go to Dashboard"
@@ -183,7 +183,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden md:flex items-center space-x-5">
             {isLoggedIn ? (
-              <Link href={getDashboardLink()} className="relative transition flex items-center group/profile" title="Go to Dashboard">
+              <Link href="/dashboard/tenant" className="relative transition flex items-center group/profile" title="Go to Dashboard">
                 <div className="relative">
                   {profileImage ? (
                     <img
@@ -272,7 +272,7 @@ export default function Navbar() {
             {isLoggedIn ? (
               <div className="flex flex-col space-y-4 pt-1">
                 <Link 
-                  href={getDashboardLink()} 
+                  href="/dashboard/tenant" 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center space-x-3 text-[#1A1A1A] py-1.5"
                 >
