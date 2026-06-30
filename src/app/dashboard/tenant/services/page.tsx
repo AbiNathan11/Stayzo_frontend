@@ -36,7 +36,7 @@ export default function ServicesPage() {
         </Link>
 
         {/* Nearby Part-time Jobs */}
-        <section className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer">
+        <Link href="/dashboard/tenant/services/job" className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer no-underline">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center border border-gray-200 mb-5">
               <Briefcase className="w-6 h-6 text-[#1A1A1A]" />
@@ -53,7 +53,7 @@ export default function ServicesPage() {
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
-        </section>
+        </Link>
 
       </div>
     </div>

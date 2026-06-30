@@ -111,7 +111,7 @@ export default function Navbar() {
     return '/dashboard/tenant';
   };
 
-  const isSearchPage = pathname === '/search' || pathname.includes('/services/food');
+  const isSearchPage = pathname === '/search' || pathname.includes('/services/food') || pathname.includes('/services/job');
 
   return (
     <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none ${isSearchPage ? 'top-0' : 'top-6 px-4 md:px-6'}`}>
