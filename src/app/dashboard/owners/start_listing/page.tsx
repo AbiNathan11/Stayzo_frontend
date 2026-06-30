@@ -7,6 +7,7 @@ import Script from "next/script";
 import toast, { Toaster } from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/services/google/geocode";
+import exifr from 'exifr';
 import {
   ChevronLeft,
   UploadCloud,
@@ -271,55 +272,68 @@ export default function StartListingPage() {
     }
   }, [simulateMismatchAddress, simulateMismatchName]);
 
-  // GPS Metadata Verification logic
-  const verifyImageGps = (fieldName: string) => {
+  // GPS Metadata Verification logic with Exifr
+  const processImageWithGPS = async (file: File, onSuccess: (dataUrl: string) => void) => {
     setIsVerifyingPhotos(true);
-    setPhotosVerified(false);
-    setGpsVerificationDetails("Reading image EXIF GPS metadata...");
-
-    setTimeout(() => {
-      setIsVerifyingPhotos(false);
+    setGpsVerificationDetails("Extracting GPS data from image...");
+    
+    try {
+      const gps = await exifr.gps(file);
       
-      const propLat = formData.latitude || 6.9271;
-      const propLng = formData.longitude || 79.8612;
-
-      if (gpsSimulationMode === "fraud") {
-        // Mock off-site coordinates (e.g. Kandy)
-        const imageLat = 7.2906;
-        const imageLng = 80.6337;
-        const distanceKm = 115.4;
-        
-        setGpsVerificationDetails(
-          `Image Coordinates: ${imageLat.toFixed(4)}° N, ${imageLng.toFixed(4)}° E. Property Coordinates: ${propLat.toFixed(4)}° N, ${propLng.toFixed(4)}° E. Distance: ${distanceKm.toFixed(1)} km. Result: BLOCKED (Fraudulent listing detected).`
-        );
+      if (!gps || !gps.latitude || !gps.longitude) {
+        toast.error("Image does not contain GPS location data. Please upload an original photo taken on-site.", { id: "gps-verify" });
+        setGpsVerificationDetails("Image has no GPS EXIF data. Verification blocked.");
         setPhotosVerified(false);
-        toast.error("Fraud detection triggered: Images were not taken at the property location.", { id: "gps-verify" });
-      } else if (gpsSimulationMode === "no-gps") {
-        setGpsVerificationDetails(
-          "No GPS metadata tags found in this image file. Please upload an authentic image taken on-site with Location services active."
-        );
-        setPhotosVerified(false);
-        toast.error("Verification failed: Missing on-site GPS metadata.", { id: "gps-verify" });
-      } else {
-        // Match: within 15 meters
-        const imageLat = propLat + 0.0001;
-        const imageLng = propLng + 0.0001;
-        
-        setGpsVerificationDetails(
-          `Image Coordinates: ${imageLat.toFixed(4)}° N, ${imageLng.toFixed(4)}° E. Property Coordinates: ${propLat.toFixed(4)}° N, ${propLng.toFixed(4)}° E. Distance: 15.2 meters. Result: VERIFIED.`
-        );
-        setPhotosVerified(true);
-        toast.success("Image GPS location verified!", { id: "gps-verify" });
+        setIsVerifyingPhotos(false);
+        return;
       }
-    }, 1500);
-  };
 
-  // Re-run photo verification if GPS mode changes
-  useEffect(() => {
-    if (formData.images[0] || formData.panoramaImage) {
-      verifyImageGps("images");
+      const propLat = formData.latitude;
+      const propLng = formData.longitude;
+
+      if (!propLat || !propLng) {
+        toast.error("Please set property coordinates in Step 3 first.", { id: "gps-verify" });
+        setIsVerifyingPhotos(false);
+        return;
+      }
+
+      const R = 6371; // Earth's radius in km
+      const dLat = (gps.latitude - propLat) * Math.PI / 180;
+      const dLon = (gps.longitude - propLng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(propLat * Math.PI / 180) * Math.cos(gps.latitude * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const distanceKm = R * c;
+
+      if (distanceKm > 1.0) {
+        toast.error(`Image was taken ${(distanceKm).toFixed(2)}km away from the property location. Fraud detected.`, { id: "gps-verify" });
+        setGpsVerificationDetails(`Image: Distance ${distanceKm.toFixed(2)}km > 1km threshold. Verification blocked.`);
+        setPhotosVerified(false);
+        setIsVerifyingPhotos(false);
+        return;
+      }
+
+      toast.success(`Image location verified! (${(distanceKm * 1000).toFixed(0)}m from property)`, { id: "gps-verify" });
+      setGpsVerificationDetails(`Image location matched (${(distanceKm * 1000).toFixed(0)}m away). Result: VERIFIED.`);
+      setPhotosVerified(true);
+      setIsVerifyingPhotos(false);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onSuccess(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+    } catch (err) {
+      console.error("EXIF Error:", err);
+      toast.error("Could not read EXIF data from this image.", { id: "gps-verify" });
+      setGpsVerificationDetails("Error parsing EXIF data.");
+      setPhotosVerified(false);
+      setIsVerifyingPhotos(false);
     }
-  }, [gpsSimulationMode]);
+  };
 
   // Example handlers for counters
   const updateCounter = (field: keyof typeof formData, delta: number) => {
@@ -332,33 +346,34 @@ export default function StartListingPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const resultStr = reader.result as string;
-        setFormData((prev) => ({ ...prev, [fieldName]: resultStr }));
-        if (fieldName === 'waterBillImage') {
-          triggerBillVerification(resultStr);
-        }
-      };
-      reader.readAsDataURL(file);
+      if (fieldName === 'panoramaImage') {
+        processImageWithGPS(file, (dataUrl) => {
+          setFormData((prev) => ({ ...prev, [fieldName]: dataUrl }));
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const resultStr = reader.result as string;
+          setFormData((prev) => ({ ...prev, [fieldName]: resultStr }));
+          if (fieldName === 'waterBillImage') {
+            triggerBillVerification(resultStr);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      processImageWithGPS(file, (dataUrl) => {
         setFormData((prev) => {
           const updatedImages = [...prev.images];
-          updatedImages[index] = reader.result as string;
+          updatedImages[index] = dataUrl;
           return { ...prev, images: updatedImages };
         });
-        if (index === 0) {
-          verifyImageGps("coverPhoto");
-        }
-      };
-      reader.readAsDataURL(file);
+      });
     }
   };
 
