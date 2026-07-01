@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -141,7 +142,7 @@ export default function OwnerListings() {
 
   // Decode JWT once on mount to get the real owner ID
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       const payload = decodeToken(token);
       if (payload?.id) setOwnerId(payload.id);
@@ -154,7 +155,7 @@ export default function OwnerListings() {
     const fetchListings = async () => {
       setLoading(true);
       try {
-        const token = sessionStorage.getItem('stayzo_token');
+        const token = Cookies.get('stayzo_token');
         const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
