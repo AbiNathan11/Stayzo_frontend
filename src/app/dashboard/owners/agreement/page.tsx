@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -547,7 +548,7 @@ export default function OwnerAgreementPage() {
 
   useEffect(() => {
     let email = 'landlord@example.com';
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));

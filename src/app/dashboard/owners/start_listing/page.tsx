@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -224,7 +225,7 @@ export default function StartListingPage() {
     setBillVerified(false);
 
     let landlordName = "Abiramy Nathan";
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
@@ -480,7 +481,7 @@ export default function StartListingPage() {
       try {
         let ownerId = "owner-123";
         let ownerEmail = "owner@example.com";
-        const token = sessionStorage.getItem('stayzo_token');
+        const token = Cookies.get('stayzo_token');
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));

@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -56,7 +57,7 @@ function ChatPageContent() {
 
   // Decode user from token
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -70,7 +71,7 @@ function ChatPageContent() {
   // Fetch all threads for this owner
   const fetchThreads = () => {
     if (!userId) return;
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=owner`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -104,7 +105,7 @@ function ChatPageContent() {
   // Fetch specific thread details and messages
   useEffect(() => {
     if (activeThreadId) {
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -160,7 +161,7 @@ function ChatPageContent() {
     ]);
     setInput("");
 
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -443,7 +444,7 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     
     setIsTranslating(true);
     try {
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       const res = await fetch(`http://localhost:3001/api/chat/message/${msg.id}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
