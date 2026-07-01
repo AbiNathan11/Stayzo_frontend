@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
@@ -215,7 +216,7 @@ export default function TenantOverviewPage() {
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -289,7 +290,7 @@ export default function TenantOverviewPage() {
     e.preventDefault();
     if (!user || !editFirstName.trim()) return;
 
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     setUpdatingProfile(true);
     try {
       const response = await fetch('http://localhost:3001/api/auth/update-profile', {

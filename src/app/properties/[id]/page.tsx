@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -78,7 +79,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -207,7 +208,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     : '';
 
   const handleChatWithOwner = async () => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to chat with the owner.');
       setTimeout(() => {

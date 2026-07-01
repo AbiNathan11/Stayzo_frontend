@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -103,7 +104,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       setIsLoggedIn(!!token);
     }
   }, []);

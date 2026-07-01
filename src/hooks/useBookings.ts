@@ -1,11 +1,12 @@
 'use client';
+import Cookies from 'js-cookie';
 import { useState, useEffect, useCallback } from 'react';
 
 const API = 'http://localhost:3001';
 
 function getToken() {
   if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem('stayzo_token');
+  return Cookies.get('stayzo_token');
 }
 
 function authHeaders() {

@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -30,7 +31,7 @@ export default function TenantAuth() {
       const isLandlordUrl = urlRole === 'landlord';
       setRole(isLandlordUrl ? 'landlord' : 'tenant');
 
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
@@ -144,7 +145,8 @@ export default function TenantAuth() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
 
-      if (data.token) sessionStorage.setItem('stayzo_token', data.token);
+      if (data.stayzo_token) Cookies.set('stayzo_token', data.stayzo_token, { expires: 7 });
+      if (data.stayzo_refresh_token) Cookies.set('stayzo_refresh_token', data.stayzo_refresh_token, { expires: 30 });
       toast.success('Successfully authenticated!');
 
       const lowerEmail = email.toLowerCase();

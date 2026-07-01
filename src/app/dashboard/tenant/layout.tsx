@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -24,7 +25,7 @@ export default function TenantDashboardLayout({
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -63,7 +64,7 @@ export default function TenantDashboardLayout({
   }, []);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('stayzo_token');
+    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
     window.location.href = '/';
   };
 
