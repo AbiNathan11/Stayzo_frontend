@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -22,11 +23,12 @@ type Message = {
   translatedText?: string;
   translatedLanguage?: string;
   time: string;
+  date?: string;
   status?: string;
 };
 
 // ─── Shared Documents ────────────────────────────────────────────────────────
-const sharedDocs = ["TENANCY_AGREEMENT.PDF", "HOUSE_RULES_V2.PDF"];
+// (Removed)
 
 // ─── Page Component ──────────────────────────────────────────────────────────
 export default function ChatPage() {
@@ -56,7 +58,7 @@ function ChatPageContent() {
 
   // Decode user from token
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -70,7 +72,7 @@ function ChatPageContent() {
   // Fetch all threads for this tenant
   const fetchThreads = () => {
     if (!userId) return;
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=tenant`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -104,7 +106,7 @@ function ChatPageContent() {
   // Fetch specific thread details and messages
   useEffect(() => {
     if (activeThreadId) {
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -119,14 +121,15 @@ function ChatPageContent() {
               translatedText: m.translatedText,
               translatedLanguage: m.translatedLanguage,
               time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              date: new Date(m.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
               status: m.isRead ? "READ" : "DELIVERED"
             }));
             setMessages(formattedMsgs);
 
             // Dynamic Initial Dropdown Value
-            const lastTranslatedMsg = [...formattedMsgs].reverse().find(m => m.translatedLanguage);
-            if (lastTranslatedMsg) {
-              setLanguage(lastTranslatedMsg.translatedLanguage);
+            const lastReceivedTranslatedMsg = [...formattedMsgs].reverse().find(m => m.from === "them" && m.translatedLanguage);
+            if (lastReceivedTranslatedMsg) {
+              setLanguage(lastReceivedTranslatedMsg.translatedLanguage);
             } else {
               setLanguage("Original");
             }
@@ -153,12 +156,13 @@ function ChatPageContent() {
         from: "me",
         originalText: text,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         status: "SENDING...",
       },
     ]);
     setInput("");
 
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     fetch(`http://localhost:3001/api/chat/thread/${activeThreadId}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -182,6 +186,7 @@ function ChatPageContent() {
                   translatedText: m.translatedText,
                   translatedLanguage: m.translatedLanguage,
                   time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  date: new Date(m.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                   status: m.isRead ? "READ" : "DELIVERED"
                 }));
                 setMessages(formattedMsgs);
@@ -234,7 +239,7 @@ function ChatPageContent() {
                 onClick={() => setActiveThreadId(convo.id)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
                   convo.id === activeThreadId
-                    ? "bg-white border-l-[3px] border-l-[#1A1A1A]"
+                    ? "bg-white border-l-[3px] border-l-[#4F46E5]"
                     : "hover:bg-gray-50"
                 }`}
               >
@@ -251,8 +256,8 @@ function ChatPageContent() {
                 </p>
                 {convo.id === activeThreadId && (
                   <div className="mt-1.5 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]" />
-                    <span className="text-[9px] font-bold tracking-widest text-[#1A1A1A] uppercase">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5]" />
+                    <span className="text-[9px] font-bold tracking-widest text-[#4F46E5] uppercase">
                       Active Thread
                     </span>
                   </div>
@@ -315,24 +320,28 @@ function ChatPageContent() {
 
         {/* Scrollable: Message Bubbles */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4">
-          {/* Date Divider */}
-          <div className="flex items-center gap-3 my-2">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase whitespace-nowrap">
-              October 28, 2024
-            </span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
           {/* Message Bubbles */}
-          {messages.map((msg) => (
-            <MessageBubble 
-              key={msg.id} 
-              msg={msg} 
-              globalLanguage={language} 
-              setMessages={setMessages} 
-            />
-          ))}
+          {messages.map((msg, index) => {
+            const showDate = index === 0 || messages[index - 1].date !== msg.date;
+            return (
+              <React.Fragment key={msg.id}>
+                {showDate && msg.date && (
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase whitespace-nowrap">
+                      {msg.date}
+                    </span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                )}
+                <MessageBubble 
+                  msg={msg} 
+                  globalLanguage={language} 
+                  setMessages={setMessages} 
+                />
+              </React.Fragment>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
@@ -358,7 +367,7 @@ function ChatPageContent() {
             <button
               id="chat-send-btn"
               onClick={sendMessage}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#1A1A1A] hover:bg-black rounded-full transition-colors shadow-md"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#4F46E5] hover:bg-[#4338CA] rounded-full transition-colors shadow-md"
               aria-label="Send message"
             >
               <Send className="w-3.5 h-3.5 text-white" />
@@ -410,57 +419,10 @@ function ChatPageContent() {
           </div>
         </div>
 
-        {/* Next Visit */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Next Visit
-          </p>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-[11px] font-bold text-[#1A1A1A]">
-              OCT 29, 2024
-            </span>
-          </div>
-        </div>
-
-        {/* Status */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Status
-          </p>
-          <div className="flex items-center gap-2">
-            <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-[11px] font-bold text-[#1A1A1A] uppercase tracking-wide">
-              Pending Visit
-            </span>
-          </div>
-        </div>
-
-        {/* Shared Documents */}
-        <div>
-          <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mb-1.5">
-            Shared Documents (2)
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {sharedDocs.map((doc) => (
-              <button
-                key={doc}
-                id={`chat-doc-${doc.replace(/\./g, "-").toLowerCase()}`}
-                className="flex items-center gap-2 bg-white rounded-lg px-2.5 py-1.5 shadow-sm hover:shadow-md transition-shadow text-left w-full"
-              >
-                <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span className="text-[9px] font-bold text-[#1A1A1A] tracking-wide truncate">
-                  {doc}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Reschedule Visit */}
         <button
           id="chat-reschedule-visit-btn"
-          className="w-full border-2 border-[#1A1A1A] text-[#1A1A1A] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#1A1A1A] hover:text-white transition-colors"
+          className="w-full border-2 border-[#4F46E5] text-[#4F46E5] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#4F46E5] hover:text-white transition-colors"
         >
           Reschedule Visit
         </button>
@@ -471,8 +433,8 @@ function ChatPageContent() {
 }
 
 function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, globalLanguage: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>> }) {
-  // Initialize to true if a translation already exists in the database
-  const [showTranslation, setShowTranslation] = useState(!!msg.translatedText);
+  // Initialize to true if a translation already exists in the database and it's a received message
+  const [showTranslation, setShowTranslation] = useState(msg.from === "them" && !!msg.translatedText);
   const [isTranslating, setIsTranslating] = useState(false);
 
   const handleTranslate = async (targetLang: string) => {
@@ -483,7 +445,7 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     
     setIsTranslating(true);
     try {
-      const token = sessionStorage.getItem('stayzo_token');
+      const token = Cookies.get('stayzo_token');
       const res = await fetch(`http://localhost:3001/api/chat/message/${msg.id}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -521,17 +483,20 @@ function MessageBubble({ msg, globalLanguage, setMessages }: { msg: Message, glo
     }
   };
 
-  const displayedText = showTranslation && msg.translatedText ? msg.translatedText : msg.originalText;
+  // Sent messages must ONLY get from the text column (originalText). Received messages use translatedText if available.
+  const displayedText = msg.from === "me" 
+    ? msg.originalText 
+    : (showTranslation && msg.translatedText ? msg.translatedText : msg.originalText);
   
-  // Only show the toggle button if it's not a temp message ID and a target language is selected, or if we already have a translation
-  const canTranslate = msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
+  // Only allow translating received messages
+  const canTranslate = msg.from === "them" && msg.id.length > 20 && (globalLanguage !== "Original" || msg.translatedText);
 
   return (
     <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"}`}>
       <div
         className={`max-w-[68%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed font-medium ${
           msg.from === "me"
-            ? "bg-[#1A1A1A] text-white rounded-br-sm"
+            ? "bg-[#4F46E5] text-white rounded-br-sm"
             : "bg-gray-100 text-[#1A1A1A] rounded-bl-sm"
         }`}
       >

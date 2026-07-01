@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -219,7 +220,7 @@ export default function TenantAgreementPage() {
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     let email = 'abiramy@example.com';
     if (token) {
       try {

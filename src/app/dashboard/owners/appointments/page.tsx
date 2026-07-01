@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from "react";
 import {
@@ -71,7 +72,7 @@ export default function OwnerAppointmentsPage() {
   const [ownerId, setOwnerId] = useState("");
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (!token) return;
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -84,7 +85,7 @@ export default function OwnerAppointmentsPage() {
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const token2 = sessionStorage.getItem('stayzo_token')!;
+          const token2 = Cookies.get('stayzo_token')!;
           const p2 = JSON.parse(atob(token2.split(".")[1]));
           const myProps = data.filter((p: any) => p.ownerId === p2.id);
           setProperties(myProps.map((p: any) => ({ id: p.id, title: p.title })));

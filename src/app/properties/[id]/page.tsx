@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -34,6 +35,7 @@ interface Property {
   sqft: number;
   type: string;
   status: string;
+  isBoosted?: boolean;
   images: string[];
   panoramaImage: string | null;
   waterBillImage: string | null;
@@ -77,7 +79,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -108,9 +110,29 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       }
 
       // @ts-ignore
-      payhere.onCompleted = function onCompleted(orderId) {
+      payhere.onCompleted = async function onCompleted(orderId) {
         triggerToast('Payment successful! Your listing is now boosted.');
-        // Optionally refresh the property data here
+        
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+          await fetch(`${backendUrl}/api/properties/${propertyId}/mark-boosted`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: '500.00',
+              paymentMethod: 'PayHere Sandbox',
+              reference: orderId,
+              status: 'Completed',
+              email: property?.owner?.email
+            })
+          });
+          
+          if (property) {
+            setProperty({ ...property, isBoosted: true });
+          }
+        } catch (err) {
+          console.error('Failed to notify backend of boost:', err);
+        }
       };
 
       // @ts-ignore
@@ -186,7 +208,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     : '';
 
   const handleChatWithOwner = async () => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to chat with the owner.');
       setTimeout(() => {
@@ -596,10 +618,15 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   </p>
                 </div>
                 <button
-                  onClick={() => handleBoostListing(property.id)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-extrabold transition shadow-md hover:shadow-lg uppercase tracking-wider active:scale-[0.98]"
+                  onClick={() => !property.isBoosted && handleBoostListing(property.id)}
+                  disabled={property.isBoosted}
+                  className={`w-full py-3 rounded-xl text-xs font-extrabold transition uppercase tracking-wider ${
+                    property.isBoosted 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]'
+                  }`}
                 >
-                  Boost listing
+                  {property.isBoosted ? 'Boosted' : 'Boost listing'}
                 </button>
               </div>
             )}

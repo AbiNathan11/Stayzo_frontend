@@ -1,4 +1,5 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -24,7 +25,7 @@ export default function TenantDashboardLayout({
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
 
   useEffect(() => {
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -63,7 +64,7 @@ export default function TenantDashboardLayout({
   }, []);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('stayzo_token');
+    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
     window.location.href = '/';
   };
 
@@ -86,6 +87,7 @@ export default function TenantDashboardLayout({
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col">
       
       {/* Top Header with Navigation */}
+      {!(pathname.includes('/services/food') || pathname.includes('/services/job')) && (
       <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-10 flex items-center justify-between z-50 shrink-0 select-none sticky top-0">
         
         {/* Left Brand Logo */}
@@ -266,9 +268,10 @@ export default function TenantDashboardLayout({
           </div>
         </div>
       </header>
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 w-full mx-auto max-w-[1400px] px-8 sm:px-16 md:px-24 py-10">
+      <div className={`flex-1 w-full mx-auto ${pathname.includes('/services/food') || pathname.includes('/services/job') ? '' : 'max-w-[1400px] px-8 sm:px-16 md:px-24 py-10'}`}>
         <main className="w-full min-w-0">
           {children}
         </main>

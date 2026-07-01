@@ -1,11 +1,14 @@
 "use client";
+import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import toast, { Toaster } from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/services/google/geocode";
+import exifr from 'exifr';
 import {
   ChevronLeft,
   UploadCloud,
@@ -222,7 +225,7 @@ export default function StartListingPage() {
     setBillVerified(false);
 
     let landlordName = "Abiramy Nathan";
-    const token = sessionStorage.getItem('stayzo_token');
+    const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
@@ -270,55 +273,68 @@ export default function StartListingPage() {
     }
   }, [simulateMismatchAddress, simulateMismatchName]);
 
-  // GPS Metadata Verification logic
-  const verifyImageGps = (fieldName: string) => {
+  // GPS Metadata Verification logic with Exifr
+  const processImageWithGPS = async (file: File, onSuccess: (dataUrl: string) => void) => {
     setIsVerifyingPhotos(true);
-    setPhotosVerified(false);
-    setGpsVerificationDetails("Reading image EXIF GPS metadata...");
-
-    setTimeout(() => {
-      setIsVerifyingPhotos(false);
+    setGpsVerificationDetails("Extracting GPS data from image...");
+    
+    try {
+      const gps = await exifr.gps(file);
       
-      const propLat = formData.latitude || 6.9271;
-      const propLng = formData.longitude || 79.8612;
-
-      if (gpsSimulationMode === "fraud") {
-        // Mock off-site coordinates (e.g. Kandy)
-        const imageLat = 7.2906;
-        const imageLng = 80.6337;
-        const distanceKm = 115.4;
-        
-        setGpsVerificationDetails(
-          `Image Coordinates: ${imageLat.toFixed(4)}° N, ${imageLng.toFixed(4)}° E. Property Coordinates: ${propLat.toFixed(4)}° N, ${propLng.toFixed(4)}° E. Distance: ${distanceKm.toFixed(1)} km. Result: BLOCKED (Fraudulent listing detected).`
-        );
+      if (!gps || !gps.latitude || !gps.longitude) {
+        toast.error("Image does not contain GPS location data. Please upload an original photo taken on-site.", { id: "gps-verify" });
+        setGpsVerificationDetails("Image has no GPS EXIF data. Verification blocked.");
         setPhotosVerified(false);
-        toast.error("Fraud detection triggered: Images were not taken at the property location.", { id: "gps-verify" });
-      } else if (gpsSimulationMode === "no-gps") {
-        setGpsVerificationDetails(
-          "No GPS metadata tags found in this image file. Please upload an authentic image taken on-site with Location services active."
-        );
-        setPhotosVerified(false);
-        toast.error("Verification failed: Missing on-site GPS metadata.", { id: "gps-verify" });
-      } else {
-        // Match: within 15 meters
-        const imageLat = propLat + 0.0001;
-        const imageLng = propLng + 0.0001;
-        
-        setGpsVerificationDetails(
-          `Image Coordinates: ${imageLat.toFixed(4)}° N, ${imageLng.toFixed(4)}° E. Property Coordinates: ${propLat.toFixed(4)}° N, ${propLng.toFixed(4)}° E. Distance: 15.2 meters. Result: VERIFIED.`
-        );
-        setPhotosVerified(true);
-        toast.success("Image GPS location verified!", { id: "gps-verify" });
+        setIsVerifyingPhotos(false);
+        return;
       }
-    }, 1500);
-  };
 
-  // Re-run photo verification if GPS mode changes
-  useEffect(() => {
-    if (formData.images[0] || formData.panoramaImage) {
-      verifyImageGps("images");
+      const propLat = formData.latitude;
+      const propLng = formData.longitude;
+
+      if (!propLat || !propLng) {
+        toast.error("Please set property coordinates in Step 3 first.", { id: "gps-verify" });
+        setIsVerifyingPhotos(false);
+        return;
+      }
+
+      const R = 6371; // Earth's radius in km
+      const dLat = (gps.latitude - propLat) * Math.PI / 180;
+      const dLon = (gps.longitude - propLng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(propLat * Math.PI / 180) * Math.cos(gps.latitude * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const distanceKm = R * c;
+
+      if (distanceKm > 1.0) {
+        toast.error(`Image was taken ${(distanceKm).toFixed(2)}km away from the property location. Fraud detected.`, { id: "gps-verify" });
+        setGpsVerificationDetails(`Image: Distance ${distanceKm.toFixed(2)}km > 1km threshold. Verification blocked.`);
+        setPhotosVerified(false);
+        setIsVerifyingPhotos(false);
+        return;
+      }
+
+      toast.success(`Image location verified! (${(distanceKm * 1000).toFixed(0)}m from property)`, { id: "gps-verify" });
+      setGpsVerificationDetails(`Image location matched (${(distanceKm * 1000).toFixed(0)}m away). Result: VERIFIED.`);
+      setPhotosVerified(true);
+      setIsVerifyingPhotos(false);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onSuccess(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+    } catch (err) {
+      console.error("EXIF Error:", err);
+      toast.error("Could not read EXIF data from this image.", { id: "gps-verify" });
+      setGpsVerificationDetails("Error parsing EXIF data.");
+      setPhotosVerified(false);
+      setIsVerifyingPhotos(false);
     }
-  }, [gpsSimulationMode]);
+  };
 
   // Example handlers for counters
   const updateCounter = (field: keyof typeof formData, delta: number) => {
@@ -331,33 +347,34 @@ export default function StartListingPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const resultStr = reader.result as string;
-        setFormData((prev) => ({ ...prev, [fieldName]: resultStr }));
-        if (fieldName === 'waterBillImage') {
-          triggerBillVerification(resultStr);
-        }
-      };
-      reader.readAsDataURL(file);
+      if (fieldName === 'panoramaImage') {
+        processImageWithGPS(file, (dataUrl) => {
+          setFormData((prev) => ({ ...prev, [fieldName]: dataUrl }));
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const resultStr = reader.result as string;
+          setFormData((prev) => ({ ...prev, [fieldName]: resultStr }));
+          if (fieldName === 'waterBillImage') {
+            triggerBillVerification(resultStr);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      processImageWithGPS(file, (dataUrl) => {
         setFormData((prev) => {
           const updatedImages = [...prev.images];
-          updatedImages[index] = reader.result as string;
+          updatedImages[index] = dataUrl;
           return { ...prev, images: updatedImages };
         });
-        if (index === 0) {
-          verifyImageGps("coverPhoto");
-        }
-      };
-      reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -463,11 +480,13 @@ export default function StartListingPage() {
       setIsSubmitting(true);
       try {
         let ownerId = "owner-123";
-        const token = sessionStorage.getItem('stayzo_token');
+        let ownerEmail = "owner@example.com";
+        const token = Cookies.get('stayzo_token');
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             if (payload.id) ownerId = payload.id;
+            if (payload.email) ownerEmail = payload.email;
           } catch {
             // ignore
           }
@@ -481,7 +500,7 @@ export default function StartListingPage() {
         // Filter out empty strings from images array
         const filteredImages = formData.images.filter((img) => img !== "");
 
-        const body = {
+        const body: any = {
           ownerId,
           title,
           description,
@@ -502,26 +521,104 @@ export default function StartListingPage() {
           amenities: ["Kitchen", "Bathroom", "Water facilities"]
         };
 
-        const res = await fetch("http://localhost:3001/api/properties", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
+        const submitToBackend = async (transactionData?: any) => {
+          if (transactionData) {
+            body.transactionData = transactionData;
+          }
+          const res = await fetch("http://localhost:3001/api/properties", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(body),
+          });
 
-        if (res.ok) {
-          localStorage.removeItem('stayzo_listing_draft');
-          toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
-          router.push("/dashboard/owners/listings");
+          if (res.ok) {
+            localStorage.removeItem('stayzo_listing_draft');
+            toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
+            router.push("/dashboard/owners/listings");
+          } else {
+            const errData = await res.json();
+            toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
+          }
+          setIsSubmitting(false);
+        };
+
+        const advanceAmount = formData.advanceMoney ? parseFloat(formData.advanceMoney) : 0;
+        const listingFeeAmount = advanceAmount < 10000 ? 500 : advanceAmount * 0.05;
+
+        if (listingFeeAmount > 0) {
+          toast.loading("Initializing secure payment gateway...", { id: "payhere" });
+          const response = await fetch('/api/payments/generate-hash', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ propertyId: 'NEW', amount: listingFeeAmount.toString(), currency: 'LKR', orderPrefix: 'LISTING_FEE' })
+          });
+
+          if (!response.ok) throw new Error('Failed to initialize payment');
+          
+          const data = await response.json();
+          toast.dismiss("payhere");
+
+          // @ts-ignore
+          if (typeof payhere === 'undefined') {
+            throw new Error('Payment gateway is still loading. Please try again in a moment.');
+          }
+
+          // @ts-ignore
+          payhere.onCompleted = function onCompleted(orderId) {
+            toast.success('Payment successful! Creating listing...');
+            submitToBackend({
+              amount: listingFeeAmount,
+              reference: orderId,
+              paymentMethod: 'PayHere Sandbox',
+              email: ownerEmail
+            });
+          };
+
+          // @ts-ignore
+          payhere.onDismissed = function onDismissed() {
+            toast.error('Payment cancelled. Listing was not submitted.');
+            setIsSubmitting(false);
+          };
+
+          // @ts-ignore
+          payhere.onError = function onError(error) {
+            toast.error('An error occurred during payment: ' + error);
+            setIsSubmitting(false);
+          };
+
+          const payment = {
+            sandbox: true,
+            merchant_id: data.merchantId,
+            return_url: `${window.location.origin}/dashboard/owners/listings`,
+            cancel_url: `${window.location.origin}/dashboard/owners/start_listing`,
+            notify_url: `${process.env.NEXT_PUBLIC_NGROK_URL || window.location.origin}/api/payments/payhere-notify`,
+            order_id: data.orderId,
+            items: "Property Listing Fee - Stayzo",
+            amount: data.amount,
+            currency: data.currency,
+            hash: data.hash,
+            first_name: formData.realOwnerName || 'Owner',
+            last_name: '',
+            email: ownerEmail,
+            phone: "0771234567",
+            address: formData.street,
+            city: formData.city,
+            country: "Sri Lanka"
+          };
+
+          // @ts-ignore
+          payhere.startPayment(payment);
         } else {
-          const errData = await res.json();
-          toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
+          await submitToBackend();
         }
-      } catch (err) {
+
+      } catch (err: any) {
+        toast.dismiss("payhere");
         console.error("Error submitting listing:", err);
-        toast.error("An error occurred while submitting. Please check your network and try again.");
-      } finally {
+        toast.error(err.message || "An error occurred while submitting. Please check your network and try again.");
         setIsSubmitting(false);
       }
     }
@@ -539,6 +636,7 @@ export default function StartListingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
+      <Script src="https://www.payhere.lk/lib/payhere.js" strategy="lazyOnload" />
       <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
@@ -1264,6 +1362,22 @@ export default function StartListingPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all resize-none"
                     placeholder="e.g. Shopping mall 2km away often hiring part-time staff..."
                   />
+                </div>
+
+                <div className="mt-8 p-5 bg-[#EEF2FF] border border-[#4F46E5]/20 rounded-xl">
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">Listing Fee Information</h3>
+                  {(!formData.advanceMoney || parseFloat(formData.advanceMoney) < 10000) ? (
+                    <p className="text-xs text-gray-600 mb-2">
+                      Your advance amount is below Rs. 10,000, so your listing fee is fixed at Rs. 500.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-600 mb-2">
+                      You must pay a listing fee, which is 5% of your property's advance amount.
+                    </p>
+                  )}
+                  <p className="text-sm font-black text-[#4F46E5] mt-3 tracking-wide">
+                    Listing Fee = Rs. {(!formData.advanceMoney || parseFloat(formData.advanceMoney) < 10000) ? "500.00" : (parseFloat(formData.advanceMoney) * 0.05).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 </div>
               </div>
             </div>
