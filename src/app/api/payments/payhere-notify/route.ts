@@ -24,6 +24,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
+    // If this is a Listing Fee payment, the frontend handles property creation.
+    // We just return 200 OK to acknowledge PayHere.
+    if (order_id.startsWith('LISTING_FEE_')) {
+      return new NextResponse('OK', { status: 200 });
+    }
+
     // Check if payment was successful (status_code 2 means success in PayHere)
     if (status_code === '2' && order_id.startsWith('BOOST_')) {
       // Extract Property ID from the order_id (Format: BOOST_PROP123_1716700000)
@@ -33,13 +39,22 @@ export async function POST(req: Request) {
         // Or better: BOOST_{PROPERTY_ID}_{TIMESTAMP}
         const propertyId = parts.slice(1, parts.length - 1).join('_');
         
+        const method = formData.get('method') as string;
+        const payment_id = formData.get('payment_id') as string;
+
         // Notify Backend to mark property as boosted
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
         const boostResponse = await fetch(`${backendUrl}/api/properties/${propertyId}/mark-boosted`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({
+            amount: payhere_amount,
+            reference: payment_id || order_id,
+            status: 'Completed',
+            paymentMethod: method || 'PayHere Sandbox'
+          })
         });
 
         if (!boostResponse.ok) {

@@ -101,7 +101,7 @@ export default function LearnMorePage() {
               List Your Property with Confidence
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Our streamlined 7-step wizard ensures your listing is detailed, secure, and perfectly tailored to attract the right tenants. Explore the steps below to know exactly what to expect.
+              Our streamlined 8-step wizard ensures your listing is detailed, secure, and perfectly tailored to attract the right tenants. Explore the steps below to know exactly what to expect.
             </p>
           </div>
 
