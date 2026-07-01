@@ -140,6 +140,7 @@ export default function TenantDashboardLayout({
               onClick={() => setShowNotifications(v => !v)}
               className="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors group"
               aria-label="Notifications"
+              suppressHydrationWarning={true}
             >
               <Bell className="w-5 h-5 text-[#1A1A1A] group-hover:text-gray-900 transition-colors" />
               {unreadCount > 0 && (
@@ -221,6 +222,7 @@ export default function TenantDashboardLayout({
             <button 
               onClick={() => setShowDropdown(!showDropdown)} 
               className="flex items-center justify-center hover:scale-105 active:scale-95 transition-all rounded-full cursor-pointer shrink-0"
+              suppressHydrationWarning={true}
             >
               {user?.profileImage ? (
                 <img src={user.profileImage} alt="User Avatar" className="w-8 h-8 rounded-full object-cover shrink-0" />
