@@ -24,6 +24,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
+    // If this is a Listing Fee payment, the frontend handles property creation.
+    // We just return 200 OK to acknowledge PayHere.
+    if (order_id.startsWith('LISTING_FEE_')) {
+      return new NextResponse('OK', { status: 200 });
+    }
+
     // Check if payment was successful (status_code 2 means success in PayHere)
     if (status_code === '2' && order_id.startsWith('BOOST_')) {
       // Extract Property ID from the order_id (Format: BOOST_PROP123_1716700000)

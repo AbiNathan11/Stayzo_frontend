@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { Coffee, Briefcase, ChevronRight } from 'lucide-react';
 
 export default function ServicesPage() {
@@ -15,7 +16,7 @@ export default function ServicesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Boarding Food Tiffin */}
-        <section className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer">
+        <Link href="/dashboard/tenant/services/food" className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer no-underline">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center border border-gray-200 mb-5">
               <Coffee className="w-6 h-6 text-[#1A1A1A]" />
@@ -32,10 +33,10 @@ export default function ServicesPage() {
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
-        </section>
+        </Link>
 
         {/* Nearby Part-time Jobs */}
-        <section className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer">
+        <Link href="/dashboard/tenant/services/job" className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between group hover:shadow-md transition cursor-pointer no-underline">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center border border-gray-200 mb-5">
               <Briefcase className="w-6 h-6 text-[#1A1A1A]" />
@@ -52,7 +53,7 @@ export default function ServicesPage() {
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
-        </section>
+        </Link>
 
       </div>
     </div>
