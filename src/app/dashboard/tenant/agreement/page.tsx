@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FileSignature, ShieldCheck, Download, UploadCloud, 
+import {
+  FileSignature, ShieldCheck, Download, UploadCloud,
   Smartphone, CheckCircle2, FileText, ExternalLink, Scale, Clock, ShieldAlert
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -19,7 +19,7 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     ctx.strokeStyle = '#1A1A1A';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
@@ -185,7 +185,7 @@ export default function TenantAgreementPage() {
         e.target.value = '';
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -356,7 +356,7 @@ export default function TenantAgreementPage() {
               </h4>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Inspect and sign pending lease agreements</p>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs font-bold">
                 <thead>
@@ -505,7 +505,7 @@ export default function TenantAgreementPage() {
       {selectedAgreement && (
         <div className="fixed inset-0 bg-[#1A1A1A]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white border border-gray-200 rounded-[32px] w-full max-w-4xl p-6 md:p-8 shadow-2xl relative overflow-hidden my-8 animate-in zoom-in-95 duration-200">
-            
+
             <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
               <div>
                 <h3 className="text-xl font-extrabold text-[#1A1A1A]">Tenancy Lease Agreement</h3>
@@ -513,7 +513,7 @@ export default function TenantAgreementPage() {
                   Review terms and conditions for {selectedAgreement.listingName}.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedAgreement(null)}
                 className="text-gray-400 hover:text-gray-600 font-extrabold text-sm"
               >
@@ -522,11 +522,11 @@ export default function TenantAgreementPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* Document Text Pane */}
               <div className={`h-[400px] overflow-y-auto rounded-2xl border border-slate-200 flex flex-col justify-between ${getThemeClass(selectedAgreement.visualTheme)} shadow-inner`}>
                 <div className="whitespace-pre-wrap text-[13px]">{cleanContractText(selectedAgreement.contractText)}</div>
-                
+
                 {/* Signatures inside the document layout */}
                 <div className="mt-12 pt-8 border-t border-gray-200 grid grid-cols-2 gap-8 text-[12px] font-sans text-left">
                   <div>
@@ -556,7 +556,7 @@ export default function TenantAgreementPage() {
 
               {/* Signing Control Pane */}
               <div className="flex flex-col justify-between space-y-6">
-                
+
                 {/* General Info */}
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2.5">
                   <div className="flex justify-between text-xs">
@@ -594,22 +594,20 @@ export default function TenantAgreementPage() {
                       <button
                         onClick={() => setSigModalTab('qr')}
                         type="button"
-                        className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${
-                          sigModalTab === 'qr'
+                        className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${sigModalTab === 'qr'
                             ? 'bg-white text-[#4F46E5] shadow-xs'
                             : 'text-gray-500 hover:text-gray-800'
-                        }`}
+                          }`}
                       >
                         📱 Mobile Scan
                       </button>
                       <button
                         onClick={() => setSigModalTab('draw')}
                         type="button"
-                        className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${
-                          sigModalTab === 'draw'
+                        className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${sigModalTab === 'draw'
                             ? 'bg-white text-[#4F46E5] shadow-xs'
                             : 'text-gray-500 hover:text-gray-800'
-                        }`}
+                          }`}
                       >
                         ✍️ Draw Desktop
                       </button>
@@ -619,9 +617,9 @@ export default function TenantAgreementPage() {
                       /* QR CODE CONTAINER */
                       <div className="space-y-4">
                         <div className="mx-auto w-[180px] h-[180px] bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner">
-                          <img 
+                          <img
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getQrCodeUrl())}`}
-                            alt="Signature QR Code" 
+                            alt="Signature QR Code"
                             className="w-full h-full object-contain"
                           />
                         </div>
@@ -630,7 +628,7 @@ export default function TenantAgreementPage() {
                             <Smartphone className="w-4 h-4 text-purple-600" />
                             <span>Scan with your phone to sign...</span>
                           </div>
-                          
+
                           <a
                             href={getQrCodeUrl()}
                             target="_blank"
@@ -648,7 +646,7 @@ export default function TenantAgreementPage() {
 
 
 
-                     <div className="flex gap-3">
+                    <div className="flex gap-3">
                       <button
                         onClick={() => {
                           setSelectedAgreement(null);
@@ -662,11 +660,10 @@ export default function TenantAgreementPage() {
                         onClick={submitTenantSignature}
                         disabled={!tenantSig}
                         type="button"
-                        className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 cursor-pointer ${
-                          !tenantSig
+                        className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 cursor-pointer ${!tenantSig
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-[#4F46E5] text-white hover:bg-[#4338CA] active:scale-95"
-                        }`}
+                          }`}
                       >
                         Submit Signature
                       </button>

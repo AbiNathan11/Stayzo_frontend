@@ -9,7 +9,7 @@ import { io, Socket } from 'socket.io-client';
 
 export default function MobileSignPage() {
   const router = useRouter();
-  
+
   // Read query params manually to support standard React hydration
   const [role, setRole] = useState<'landlord' | 'tenant'>('landlord');
   const [draftId, setDraftId] = useState<string>('default-draft');
@@ -89,55 +89,48 @@ export default function MobileSignPage() {
     return () => window.removeEventListener('resize', setupCanvas);
   }, [isSubmitted]);
 
-  // Coordinate math
-  const getCoordinates = (e: MouseEvent | TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-
-    if ('touches' in e) {
-      if (e.touches.length === 0) return { x: 0, y: 0 };
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-      };
-    } else {
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    }
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { x, y } = getCoordinates(e.nativeEvent);
+    // Capture the pointer to ensure we receive move events even if the finger slides off the canvas edge
+    canvas.setPointerCapture(e.pointerId);
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { x, y } = getCoordinates(e.nativeEvent);
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
     ctx.lineTo(x, y);
     ctx.stroke();
     setHasDrawn(true);
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas && e.pointerId) {
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+    }
   };
 
   const handleClear = () => {
@@ -148,10 +141,10 @@ export default function MobileSignPage() {
   const handleSubmit = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     // Convert canvas drawing to base64 Data URL
     const signatureDataUrl = canvas.toDataURL('image/png');
-    
+
     // Save to localStorage (fallback for same-device testing)
     const storageKey = role === 'landlord' ? 'stayzo_landlord_sig' : 'stayzo_tenant_sig';
     localStorage.setItem(storageKey, signatureDataUrl);
@@ -170,7 +163,7 @@ export default function MobileSignPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans px-4 py-6 justify-between select-none">
-      
+
       {/* Top Title Bar */}
       <div className="text-center space-y-1">
         <div className="flex items-center justify-center space-x-1 text-[#1A1A1A]">
@@ -185,24 +178,22 @@ export default function MobileSignPage() {
       {!isSubmitted ? (
         /* ──── SIGNING STATE ──── */
         <div className="flex-1 flex flex-col justify-center my-6 space-y-4">
-          
+
           {/* Canvas Wrapper */}
           <div ref={containerRef} className="bg-white border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col items-center w-full">
             <div className="w-full bg-slate-50 border-b border-slate-100 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               {hasDrawn ? '✓ Signature drawn — tap Confirm Sign' : 'Draw your signature in the box below'}
             </div>
-            
+
             <canvas
               ref={canvasRef}
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-              onTouchStart={startDrawing}
-              onTouchMove={draw}
-              onTouchEnd={stopDrawing}
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={stopDrawing}
+              onPointerCancel={stopDrawing}
+              onPointerOut={stopDrawing}
               className="bg-white touch-none cursor-crosshair w-full"
-              style={{ display: 'block' }}
+              style={{ display: 'block', touchAction: 'none' }}
             />
           </div>
 

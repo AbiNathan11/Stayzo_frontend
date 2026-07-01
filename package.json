@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/react-signature-canvas": "^1.0.7",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.263.1",
     "next": "^16.2.9",
@@ -16,6 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.6.0",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
