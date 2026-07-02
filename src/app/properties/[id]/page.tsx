@@ -59,8 +59,16 @@ interface Property {
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80';
 
-export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function PropertyDetailPage({ 
+  params,
+  searchParams
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { id } = use(params);
+  const resolvedSearchParams = use(searchParams);
+  const fromSaved = resolvedSearchParams.from === 'saved';
   const router = useRouter();
 
   const [property, setProperty] = useState<Property | null>(null);
@@ -198,9 +206,37 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const wishlist = JSON.parse(localStorage.getItem('stayzo_wishlist') || '[]');
+      const idsArray = wishlist.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
+      setIsBookmarked(idsArray.includes(String(id)));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [id]);
+
   const handleBookmarkToggle = () => {
-    setIsBookmarked(!isBookmarked);
-    triggerToast(isBookmarked ? 'Removed from wishlist.' : 'Saved to your wishlist!');
+    if (!property) return;
+    try {
+      const wishlist = JSON.parse(localStorage.getItem('stayzo_wishlist') || '[]');
+      const idsArray = wishlist.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
+      const idStr = String(property.id);
+      let updated;
+      if (isBookmarked) {
+        updated = idsArray.filter((bId: string) => bId !== idStr);
+        triggerToast('Removed from wishlist.');
+      } else {
+        updated = [...idsArray, idStr];
+        triggerToast('Saved to your wishlist!');
+      }
+      localStorage.setItem('stayzo_wishlist', JSON.stringify(updated));
+      setIsBookmarked(!isBookmarked);
+    } catch (e) {
+      console.error(e);
+      triggerToast('Could not update wishlist.');
+    }
   };
 
   const ownerName = property
@@ -246,6 +282,18 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     } catch (error: any) {
       triggerToast(error.message || 'Failed to start chat.');
     }
+  };
+
+  const handleRequestBookingVisit = () => {
+    const token = Cookies.get('stayzo_token');
+    if (!token) {
+      triggerToast('Please sign in to schedule a visit.');
+      setTimeout(() => {
+        router.push(`/auth?redirect=/properties/${id}`);
+      }, 1500);
+      return;
+    }
+    router.push(`/dashboard/tenant/visits?propertyId=${id}`);
   };
 
   const images = property?.images?.length ? property.images : [FALLBACK_IMG];
@@ -368,8 +416,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       <div className="text-center space-y-4 max-w-sm px-6">
         <p className="text-2xl font-black text-[#1A1A1A]">Property Not Found</p>
         <p className="text-sm text-gray-500">{error ?? 'This listing may have been removed.'}</p>
-        <Link href="/search" className="inline-block mt-4 bg-[#1A1A1A] text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-full">
-          Back to Search
+        <Link href={fromSaved ? "/dashboard/tenant/saved" : "/search"} className="inline-block mt-4 bg-[#1A1A1A] text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-full">
+          {fromSaved ? "Back to Saved Properties" : "Back to Search"}
         </Link>
       </div>
     </div>
@@ -391,9 +439,9 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Breadcrumb */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
-          <Link href="/search" className="group flex items-center space-x-2 text-xs font-bold text-gray-500 hover:text-[#1A1A1A] transition">
+          <Link href={fromSaved ? "/dashboard/tenant/saved" : "/search"} className="group flex items-center space-x-2 text-xs font-bold text-gray-500 hover:text-[#1A1A1A] transition">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span>Back to Search Results</span>
+            <span>{fromSaved ? "Back to Saved Properties" : "Back to Search Results"}</span>
           </Link>
           <button onClick={handleBookmarkToggle} className="flex items-center space-x-1.5 text-xs font-bold text-gray-600 hover:text-[#1A1A1A] transition">
             <Heart className={`w-4 h-4 transition-colors ${isBookmarked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
@@ -698,7 +746,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => triggerToast(`Booking request sent to ${ownerName}! They'll reply within 24 hours.`)}
+                  onClick={handleRequestBookingVisit}
                   className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
                 >
                   Request Booking / Visit
