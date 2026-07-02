@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 import {
   Calendar as CalendarIcon, Clock, MapPin, CheckCircle2,
   XCircle, Clock4, ChevronLeft, ChevronRight, Plus,
@@ -39,6 +41,17 @@ type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 type TabType = "upcoming" | "pending" | "cancelled";
 
 export default function VisitsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm font-bold text-gray-500">Loading scheduler...</div>}>
+      <VisitsPageContent />
+    </Suspense>
+  );
+}
+
+function VisitsPageContent() {
+  const searchParams = useSearchParams();
+  const queryPropertyId = searchParams?.get("propertyId") || "";
+
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
   const [calYear, setCalYear]     = useState(new Date().getFullYear());
   const [calMonth, setCalMonth]   = useState(new Date().getMonth());
@@ -51,7 +64,6 @@ export default function VisitsPage() {
   const [selectedSlot, setSelectedSlot]       = useState<Slot | null>(null);
   const [note, setNote]                       = useState("");
   const [bookingLoading, setBookingLoading]   = useState(false);
-  const [toast, setToast]                     = useState("");
 
   // Reschedule modal
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
@@ -73,31 +85,43 @@ export default function VisitsPage() {
       .then(data => {
         if (Array.isArray(data)) {
           setProperties(data.map((p: any) => ({ id: p.id, title: p.title, address: p.address })));
-          // Auto-select the first property so the calendar isn't empty, since we can't fetch all properties at once
-          if (data.length > 0) setSelectedPropertyId(data[0].id);
+          // Auto-select based on query parameter first, fallback to first property
+          if (queryPropertyId && data.some((p: any) => p.id === queryPropertyId)) {
+            setSelectedPropertyId(queryPropertyId);
+          } else if (data.length > 0) {
+            setSelectedPropertyId(data[0].id);
+          }
         }
       })
       .catch(() => {});
-  }, []);
+  }, [queryPropertyId]);
 
   const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3500);
+    if (msg.startsWith("✅")) {
+      toast.success(msg.replace("✅", "").trim());
+    } else if (msg.startsWith("❌")) {
+      toast.error(msg.replace("❌", "").trim());
+    } else {
+      toast(msg);
+    }
   };
 
   // Calendar helpers
   const firstDay    = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-  // Safely extract YYYY-MM-DD from a UTC ISO date string (e.g. "2026-06-01T00:00:00.000Z" → "2026-06-01")
-  const slotDateStr = (isoDate: string | undefined) => (isoDate ?? "").slice(0, 10);
+  // Parse slot date in local timezone to avoid off-by-one calendar shifts
+  const slotDateStr = (isoDate: string | undefined) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   const bookingsOnDate = (dateStr: string) =>
     bookings.filter(b => slotDateStr(b.slot?.date) === dateStr);
   const slotsOnDate = (dateStr: string) =>
     availableSlots.filter(s => !s.isBlocked && slotDateStr(s.date) === dateStr);
-  const blockedOnDate = (dateStr: string) =>
-    availableSlots.some(s => s.isBlocked && slotDateStr(s.date) === dateStr);
 
   const slotsForSelectedDate = slotsOnDate(selectedDate).filter(s => {
     // Prevent booking slots that have already passed today or are completely in the past
@@ -174,12 +198,7 @@ export default function VisitsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-[#1A1A1A] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
-          {toast}
-        </div>
-      )}
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -248,7 +267,6 @@ export default function VisitsPage() {
           <div className="flex items-center gap-4 mb-4 text-[10px] font-semibold text-gray-500">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" />Available</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#1A1A1A]" />Your Booking</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-300" />Blocked</span>
           </div>
 
           <div className="grid grid-cols-7 gap-2 mb-2">
@@ -267,7 +285,6 @@ export default function VisitsPage() {
               const isPast       = dateStr < formatDate(new Date());
               const myBookings   = bookingsOnDate(dateStr);
               const freeSlots    = isPast ? [] : slotsOnDate(dateStr);
-              const isBlocked    = blockedOnDate(dateStr);
               const hasConfirmed = myBookings.some(b => b.status === "CONFIRMED");
               const hasPending   = myBookings.some(b => b.status === "PENDING");
 
@@ -279,8 +296,6 @@ export default function VisitsPage() {
                   className={`aspect-square flex flex-col items-center justify-center rounded-2xl border transition ${isPast ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'cursor-pointer'} ${
                     isSelected
                       ? "bg-[#1A1A1A] border-[#1A1A1A] text-white"
-                      : isBlocked && !isPast
-                      ? "bg-red-50 border-red-100 text-red-300"
                       : !isPast ? "border-transparent hover:bg-gray-50 text-gray-700 font-semibold" : ""
                   } ${isToday && !isSelected ? "border-2 border-[#1A1A1A]" : ""}`}
                 >
@@ -302,10 +317,6 @@ export default function VisitsPage() {
               </h4>
               {slotsLoading ? (
                 <p className="text-xs text-gray-400">Loading slots…</p>
-              ) : blockedOnDate(selectedDate) ? (
-                <div className="flex items-center gap-2 text-xs text-red-400 font-semibold p-3 bg-red-50 rounded-xl">
-                  <AlertCircle className="w-4 h-4" /> This date is not available
-                </div>
               ) : slotsForSelectedDate.length === 0 ? (
                 <p className="text-xs text-gray-400 font-semibold">No available slots on this date</p>
               ) : (

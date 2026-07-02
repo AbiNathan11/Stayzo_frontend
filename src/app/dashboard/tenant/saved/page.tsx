@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Heart, BedDouble, Bath, Maximize2 } from 'lucide-react';
 
 interface WishlistItem {
-  id: number;
+  id: string | number;
   title: string;
   address: string;
   beds: number;
@@ -16,53 +17,75 @@ interface WishlistItem {
 }
 
 export default function SavedPropertiesPage() {
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([
-    {
-      id: 1,
-      title: "Villa in Galle",
-      address: "Galle, Sri Lanka",
-      beds: 3,
-      baths: 2,
-      sqft: 1800,
-      price: "Rs. 17,827",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: 3,
-      title: "Villa in Hapugala",
-      address: "Hapugala, Sri Lanka",
-      beds: 2,
-      baths: 2,
-      sqft: 1400,
-      price: "Rs. 49,071",
-      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: 11,
-      title: "Kandy Mountain Haven",
-      address: "Kandy, Sri Lanka",
-      beds: 4,
-      baths: 4,
-      sqft: 2800,
-      price: "Rs. 95,000",
-      image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: 12,
-      title: "Colombo Sky Villa",
-      address: "Colombo, Sri Lanka",
-      beds: 3,
-      baths: 3,
-      sqft: 2200,
-      price: "Rs. 210,000",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    }
-  ]);
+  const router = useRouter();
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleRemove = (id: number, e: React.MouseEvent) => {
+  useEffect(() => {
+    const saved = localStorage.getItem('stayzo_wishlist');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Supports legacy object array or standard ID array format
+        const idsArray = parsed.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
+        
+        // Remove legacy mock IDs
+        const mockIds = ["1", "3", "11", "12"];
+        const cleanIds = idsArray.filter((id: string) => !mockIds.includes(id));
+
+        if (cleanIds.length === 0) {
+          setWishlist([]);
+          setLoading(false);
+          return;
+        }
+
+        const fetchAll = async () => {
+          const fetchPromises = cleanIds.map(async (id: string) => {
+            try {
+              const res = await fetch(`http://localhost:3001/api/properties/${id}`);
+              if (!res.ok) return null;
+              const data = await res.json();
+              return {
+                id: data.id,
+                title: data.title,
+                address: data.address,
+                beds: data.bedrooms || 1,
+                baths: data.bathrooms || 1,
+                sqft: data.sqft || 1000,
+                price: `Rs. ${Number(data.price).toLocaleString()}`,
+                image: data.images?.[0] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80'
+              };
+            } catch (err) {
+              console.error(err);
+              return null;
+            }
+          });
+          const results = await Promise.all(fetchPromises);
+          const validResults = results.filter(Boolean) as WishlistItem[];
+          setWishlist(validResults);
+          
+          // Keep localStorage in sync with valid IDs
+          const validIds = validResults.map(item => String(item.id));
+          localStorage.setItem('stayzo_wishlist', JSON.stringify(validIds));
+          setLoading(false);
+        };
+        fetchAll();
+      } catch (e) {
+        console.error('Error parsing wishlist', e);
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleRemove = (id: string | number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setWishlist(prev => prev.filter(item => item.id !== id));
+    const updatedList = wishlist.filter(item => item.id !== id);
+    setWishlist(updatedList);
+    const updatedIds = updatedList.map(item => String(item.id));
+    localStorage.setItem('stayzo_wishlist', JSON.stringify(updatedIds));
   };
 
   return (
@@ -84,8 +107,12 @@ export default function SavedPropertiesPage() {
         </Link>
       </div>
 
-      {/* Empty State */}
-      {wishlist.length === 0 ? (
+      {/* Loading, Empty state or Card Grid */}
+      {loading ? (
+        <div className="text-center py-24 text-gray-400 font-semibold animate-pulse">
+          Loading saved properties...
+        </div>
+      ) : wishlist.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-[32px] p-16 shadow-sm text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mx-auto">
             <Heart className="w-7 h-7 text-gray-300" />
@@ -109,7 +136,8 @@ export default function SavedPropertiesPage() {
           {wishlist.map((item) => (
             <div
               key={item.id}
-              className="bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group"
+              onClick={() => router.push(`/properties/${item.id}?from=saved`)}
+              className="bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group cursor-pointer"
             >
               {/* Property Image */}
               <div className="h-[220px] w-full bg-gray-50 relative shrink-0 overflow-hidden">
@@ -162,12 +190,11 @@ export default function SavedPropertiesPage() {
                   </div>
 
                   {/* ✅ View navigates to the same detailed page as search results */}
-                  <Link
-                    href={`/properties/${item.id}`}
+                  <span
                     className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold transition duration-200 shadow-sm"
                   >
                     View
-                  </Link>
+                  </span>
                 </div>
               </div>
             </div>

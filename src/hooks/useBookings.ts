@@ -13,6 +13,19 @@ function authHeaders() {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` };
 }
 
+function handleAuthError(res: Response, data: any) {
+  if (res.status === 401 || res.status === 403) {
+    const errMsg = data && data.error ? String(data.error).toLowerCase() : '';
+    if (errMsg.includes('expired') || errMsg.includes('token') || errMsg.includes('forbidden') || errMsg.includes('unauthorized')) {
+      if (typeof window !== 'undefined') {
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth?expired=true';
+      }
+    }
+  }
+}
+
 export interface Slot {
   id: string;
   propertyId: string;
@@ -54,7 +67,10 @@ export function useTenantBookings() {
       setLoading(true);
       const res = await fetch(`${API}/api/bookings/tenant`, { headers: authHeaders() });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        handleAuthError(res, data);
+        throw new Error(data.error);
+      }
       setBookings(data);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -90,7 +106,10 @@ export async function bookSlot(slotId: string, note?: string) {
     body: JSON.stringify({ slotId, note }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -99,7 +118,10 @@ export async function cancelBookingApi(bookingId: string) {
     method: 'PATCH', headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -110,7 +132,10 @@ export async function rescheduleBookingApi(bookingId: string, newSlotId: string)
     body: JSON.stringify({ newSlotId }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -125,7 +150,11 @@ export function useOwnerBookings() {
       setLoading(true);
       const res = await fetch(`${API}/api/bookings/owner`, { headers: authHeaders() });
       const data = await res.json();
-      if (res.ok) setBookings(Array.isArray(data) ? data : []);
+      if (!res.ok) {
+        handleAuthError(res, data);
+      } else {
+        setBookings(Array.isArray(data) ? data : []);
+      }
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -146,7 +175,11 @@ export function useOwnerSlots(propertyId?: string) {
         : `${API}/api/availability/owner`;
       const res = await fetch(url, { headers: authHeaders() });
       const data = await res.json();
-      if (res.ok) setSlots(Array.isArray(data) ? data : []);
+      if (!res.ok) {
+        handleAuthError(res, data);
+      } else {
+        setSlots(Array.isArray(data) ? data : []);
+      }
     } catch {}
     finally { setLoading(false); }
   }, [propertyId]);
@@ -164,7 +197,11 @@ export function useOwnerSettings() {
       setLoading(true);
       const res = await fetch(`${API}/api/availability/settings`, { headers: authHeaders() });
       const data = await res.json();
-      if (res.ok) setSettings(data);
+      if (!res.ok) {
+        handleAuthError(res, data);
+      } else {
+        setSettings(data);
+      }
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -176,7 +213,10 @@ export function useOwnerSettings() {
       method: 'PATCH', headers: authHeaders(), body: JSON.stringify(updates)
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) {
+      handleAuthError(res, data);
+      throw new Error(data.error);
+    }
     setSettings(prev => ({ ...prev, ...data }));
   };
 
@@ -191,7 +231,10 @@ export async function createSlotApi(payload: {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(payload)
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -203,7 +246,10 @@ export async function createRecurringApi(payload: {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(payload)
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -212,7 +258,22 @@ export async function blockDatesApi(payload: { propertyId: string; startDate: st
     method: 'POST', headers: authHeaders(), body: JSON.stringify(payload)
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
+  return data;
+}
+
+export async function unblockDatesApi(payload: { propertyId: string; startDate: string; endDate?: string }) {
+  const res = await fetch(`${API}/api/availability/unblock`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -221,7 +282,10 @@ export async function deleteSlotApi(slotId: string) {
     method: 'DELETE', headers: authHeaders()
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -230,7 +294,10 @@ export async function approveBookingApi(bookingId: string) {
     method: 'PATCH', headers: authHeaders()
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }
 
@@ -239,6 +306,9 @@ export async function rejectBookingApi(bookingId: string) {
     method: 'PATCH', headers: authHeaders()
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  if (!res.ok) {
+    handleAuthError(res, data);
+    throw new Error(data.error);
+  }
   return data;
 }

@@ -9,6 +9,19 @@ function getToken() {
   return Cookies.get('stayzo_token');
 }
 
+function handleAuthError(res: Response, data: any) {
+  if (res.status === 401 || res.status === 403) {
+    const errMsg = data && data.error ? String(data.error).toLowerCase() : '';
+    if (errMsg.includes('expired') || errMsg.includes('token') || errMsg.includes('forbidden') || errMsg.includes('unauthorized')) {
+      if (typeof window !== 'undefined') {
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth?expired=true';
+      }
+    }
+  }
+}
+
 export interface AppNotification {
   id: string;
   title: string;
@@ -35,6 +48,8 @@ export function useNotifications() {
       if (res.ok) {
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
+      } else {
+        handleAuthError(res, data);
       }
     } catch {}
     finally { setLoading(false); }
@@ -50,23 +65,33 @@ export function useNotifications() {
   const markAllRead = async () => {
     const token = getToken();
     if (!token) return;
-    await fetch(`${API}/api/notifications/read-all`, {
+    const res = await fetch(`${API}/api/notifications/read-all`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     });
-    setUnreadCount(0);
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    const data = await res.json();
+    if (res.ok) {
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } else {
+      handleAuthError(res, data);
+    }
   };
 
   const markOneRead = async (id: string) => {
     const token = getToken();
     if (!token) return;
-    await fetch(`${API}/api/notifications/${id}/read`, {
+    const res = await fetch(`${API}/api/notifications/${id}/read`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     });
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    const data = await res.json();
+    if (res.ok) {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } else {
+      handleAuthError(res, data);
+    }
   };
 
   return { notifications, unreadCount, loading, refresh: fetch_, markAllRead, markOneRead };
