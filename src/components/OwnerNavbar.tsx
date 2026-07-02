@@ -62,6 +62,7 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
     if (type === 'booking_confirmed') return '✅';
     if (type === 'booking_cancelled') return '❌';
     if (type === 'booking_request')   return '📅';
+    if (type === 'booking_reminder')  return '⏰';
     return '🔔';
   };
 
@@ -129,6 +130,7 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
               onClick={() => setShowNotifications(v => !v)}
               className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#EEF2FF] transition-colors group"
               aria-label="Notifications"
+              suppressHydrationWarning={true}
             >
               <Bell className="w-5 h-5 text-[#1A1A1A] group-hover:text-[#4F46E5] transition-colors" />
               {unreadCount > 0 && (
@@ -204,6 +206,7 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
             <button
               onClick={() => setShowProfileMenu(v => !v)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-[#1A1A1A] text-white text-xs font-bold uppercase hover:scale-105 active:scale-95 transition-all shrink-0"
+              suppressHydrationWarning={true}
             >
               {user?.profileImage ? (
                 <img src={user.profileImage} alt="Profile" className="w-8 h-8 rounded-full object-cover shrink-0" />

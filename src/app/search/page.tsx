@@ -121,13 +121,34 @@ function SearchContent() {
       });
   }, [searchParams]);
 
-  const handleBookmarkToggle = (id: string, e: React.MouseEvent) => {
+  useEffect(() => {
+    try {
+      const wishlist = JSON.parse(localStorage.getItem('stayzo_wishlist') || '[]');
+      const idsArray = wishlist.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
+      setBookmarkedIds(idsArray);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const handleBookmarkToggle = (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (bookmarkedIds.includes(id)) {
-      setBookmarkedIds(bookmarkedIds.filter(bId => bId !== id));
-    } else {
-      setBookmarkedIds([...bookmarkedIds, id]);
+    try {
+      const wishlist = JSON.parse(localStorage.getItem('stayzo_wishlist') || '[]');
+      const idsArray = wishlist.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
+      const idStr = String(id);
+      let updated;
+      if (idsArray.includes(idStr)) {
+        updated = idsArray.filter((bId: string) => bId !== idStr);
+        setBookmarkedIds(prev => prev.filter(bId => bId !== idStr));
+      } else {
+        updated = [...idsArray, idStr];
+        setBookmarkedIds(prev => [...prev, idStr]);
+      }
+      localStorage.setItem('stayzo_wishlist', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -365,7 +386,7 @@ function SearchContent() {
                       onClick={(e) => handleBookmarkToggle(listing.id, e)}
                       className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/10 hover:bg-black/25 backdrop-blur-xs transition"
                     >
-                      <Heart className={`w-4 h-4 transition-colors ${bookmarkedIds.includes(listing.id) ? 'fill-[#1A1A1A] stroke-white' : 'fill-transparent stroke-white'}`} />
+                      <Heart className={`w-4 h-4 transition-colors ${bookmarkedIds.includes(String(listing.id)) ? 'fill-red-500 stroke-red-500' : 'fill-transparent stroke-white'}`} />
                     </button>
                   </div>
 

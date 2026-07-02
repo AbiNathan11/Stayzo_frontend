@@ -536,6 +536,7 @@ export default function LandingPage() {
               {/* Location Dropdown */}
               <div className="relative flex-1 w-full">
                 <button
+                  suppressHydrationWarning={true}
                   onClick={() => setOpenDropdown(openDropdown === 'location' ? null : 'location')}
                   className="w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start focus:outline-none"
                 >
@@ -560,6 +561,7 @@ export default function LandingPage() {
               {/* Property Type Dropdown */}
               <div className="relative flex-1 w-full">
                 <button
+                  suppressHydrationWarning={true}
                   onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
                   className="w-full px-6 py-2 border-r border-transparent sm:border-gray-100 flex flex-col items-start focus:outline-none"
                 >
@@ -584,6 +586,7 @@ export default function LandingPage() {
               {/* Budget Dropdown */}
               <div className="relative flex-1 w-full">
                 <button
+                  suppressHydrationWarning={true}
                   onClick={() => setOpenDropdown(openDropdown === 'budget' ? null : 'budget')}
                   className="w-full px-6 py-2 flex flex-col items-start focus:outline-none"
                 >
@@ -607,6 +610,7 @@ export default function LandingPage() {
 
               {/* Search Button */}
               <button
+                suppressHydrationWarning={true}
                 onClick={handleSearch}
                 className="bg-[#4F46E5] hover:bg-[#4338CA] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-md transition shrink-0 active:scale-95 cursor-pointer"
               >
@@ -720,6 +724,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-20">
             <div className="bg-[#F8FAFB] p-1.5 rounded-full flex items-center space-x-1">
               <button
+                suppressHydrationWarning={true}
                 onClick={() => setWorksTab('tenant')}
                 className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${worksTab === 'tenant'
                     ? 'bg-[#4F46E5] text-white shadow-md shadow-indigo-500/10'
@@ -729,6 +734,7 @@ export default function LandingPage() {
                 For Tenants
               </button>
               <button
+                suppressHydrationWarning={true}
                 onClick={() => setWorksTab('landlord')}
                 className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${worksTab === 'landlord'
                     ? 'bg-[#1A1A1A] text-white shadow-md'
@@ -1075,6 +1081,7 @@ export default function LandingPage() {
               <form onSubmit={handleContactSubmit} className="space-y-8">
                 <div>
                   <input
+                    suppressHydrationWarning={true}
                     type="text"
                     placeholder="Full name *"
                     required
@@ -1086,6 +1093,7 @@ export default function LandingPage() {
 
                 <div>
                   <input
+                    suppressHydrationWarning={true}
                     type="email"
                     placeholder="Email *"
                     required
@@ -1097,6 +1105,7 @@ export default function LandingPage() {
 
                 <div>
                   <input
+                    suppressHydrationWarning={true}
                     type="text"
                     placeholder="Subject"
                     value={contactForm.subject}
@@ -1107,6 +1116,7 @@ export default function LandingPage() {
 
                 <div>
                   <textarea
+                    suppressHydrationWarning={true}
                     placeholder="Message *"
                     required
                     value={contactForm.message}
@@ -1118,6 +1128,7 @@ export default function LandingPage() {
 
                 <div className="pt-4">
                   <button
+                    suppressHydrationWarning={true}
                     type="submit"
                     className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-6 py-3 rounded-full text-xs font-extrabold shadow-sm transition active:scale-95"
                   >

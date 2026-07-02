@@ -31,20 +31,34 @@ export default function TenantAuth() {
       const isLandlordUrl = urlRole === 'landlord';
       setRole(isLandlordUrl ? 'landlord' : 'tenant');
 
+      const expiredParam = params.get('expired');
+      if (expiredParam === 'true') {
+        toast.error('Your session has expired. Please verify your email again.');
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        return;
+      }
+
       const token = Cookies.get('stayzo_token');
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          if (payload.isOwner) {
-            window.location.href = '/dashboard/owners';
-          } else if (isLandlordUrl) {
-            setIsUpgrading(true);
-            setMode('signup');
-            setFirstName(payload.firstName || '');
-            setLastName(payload.lastName || '');
-            setEmail(payload.email || '');
+          const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+          if (isExpired) {
+            Cookies.remove('stayzo_token');
+            Cookies.remove('stayzo_refresh_token');
           } else {
-            window.location.href = '/dashboard/tenant';
+            if (payload.isOwner) {
+              window.location.href = '/dashboard/owners';
+            } else if (isLandlordUrl) {
+              setIsUpgrading(true);
+              setMode('signup');
+              setFirstName(payload.firstName || '');
+              setLastName(payload.lastName || '');
+              setEmail(payload.email || '');
+            } else {
+              window.location.href = '/dashboard/tenant';
+            }
           }
         } catch (e) {
           console.error(e);

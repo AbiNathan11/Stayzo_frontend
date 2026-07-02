@@ -2,6 +2,7 @@
 import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import {
   Calendar, Clock, Plus, Trash2, Check, X, Settings,
   RefreshCw, CalendarOff, ChevronLeft, ChevronRight,
@@ -10,7 +11,7 @@ import {
 } from "lucide-react";
 import {
   useOwnerBookings, useOwnerSlots, useOwnerSettings,
-  createSlotApi, createRecurringApi, blockDatesApi,
+  createSlotApi, createRecurringApi, blockDatesApi, unblockDatesApi,
   deleteSlotApi, approveBookingApi, rejectBookingApi, cancelBookingApi,
   Booking, Slot
 } from "@/hooks/useBookings";
@@ -45,7 +46,6 @@ export default function OwnerAppointmentsPage() {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
-  const [toast, setToast] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -104,16 +104,26 @@ export default function OwnerAppointmentsPage() {
   const { settings, loading: settingsLoading, updateSettings } = useOwnerSettings();
 
   const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3500);
+    if (msg.startsWith("✅")) {
+      toast.success(msg.replace("✅", "").trim());
+    } else if (msg.startsWith("❌")) {
+      toast.error(msg.replace("❌", "").trim());
+    } else {
+      toast(msg);
+    }
   };
 
   // Calendar helpers
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-  // Safely extract YYYY-MM-DD from a UTC ISO date string
-  const slotDateStr = (isoDate: string | undefined) => (isoDate ?? "").slice(0, 10);
+  // Parse slot date in local timezone to avoid off-by-one calendar shifts
+  const slotDateStr = (isoDate: string | undefined) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   const slotsForDate = (dateStr: string) =>
     slots.filter(s => !s.isBlocked && slotDateStr(s.date) === dateStr);
@@ -129,12 +139,19 @@ export default function OwnerAppointmentsPage() {
   const handleCreateSlot = async () => {
     if (!newSlot.propertyId) return showToast("Select a property first");
 
+    // Validate start and end times
+    const [startH, startM] = newSlot.startTime.split(":").map(Number);
+    const [endH, endM] = newSlot.endTime.split(":").map(Number);
+    if (endH * 60 + endM <= startH * 60 + startM) {
+      setErrorMessage("End Time must be after Start Time. Note: Browser time inputs are in 24-hour format (e.g. 20:00 for 8:00 PM).");
+      return;
+    }
+
     // Prevent creating slots in the past
     const now = new Date();
     if (newSlot.date === formatDate(now)) {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const [h, m] = newSlot.startTime.split(":").map(Number);
-      if (h * 60 + m <= currentMinutes) {
+      if (startH * 60 + startM <= currentMinutes) {
         setErrorMessage("Cannot create availability in the past");
         return;
       }
@@ -142,7 +159,11 @@ export default function OwnerAppointmentsPage() {
 
     setActionLoading("create");
     try {
-      await createSlotApi(newSlot);
+      const res = await createSlotApi(newSlot);
+      if (res.slots && res.slots.length === 0) {
+        setErrorMessage("No slots were created. Please verify that the slot duration and buffer fit between the Start Time and End Time.");
+        return;
+      }
       setSuccessMessage("Slots created successfully!");
       refreshSlots();
       setShowCreateModal(false);
@@ -152,9 +173,22 @@ export default function OwnerAppointmentsPage() {
 
   const handleCreateRecurring = async () => {
     if (!recurringForm.propertyId) return showToast("Select a property first");
+
+    // Validate start and end times
+    const [startH, startM] = recurringForm.startTime.split(":").map(Number);
+    const [endH, endM] = recurringForm.endTime.split(":").map(Number);
+    if (endH * 60 + endM <= startH * 60 + startM) {
+      setErrorMessage("End Time must be after Start Time. Note: Browser time inputs are in 24-hour format (e.g. 16:00 for 4:00 PM).");
+      return;
+    }
+
     setActionLoading("recurring");
     try {
       const res = await createRecurringApi(recurringForm);
+      if (res.slots && res.slots.length === 0) {
+        setErrorMessage("No recurring slots were created. Please verify that the slot duration and buffer fit between the Start Time and End Time.");
+        return;
+      }
       setSuccessMessage(res.message || "Recurring availability created successfully!");
       refreshSlots();
       setShowCreateModal(false);
@@ -170,6 +204,20 @@ export default function OwnerAppointmentsPage() {
       showToast(`✅ ${res.message}`);
       refreshSlots();
       setShowCreateModal(false);
+    } catch (e: any) { showToast(`❌ ${e.message}`); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleUnblockDate = async () => {
+    if (!blockForm.propertyId) return showToast("Select a property first");
+    setActionLoading("unblock");
+    try {
+      const res = await unblockDatesApi({
+        propertyId: blockForm.propertyId,
+        startDate: selectedDate
+      });
+      showToast(`✅ ${res.message}`);
+      refreshSlots();
     } catch (e: any) { showToast(`❌ ${e.message}`); }
     finally { setActionLoading(null); }
   };
@@ -219,12 +267,7 @@ export default function OwnerAppointmentsPage() {
 
   return (
     <div className="animate-in fade-in duration-300 space-y-6">
-          {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#4F46E5] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
-          {toast}
-        </div>
-      )}
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -235,7 +278,7 @@ export default function OwnerAppointmentsPage() {
           </p>
         </div>
         <button
-          onClick={() => { setShowCreateModal(true); setCreateMode("single"); }}
+          onClick={() => { setNewSlot(f => ({ ...f, date: selectedDate })); setShowCreateModal(true); setCreateMode("single"); }}
           className="flex items-center gap-2 bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Availability
@@ -421,13 +464,23 @@ export default function OwnerAppointmentsPage() {
               >
                 <RefreshCw className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-emerald-500'}`} /> Set Recurring Availability
               </button>
-              <button
-                disabled={isPastSelected}
-                onClick={() => { setBlockForm(f => ({ ...f, startDate: selectedDate })); setShowCreateModal(true); setCreateMode("block"); }}
-                className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition cursor-pointer ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
-              >
-                <CalendarOff className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-red-400'}`} /> Block This Date
-              </button>
+              {blockedOnDate(selectedDate) ? (
+                <button
+                  disabled={isPastSelected || actionLoading === "unblock"}
+                  onClick={handleUnblockDate}
+                  className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition cursor-pointer ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Calendar className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-emerald-500'}`} /> Unblock This Date
+                </button>
+              ) : (
+                <button
+                  disabled={isPastSelected}
+                  onClick={() => { setBlockForm(f => ({ ...f, startDate: selectedDate })); setShowCreateModal(true); setCreateMode("block"); }}
+                  className={`flex items-center gap-2 w-full p-3 bg-white border border-gray-200 rounded-2xl text-xs font-bold transition cursor-pointer ${isPastSelected ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <CalendarOff className={`w-4 h-4 ${isPastSelected ? 'text-gray-300' : 'text-red-400'}`} /> Block This Date
+                </button>
+              )}
             </div>
           </div>
         </div>
