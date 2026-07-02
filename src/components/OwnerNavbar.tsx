@@ -62,6 +62,7 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
     if (type === 'booking_confirmed') return '✅';
     if (type === 'booking_cancelled') return '❌';
     if (type === 'booking_request')   return '📅';
+    if (type === 'booking_reminder')  return '⏰';
     return '🔔';
   };
 
