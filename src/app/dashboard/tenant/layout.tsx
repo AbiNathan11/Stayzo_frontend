@@ -189,7 +189,7 @@ export default function TenantDashboardLayout({
                           }`}
                         >
                           <span className="text-base shrink-0 mt-0.5">
-                            {n.type === 'booking_confirmed' ? '✅' : n.type === 'booking_cancelled' ? '❌' : n.type === 'booking_request' ? '📅' : '🔔'}
+                            {n.type === 'booking_confirmed' ? '✅' : n.type === 'booking_cancelled' ? '❌' : n.type === 'booking_request' ? '📅' : n.type === 'booking_reminder' ? '⏰' : '🔔'}
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className={`text-xs font-bold truncate ${!n.isRead ? 'text-[#1A1A1A]' : 'text-gray-600'}`}>
