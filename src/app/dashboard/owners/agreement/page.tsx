@@ -78,7 +78,9 @@ const AGREEMENT_TEMPLATES: AgreementTemplate[] = [
       { id: 'tenantEmail', label: 'Tenant Email Address', question: "What is the Tenant's Registered Email Address?", placeholder: 'e.g. tenant@example.com' },
       { id: 'propertyAddress', label: 'Property Address', question: 'What is the full address of the rental property?', placeholder: 'e.g. Sunset Apartments, Apt 402, Harbor Side' },
       { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 30,000 / month' },
-      { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' }
+      { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' },
+      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease term?', placeholder: 'e.g. 6 Months' },
+      { id: 'endDate', label: 'Lease End Date', question: 'What is the lease end date?', placeholder: 'e.g. December 1, 2026' }
     ],
     generateText: (values) => `SIMPLE TENANCY AGREEMENT
 
@@ -98,9 +100,11 @@ The Tenant agrees to pay a Monthly Rent of:
 RENT: ${values.rentAmount || '___________________________'}
 payable on the first day of each calendar month.
 
-4. START DATE:
+4. START DATE, END DATE & DURATION:
 The tenancy commences on the following start date:
 START DATE: ${values.startDate || '___________________________'}
+LEASE DURATION: ${values.duration || '___________________________'}
+LEASE END DATE: ${values.endDate || '___________________________'}
 
 5. AGREEMENT TERMS:
 The Tenant agrees to maintain the property in a clean state and hand it back in the same condition at the end of the tenancy.
@@ -123,7 +127,8 @@ Signature                                Signature`
       { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 45,000 / month' },
       { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. Rs 90,000' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the start date of the lease?', placeholder: 'e.g. June 1, 2026' },
-      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease term?', placeholder: 'e.g. 12 months' },
+      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease term?', placeholder: 'e.g. 12 Months' },
+      { id: 'endDate', label: 'Lease End Date', question: 'What is the lease end date?', placeholder: 'e.g. May 31, 2027' },
       { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 2 months rent (Rs 90,000)' }
     ],
     generateText: (values) => `STANDARD LEASE AGREEMENT
@@ -136,7 +141,7 @@ TENANT Email: ${values.tenantEmail || '___________________________'}
 1. PREMISES: Landlord hereby leases to Tenant the real property located at:
 PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
 
-2. LEASE TERM: The lease shall commence on ${values.startDate || '___________'} and shall remain in effect for a period of ${values.duration || '___________'}.
+2. LEASE TERM: The lease shall commence on ${values.startDate || '___________'}, run for a period of ${values.duration || '___________'}, and expire on ${values.endDate || '___________'}.
 
 3. PAYMENT OF RENT: Tenant agrees to pay monthly rent in the amount of ${values.rentAmount || '___________'} on or before the first day of each calendar month.
 
@@ -166,7 +171,8 @@ Signature                                Signature`
       { id: 'rentAmount', label: 'Monthly Rent', question: 'What is the monthly rent amount (including currency)?', placeholder: 'e.g. Rs 60,000 / month' },
       { id: 'depositAmount', label: 'Security Deposit', question: 'What is the security deposit amount?', placeholder: 'e.g. Rs 120,000' },
       { id: 'startDate', label: 'Lease Start Date', question: 'What is the lease start date?', placeholder: 'e.g. June 1, 2026' },
-      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 months' },
+      { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 Months' },
+      { id: 'endDate', label: 'Lease End Date', question: 'What is the lease end date?', placeholder: 'e.g. May 31, 2027' },
       { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 3 months rent (Rs 180,000)' },
       { id: 'utilities', label: 'Utilities Terms', question: 'Who is responsible for utility payments (water, electricity, gas, internet)?', placeholder: 'e.g. Tenant pays electricity and water; Landlord pays gas and internet.' },
       { id: 'petPolicy', label: 'Pet Policy', question: 'What is the policy regarding pets in the property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a Rs 20,000 pet fee; no aggressive breeds.' },
@@ -185,7 +191,7 @@ Landlord leases to Tenant the premises located at:
 PROPERTY ADDRESS: ${values.propertyAddress || '___________________________'}
 
 2. DURATION & TERM:
-The lease commences on ${values.startDate || '___________'} and runs for a term of ${values.duration || '___________'}.
+The lease commences on ${values.startDate || '___________'}, runs for a term of ${values.duration || '___________'}, and expires on ${values.endDate || '___________'}.
 
 3. MONTHLY RENT:
 Rent is set at ${values.rentAmount || '___________'} per month, due in advance on the 1st day of the month.
@@ -774,6 +780,12 @@ export default function OwnerAgreementPage() {
       }
     }
 
+    if (fieldId === 'endDate') {
+      if (trimmed.length < 4) {
+        return "Please enter a valid lease end date (e.g., December 1, 2026).";
+      }
+    }
+
     return null;
   };
 
@@ -1291,8 +1303,8 @@ export default function OwnerAgreementPage() {
           </p>
 
           <p className="text-[13px] md:text-[14px]">
-            <strong>3. COMMENCEMENT DATE:</strong> <br />
-            This tenancy will officially begin on {getFieldSpan('startDate', 'Start Date')}.
+            <strong>3. COMMENCEMENT DATE, DURATION & END DATE:</strong> <br />
+            This tenancy commences on {getFieldSpan('startDate', 'Start Date')}, for a lease term/duration of {getFieldSpan('duration', 'Lease Duration')}, and terminates on {getFieldSpan('endDate', 'Lease End Date')}.
           </p>
 
           <p className="text-[13px] md:text-[14px] italic text-gray-500">
@@ -1331,9 +1343,9 @@ export default function OwnerAgreementPage() {
             <strong>PROPERTY ADDRESS:</strong> {getFieldSpan('propertyAddress', 'Property Address')}
           </p>
 
-          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">2. LEASE DURATION</p>
+          <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">2. LEASE DURATION & TERM</p>
           <p className="text-[13px] md:text-[14px]">
-            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')} and shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}.
+            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')}, shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}, and shall expire on {getFieldSpan('endDate', 'Lease End Date')}.
           </p>
 
           <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">3. MONTHLY RENT</p>
@@ -1385,7 +1397,7 @@ export default function OwnerAgreementPage() {
 
           <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">2. DURATION & TERM</p>
           <p className="text-[13px] md:text-[14px]">
-            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')} and shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}.
+            The term of this lease shall commence on {getFieldSpan('startDate', 'Start Date')}, shall remain in effect for a period of {getFieldSpan('duration', 'Lease Duration')}, and shall expire on {getFieldSpan('endDate', 'Lease End Date')}.
           </p>
 
           <p className="clause-title font-bold text-[12px] uppercase text-[#1A1A1A] tracking-wider mt-5">3. PAYMENT OF MONTHLY RENT</p>
