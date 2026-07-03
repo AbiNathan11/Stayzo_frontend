@@ -536,7 +536,7 @@ export default function StartListingPage() {
 
           if (res.ok) {
             localStorage.removeItem('stayzo_listing_draft');
-            toast.success("Listing submitted successfully! Images have been saved to Cloudinary.");
+            toast.success("Listing submitted successfully! Images have been saved to AWS S3.");
             router.push("/dashboard/owners/listings");
           } else {
             const errData = await res.json();
