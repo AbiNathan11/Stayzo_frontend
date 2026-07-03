@@ -67,8 +67,8 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
   };
 
   const handleLogout = () => {
-    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
-    window.location.href = '/auth?role=landlord';
+    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');
+    window.location.replace('/auth?role=landlord');
   };
 
   const handleProfileSuccess = (updatedUser: UserProfile) => {

@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Cookies from 'js-cookie';
 import OwnerNavbar from '@/components/OwnerNavbar';
 
 export default function OwnerDashboardLayout({
@@ -10,6 +11,28 @@ export default function OwnerDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = Cookies.get('stayzo_token');
+      if (!token) {
+        window.location.replace('/auth?role=landlord');
+      }
+    };
+
+    checkAuth();
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
 
   if (pathname.includes('/start_listing')) {
     return <>{children}</>;
