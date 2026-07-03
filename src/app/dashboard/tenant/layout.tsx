@@ -25,47 +25,62 @@ export default function TenantDashboardLayout({
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
 
   useEffect(() => {
-    const token = Cookies.get('stayzo_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const email = payload.email || 'abiramy@example.com';
-        setUser({
-          firstName: payload.firstName || 'Abiramy',
-          lastName: payload.lastName || '',
-          email: email,
-          profileImage: payload.profileImage || null,
-          isOwner: !!payload.isOwner
-        });
+    const checkAuth = () => {
+      const token = Cookies.get('stayzo_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const email = payload.email || 'abiramy@example.com';
+          setUser({
+            firstName: payload.firstName || 'Abiramy',
+            lastName: payload.lastName || '',
+            email: email,
+            profileImage: payload.profileImage || null,
+            isOwner: !!payload.isOwner
+          });
 
-        // Live refresh from DB
-        fetch(`http://localhost:3001/api/auth/profile/${email}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.user) {
-              setUser(prev => ({
-                ...prev!,
-                firstName: data.user.firstName || prev?.firstName || 'Abiramy',
-                profileImage: data.user.profileImage || null
-              }));
+          // Live refresh from DB
+          fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
             }
           })
-          .catch(err => console.warn("Live profile fetch issue:", err));
-      } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
+            .then(res => res.json())
+            .then(data => {
+              if (data.user) {
+                setUser(prev => ({
+                  ...prev!,
+                  firstName: data.user.firstName || prev?.firstName || 'Abiramy',
+                  profileImage: data.user.profileImage || null
+                }));
+              }
+            })
+            .catch(err => console.warn("Live profile fetch issue:", err));
+        } catch (e) {
+          window.location.replace('/auth?role=tenant');
+        }
+      } else {
+        window.location.replace('/auth?role=tenant');
       }
-    } else {
-      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
-    }
+    };
+    
+    checkAuth();
+    
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, []);
 
   const handleLogout = () => {
-    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
-    window.location.href = '/';
+    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');
+    window.location.replace('/');
   };
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
