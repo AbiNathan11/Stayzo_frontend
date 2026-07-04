@@ -200,6 +200,7 @@ export default function Navbar({ searchQuery = '', setSearchQuery }: NavbarProps
                 onKeyDown={handleKeyDown}
                 placeholder="Search properties..."
                 className="w-full bg-[#F5F7F8] border border-gray-150 text-[10px] sm:text-xs font-semibold text-gray-700 pl-7 sm:pl-8 pr-2 sm:pr-3 py-1.5 sm:py-2 rounded-full outline-none focus:ring-1 focus:ring-[#1A1A1A] transition shadow-inner"
+                suppressHydrationWarning={true}
               />
               <Search className="w-3 h-3 text-gray-400 absolute left-2.5 top-[9px] sm:top-[10px]" />
             </div>
