@@ -87,8 +87,8 @@ export default function TenantDashboardLayout({
   }, []);
 
   const handleLogout = () => {
-    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
-    window.location.href = '/';
+    Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');
+    window.location.replace('/');
   };
 
   if (!user) {
