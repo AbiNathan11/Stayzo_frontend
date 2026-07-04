@@ -199,6 +199,7 @@ export default function TenantOverviewPage() {
   const [editImage, setEditImage] = useState<string | null>(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [stats, setStats] = useState<{ activeBookings: number; pendingVisits: number; unreadMessages: number } | null>(null);
 
   // Agreement States
   const [agreements, setAgreements] = useState<any[]>([]);
@@ -220,14 +221,20 @@ export default function TenantOverviewPage() {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        const email = payload.email || 'abiramy@example.com';
+        const email = payload.email || '';
+        if (!email) {
+          Cookies.remove('stayzo_token');
+          Cookies.remove('stayzo_refresh_token');
+          window.location.href = '/auth';
+          return;
+        }
         setUser({
-          firstName: payload.firstName || 'Abiramy',
+          firstName: payload.firstName || 'User',
           lastName: payload.lastName || '',
           email: email,
           profileImage: payload.profileImage || null
         });
-        setEditFirstName(payload.firstName || 'Abiramy');
+        setEditFirstName(payload.firstName || 'User');
         setEditLastName(payload.lastName || '');
 
         // Fetch live agreements from database
@@ -240,26 +247,42 @@ export default function TenantOverviewPage() {
             'Authorization': `Bearer ${token}`
           }
         })
-          .then(res => res.json())
+          .then(res => {
+            if (res.status === 401 || res.status === 404) {
+              Cookies.remove('stayzo_token');
+              Cookies.remove('stayzo_refresh_token');
+              window.location.href = '/auth';
+              throw new Error('Session invalid, logged out');
+            }
+            return res.json();
+          })
           .then(data => {
             if (data.user) {
               setUser(prev => ({
                 ...prev!,
-                firstName: data.user.firstName || prev?.firstName || 'Abiramy',
+                firstName: data.user.firstName || prev?.firstName || 'User',
                 lastName: data.user.lastName || prev?.lastName || '',
                 profileImage: data.user.profileImage || null
               }));
-              setEditFirstName(data.user.firstName || 'Abiramy');
+              setEditFirstName(data.user.firstName || 'User');
               setEditLastName(data.user.lastName || '');
               setEditImage(data.user.profileImage || null);
             }
+            if (data.stats && data.stats.tenant) {
+              setStats(data.stats.tenant);
+            }
           })
-          .catch(err => console.warn("Live profile fetch issue:", err));
+          .catch(err => {
+            console.warn("Live profile fetch issue:", err);
+            // Fallback: trust token payload if offline/DB issue
+          });
       } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth';
       }
     } else {
-      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+      window.location.href = '/auth';
     }
 
     if (typeof window !== 'undefined') {
@@ -384,7 +407,9 @@ export default function TenantOverviewPage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Active Booking</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">1</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.activeBookings : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#4F46E5] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -399,7 +424,9 @@ export default function TenantOverviewPage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Pending Visits</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">2</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.pendingVisits : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#10B981] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -414,7 +441,9 @@ export default function TenantOverviewPage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Unread Msg</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">3</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.unreadMessages : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#F59E0B] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -480,28 +509,6 @@ export default function TenantOverviewPage() {
                       )}
                     </>
                   )}
-                </div>
-              </div>
-
-              {/* Verified KYC */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Identity (KYC)</h3>
-                </div>
-                <div className="flex items-center justify-between p-5 bg-[#EEF2FF] text-[#1A1A1A] rounded-2xl border border-indigo-100/70 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
-                  <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-12 h-12 rounded-full bg-[#4F46E5]/10 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-6 h-6 text-[#4F46E5]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-extrabold text-[#1A1A1A]">National ID Card (NIC)</h4>
-                      <p className="text-xs text-gray-500 mt-1 font-semibold">Verified & Secure</p>
-                    </div>
-                  </div>
-                  <div className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white text-[#4F46E5] border border-indigo-100 shadow-sm hover:scale-105 transition cursor-pointer">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
                 </div>
               </div>
             </div>

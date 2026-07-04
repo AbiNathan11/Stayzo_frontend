@@ -18,7 +18,7 @@ export default function TenantDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<UserProfile & { isOwner?: boolean }>({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+  const [user, setUser] = useState<UserProfile & { isOwner?: boolean } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -29,9 +29,15 @@ export default function TenantDashboardLayout({
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        const email = payload.email || 'abiramy@example.com';
+        const email = payload.email || '';
+        if (!email) {
+          Cookies.remove('stayzo_token');
+          Cookies.remove('stayzo_refresh_token');
+          window.location.href = '/auth';
+          return;
+        }
         setUser({
-          firstName: payload.firstName || 'Abiramy',
+          firstName: payload.firstName || 'User',
           lastName: payload.lastName || '',
           email: email,
           profileImage: payload.profileImage || null,
@@ -44,22 +50,39 @@ export default function TenantDashboardLayout({
             'Authorization': `Bearer ${token}`
           }
         })
-          .then(res => res.json())
+          .then(res => {
+            if (res.status === 401 || res.status === 404) {
+              Cookies.remove('stayzo_token');
+              Cookies.remove('stayzo_refresh_token');
+              window.location.href = '/auth';
+              throw new Error('Session invalid, logged out');
+            }
+            return res.json();
+          })
           .then(data => {
             if (data.user) {
               setUser(prev => ({
                 ...prev!,
-                firstName: data.user.firstName || prev?.firstName || 'Abiramy',
+                firstName: data.user.firstName || prev?.firstName || 'User',
                 profileImage: data.user.profileImage || null
               }));
+            } else if (data.error) {
+              Cookies.remove('stayzo_token');
+              Cookies.remove('stayzo_refresh_token');
+              window.location.href = '/auth';
             }
           })
-          .catch(err => console.warn("Live profile fetch issue:", err));
+          .catch(err => {
+            console.warn("Live profile fetch issue:", err);
+            // Fallback: keep user if token is parsed successfully
+          });
       } catch (e) {
-        setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth';
       }
     } else {
-      setUser({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com', isOwner: false });
+      window.location.href = '/auth';
     }
   }, []);
 
@@ -67,6 +90,15 @@ export default function TenantDashboardLayout({
     Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');;
     window.location.href = '/';
   };
+
+  if (!user) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white animate-in fade-in duration-300">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 
