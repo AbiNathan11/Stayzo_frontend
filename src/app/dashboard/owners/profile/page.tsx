@@ -12,7 +12,8 @@ import {
   UploadCloud, 
   Star, 
   ArrowRight,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import toast, { Toaster } from 'react-hot-toast';
@@ -28,9 +29,11 @@ interface Review {
 }
 
 export default function OwnerProfilePage() {
-  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
+  const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null; nicFront?: string | null; nicBack?: string | null } | null>(null);
   const [agreements, setAgreements] = useState<any[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [showNicModal, setShowNicModal] = useState(false);
+  const [stats, setStats] = useState<{ activeListings: number; pendingVisits: number; unreadMessages: number } | null>(null);
 
   const fetchAgreements = async (email: string) => {
     try {
@@ -100,7 +103,9 @@ export default function OwnerProfilePage() {
           firstName,
           lastName,
           email,
-          profileImage: payload.profileImage || null
+          profileImage: payload.profileImage || null,
+          nicFront: payload.nicFront || null,
+          nicBack: payload.nicBack || null
         });
 
         fetchAgreements(email);
@@ -121,9 +126,14 @@ export default function OwnerProfilePage() {
                 ...prev!,
                 firstName: liveFirst,
                 lastName: data.user.lastName || prev?.lastName || '',
-                profileImage: data.user.profileImage || null
+                profileImage: data.user.profileImage || null,
+                nicFront: data.user.nicFront || null,
+                nicBack: data.user.nicBack || null
               }));
               fetchReviews(liveFirst);
+            }
+            if (data.stats && data.stats.owner) {
+              setStats(data.stats.owner);
             }
           })
           .catch(err => console.warn("Live profile fetch issue:", err));
@@ -157,7 +167,9 @@ export default function OwnerProfilePage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Active Listings</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">1</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.activeListings : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#4F46E5] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -172,7 +184,9 @@ export default function OwnerProfilePage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Pending Visits</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">2</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.pendingVisits : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#10B981] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -187,7 +201,9 @@ export default function OwnerProfilePage() {
             </div>
             <div>
               <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Unread Msg</p>
-              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">3</h3>
+              <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-none">
+                {stats ? stats.unreadMessages : 0}
+              </h3>
             </div>
           </div>
           <ArrowRight className="w-4.5 h-4.5 text-gray-300 group-hover:text-[#F59E0B] transition-all duration-300 transform group-hover:translate-x-1" />
@@ -253,18 +269,29 @@ export default function OwnerProfilePage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Identity (KYC)</h3>
                 </div>
-                <div className="flex items-center justify-between p-5 bg-[#EEF2FF] text-[#1A1A1A] rounded-2xl border border-indigo-100/70 shadow-sm relative overflow-hidden">
+                <div 
+                  onClick={() => {
+                    if (user?.nicFront || user?.nicBack) {
+                      setShowNicModal(true);
+                    } else {
+                      toast.error("No digital NIC copies attached to your profile.");
+                    }
+                  }}
+                  className="group flex items-center justify-between p-5 bg-[#EEF2FF] text-[#1A1A1A] rounded-2xl border border-indigo-100/70 shadow-sm relative overflow-hidden cursor-pointer hover:bg-[#E0E7FF] transition duration-300"
+                >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#4F46E5]/5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
                   <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-12 h-12 rounded-full bg-[#4F46E5]/10 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-[#4F46E5]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition duration-300">
                       <ShieldCheck className="w-6 h-6 text-[#4F46E5]" />
                     </div>
                     <div>
                       <h4 className="text-sm font-extrabold text-[#1A1A1A]">National ID Card (NIC)</h4>
-                      <p className="text-xs text-gray-500 mt-1 font-semibold">Verified & Secure</p>
+                      <p className="text-xs text-gray-500 mt-1 font-semibold">
+                        {user?.nicFront || user?.nicBack ? "Click to view secure documents" : "No documents attached"}
+                      </p>
                     </div>
                   </div>
-                  <div className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white text-[#4F46E5] border border-indigo-100 shadow-sm hover:scale-105 transition cursor-pointer">
+                  <div className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white text-[#4F46E5] border border-indigo-100 shadow-sm group-hover:translate-x-1 transition duration-300">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -325,6 +352,94 @@ export default function OwnerProfilePage() {
         </div>
 
       </div>
+
+      {/* NIC Documents Modal */}
+      {showNicModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div 
+            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh] animate-in scale-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900">National ID Card (NIC)</h3>
+                  <p className="text-xs text-gray-500 font-semibold">Secure identity documents for verification</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowNicModal(false)}
+                className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {user?.nicFront ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">NIC Front Copy</p>
+                    <div className="aspect-[1.586/1] bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-sm relative group">
+                      <img src={user.nicFront} alt="NIC Front" className="w-full h-full object-contain bg-white" />
+                      <a 
+                        href={user.nicFront} 
+                        download="nic-front.jpg"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-xl shadow-md backdrop-blur-xs transition flex items-center justify-center"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="aspect-[1.586/1] bg-gray-50 rounded-2xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs">
+                    No Front Copy Uploaded
+                  </div>
+                )}
+
+                {user?.nicBack ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">NIC Back Copy</p>
+                    <div className="aspect-[1.586/1] bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-sm relative group">
+                      <img src={user.nicBack} alt="NIC Back" className="w-full h-full object-contain bg-white" />
+                      <a 
+                        href={user.nicBack} 
+                        download="nic-back.jpg"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-xl shadow-md backdrop-blur-xs transition flex items-center justify-center"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="aspect-[1.586/1] bg-gray-50 rounded-2xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs">
+                    No Back Copy Uploaded
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button 
+                onClick={() => setShowNicModal(false)}
+                className="bg-[#1A1A1A] hover:bg-black text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition"
+              >
+                Close Vault
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

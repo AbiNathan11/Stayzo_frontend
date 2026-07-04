@@ -14,8 +14,28 @@ import {
   Heart, MessageCircle, Share2, TrendingUp, Star, BedDouble, Bath, Maximize2
 } from 'lucide-react';
 
-const LOCATIONS = ['All Locations', 'Colombo', 'Kandy', 'Galle', 'Negombo', 'Jaffna', 'Matara'];
-const PROPERTY_TYPES = ['All Types', 'Apartment', 'House', 'Villa', 'Studio', 'Room', 'Commercial'];
+const LOCATIONS = [
+  'All Locations',
+  'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 
+  'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota', 'Jaffna', 
+  'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 
+  'Ampara', 'Trincomalee', 'Kurunegala', 'Puttalam', 'Anuradhapura', 
+  'Polonnaruwa', 'Badulla', 'Moneragala', 'Ratnapura', 'Kegalle'
+];
+const PROPERTY_TYPES = [
+  'All Types', 
+  'Individual House', 
+  'Apartment/Flat', 
+  'Bungalow', 
+  'Villa/Mansion', 
+  'Townhouse/Duplex', 
+  'Studio Apartment',
+  'Private Room (Ensuite)',
+  'Private Room (Non-Ensuite)',
+  'Shared Room/Bedspace',
+  'Bedsit',
+  'Annex'
+];
 const BUDGETS = ['Any Budget', 'Under Rs.50,000', 'Rs.50,000 - Rs.100,000', 'Rs.100,000 - Rs.200,000', 'Rs.200,000 - Rs.500,000', 'Over Rs.500,000'];
 
 // Mock property data for map pins hover cards
@@ -547,7 +567,7 @@ export default function LandingPage() {
                   </div>
                 </button>
                 {openDropdown === 'location' && (
-                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-y-auto max-h-60 no-scrollbar">
                     {LOCATIONS.map(l => (
                       <button key={l} onClick={() => { setLocation(l); setOpenDropdown(null); }}
                         className={`w-full text-left px-5 py-3 text-sm font-semibold hover:bg-gray-50 transition ${location === l ? 'text-[#4F46E5] font-extrabold bg-indigo-50/40' : 'text-gray-600'}`}>
@@ -572,7 +592,7 @@ export default function LandingPage() {
                   </div>
                 </button>
                 {openDropdown === 'type' && (
-                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 mt-3 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-y-auto max-h-60 no-scrollbar">
                     {PROPERTY_TYPES.map(t => (
                       <button key={t} onClick={() => { setPropertyType(t); setOpenDropdown(null); }}
                         className={`w-full text-left px-5 py-3 text-sm font-semibold hover:bg-gray-50 transition ${propertyType === t ? 'text-[#4F46E5] font-extrabold bg-indigo-50/40' : 'text-gray-600'}`}>

@@ -18,70 +18,87 @@ export default function TenantDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<UserProfile & { isOwner?: boolean }>({ firstName: 'Abiramy', lastName: '', email: 'abiramy@example.com' });
+  const [user, setUser] = useState<UserProfile & { isOwner?: boolean } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = Cookies.get('stayzo_token');
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const email = payload.email || 'abiramy@example.com';
-          setUser({
-            firstName: payload.firstName || 'Abiramy',
-            lastName: payload.lastName || '',
-            email: email,
-            profileImage: payload.profileImage || null,
-            isOwner: !!payload.isOwner
-          });
+    const token = Cookies.get('stayzo_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const email = payload.email || '';
+        if (!email) {
+          Cookies.remove('stayzo_token');
+          Cookies.remove('stayzo_refresh_token');
+          window.location.href = '/auth';
+          return;
+        }
+        setUser({
+          firstName: payload.firstName || 'User',
+          lastName: payload.lastName || '',
+          email: email,
+          profileImage: payload.profileImage || null,
+          isOwner: !!payload.isOwner
+        });
 
-          // Live refresh from DB
-          fetch(`http://localhost:3001/api/auth/profile/${email}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
+        // Live refresh from DB
+        fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+          .then(res => {
+            if (res.status === 401 || res.status === 404) {
+              Cookies.remove('stayzo_token');
+              Cookies.remove('stayzo_refresh_token');
+              window.location.href = '/auth';
+              throw new Error('Session invalid, logged out');
+            }
+            return res.json();
+          })
+          .then(data => {
+            if (data.user) {
+              setUser(prev => ({
+                ...prev!,
+                firstName: data.user.firstName || prev?.firstName || 'User',
+                profileImage: data.user.profileImage || null
+              }));
+            } else if (data.error) {
+              Cookies.remove('stayzo_token');
+              Cookies.remove('stayzo_refresh_token');
+              window.location.href = '/auth';
             }
           })
-            .then(res => res.json())
-            .then(data => {
-              if (data.user) {
-                setUser(prev => ({
-                  ...prev!,
-                  firstName: data.user.firstName || prev?.firstName || 'Abiramy',
-                  profileImage: data.user.profileImage || null
-                }));
-              }
-            })
-            .catch(err => console.warn("Live profile fetch issue:", err));
-        } catch (e) {
-          window.location.replace('/auth?role=tenant');
-        }
-      } else {
-        window.location.replace('/auth?role=tenant');
+          .catch(err => {
+            console.warn("Live profile fetch issue:", err);
+            // Fallback: keep user if token is parsed successfully
+          });
+      } catch (e) {
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth';
       }
-    };
-    
-    checkAuth();
-    
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        checkAuth();
-      }
-    };
-    
-    window.addEventListener('pageshow', handlePageShow);
-    return () => {
-      window.removeEventListener('pageshow', handlePageShow);
-    };
+    } else {
+      window.location.href = '/auth';
+    }
   }, []);
 
   const handleLogout = () => {
     Cookies.remove('stayzo_token'); Cookies.remove('stayzo_refresh_token');
     window.location.replace('/');
   };
+
+  if (!user) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white animate-in fade-in duration-300">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 

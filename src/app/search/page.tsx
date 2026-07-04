@@ -33,12 +33,13 @@ function SearchContent() {
   const [showMap, setShowMap] = useState(false);
 
   // Filter States
-  const [propertyType, setPropertyType] = useState<string>('house');
+  const [propertyType, setPropertyType] = useState<string>('');
   const [minPrice, setMinPrice] = useState(5000);
   const [maxPrice, setMaxPrice] = useState(200000);
   const [neighbourhood, setNeighbourhood] = useState({ school: false, hospital: false, transport: false, market: false, park: false, gym: false });
   const [conveniences, setConveniences] = useState({ parking: false, pet: false, furnished: false, wifi: false, ac: false, security: false });
   const [suitableFor, setSuitableFor] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Active/Hovered Card for Map Sync
   const [activePropertyId, setActivePropertyId] = useState<string | number>(1);
@@ -48,18 +49,25 @@ function SearchContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    const q = searchParams.get('q') || '';
+    setSearchQuery(q);
+  }, [searchParams]);
+
+  useEffect(() => {
     // Read params
     const district = searchParams.get('district');
     const type = searchParams.get('type');
     const budgetStr = searchParams.get('budget');
+    const q = searchParams.get('q');
 
     // Build fetch URL
     let apiUrl = 'http://localhost:3001/api/properties/search';
     const params = new URLSearchParams();
     if (district) params.set('district', district);
     if (type) params.set('type', type);
+    if (q) params.set('q', q);
     
-    if (budgetStr && budgetStr !== 'Any Budget' && budgetStr !== 'Over Rs.500,000') {
+    if (budgetStr && budgetStr !== 'Any Budget' && budgetStr !== 'Over Rs.50,0000') {
       let limit = 0;
       if (budgetStr === 'Under Rs.50,000') limit = 50000;
       else if (budgetStr === 'Rs.50,000 - Rs.100,000') limit = 100000;
@@ -152,7 +160,73 @@ function SearchContent() {
     }
   };
 
-  const selectedProperty = listings.find(l => l.id === activePropertyId) || listings[0];
+  // ── Dynamic Client-side Filters ──
+  const filteredListings = listings.filter(item => {
+    if (searchQuery) {
+      const term = searchQuery.toLowerCase();
+      const matchesText = (
+        (item.title || '').toLowerCase().includes(term) ||
+        (item.description || '').toLowerCase().includes(term) ||
+        (item.city || '').toLowerCase().includes(term) ||
+        (item.address || '').toLowerCase().includes(term) ||
+        (item.state || '').toLowerCase().includes(term) ||
+        (item.type || '').toLowerCase().includes(term)
+      );
+      if (!matchesText) return false;
+    }
+
+    const priceVal = Number(String(item.price).replace(/[^0-9]/g, ''));
+    if (priceVal < minPrice || priceVal > maxPrice) return false;
+
+    if (propertyType) {
+      const typeLower = (item.type || '').toLowerCase();
+      let matchesType = false;
+      if (propertyType === 'house') {
+        matchesType = ['house', 'individual house', 'villa', 'bungalow', 'townhouse', 'duplex', 'annex'].some(t => typeLower.includes(t));
+      } else if (propertyType === 'apartment') {
+        matchesType = ['apartment', 'flat', 'studio', 'bedsit'].some(t => typeLower.includes(t));
+      } else if (propertyType === 'shared') {
+        matchesType = ['shared', 'room/bedspace', 'room'].some(t => typeLower.includes(t)) && !typeLower.includes('private');
+      } else if (propertyType === 'private') {
+        matchesType = ['private', 'ensuite'].some(t => typeLower.includes(t));
+      }
+      if (!matchesType) return false;
+    }
+
+    const amenitiesLower = (item.amenities || []).map((a: string) => a.toLowerCase());
+    const matchesNeighbourhood = Object.entries(neighbourhood).every(([facility, active]) => {
+      if (!active) return true;
+      if (facility === 'school') return amenitiesLower.some((a: string) => a.includes('school') || a.includes('university'));
+      if (facility === 'hospital') return amenitiesLower.some((a: string) => a.includes('hospital') || a.includes('medical') || a.includes('clinic'));
+      if (facility === 'transport') return amenitiesLower.some((a: string) => a.includes('transport') || a.includes('bus') || a.includes('station') || a.includes('railway'));
+      if (facility === 'market') return amenitiesLower.some((a: string) => a.includes('market') || a.includes('supermarket') || a.includes('grocery') || a.includes('shop'));
+      if (facility === 'park') return amenitiesLower.some((a: string) => a.includes('park') || a.includes('garden'));
+      if (facility === 'gym') return amenitiesLower.some((a: string) => a.includes('gym') || a.includes('fitness'));
+      return true;
+    });
+    if (!matchesNeighbourhood) return false;
+
+    const matchesConveniences = Object.entries(conveniences).every(([conv, active]) => {
+      if (!active) return true;
+      if (conv === 'parking') return amenitiesLower.some((a: string) => a.includes('parking') || a.includes('garage'));
+      if (conv === 'pet') return amenitiesLower.some((a: string) => a.includes('pet') || a.includes('dog') || a.includes('cat') || a.includes('allow'));
+      if (conv === 'furnished') return amenitiesLower.some((a: string) => a.includes('furnish') || a.includes('bed') || a.includes('sofa'));
+      if (conv === 'wifi') return amenitiesLower.some((a: string) => a.includes('wifi') || a.includes('wi-fi') || a.includes('internet'));
+      if (conv === 'ac') return amenitiesLower.some((a: string) => a.includes('ac') || a.includes('air') || a.includes('condition'));
+      if (conv === 'security') return amenitiesLower.some((a: string) => a.includes('security') || a.includes('cctv') || a.includes('guard'));
+      return true;
+    });
+    if (!matchesConveniences) return false;
+
+    if (suitableFor && suitableFor !== 'Anyone') {
+      const text = ((item.title || '') + ' ' + (item.description || '') + ' ' + (item.amenities || []).join(' ')).toLowerCase();
+      if (!text.includes(suitableFor.toLowerCase())) return false;
+    }
+
+    return true;
+  });
+
+  const selectedProperty = filteredListings.find(l => l.id === activePropertyId) || filteredListings[0];
 
   // Dynamically determine grid columns based on open panels
   let gridColsClass = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"; // Both closed (max 7)
@@ -168,16 +242,30 @@ function SearchContent() {
     <div className="h-screen overflow-hidden pt-[68px] bg-[#F5F7F8] text-[#2D2D2D] font-sans flex flex-col">
       
       {/* Top Navbar Component */}
-      <Navbar />
+      <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {/* Main Content Layout */}
-      <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col lg:flex-row overflow-hidden shadow-sm">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col lg:flex-row overflow-hidden shadow-sm relative">
         
         {/* Column 1: Filters (Left) */}
         <aside className={`bg-white border-r border-gray-100 overflow-y-auto no-scrollbar shrink-0 select-none transition-all duration-300 ${
-          showFilters ? 'w-full lg:w-[260px] p-6 opacity-100' : 'w-0 p-0 opacity-0 border-r-0 pointer-events-none'
+          showFilters 
+            ? 'w-full lg:w-[260px] p-6 opacity-100 block' 
+            : 'w-0 h-0 p-0 opacity-0 border-r-0 pointer-events-none hidden'
+        } ${
+          showFilters 
+            ? 'fixed lg:relative inset-y-0 left-0 z-40 lg:z-auto lg:top-0 top-[68px] shadow-2xl lg:shadow-none' 
+            : ''
         }`}>
-          <h2 className="text-lg font-bold text-[#1A1A1A] mb-5">Filters</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold text-[#1A1A1A]">Filters</h2>
+            <button 
+              onClick={() => setShowFilters(false)}
+              className="lg:hidden px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full font-bold text-[10px] uppercase hover:bg-gray-200 transition"
+            >
+              Close
+            </button>
+          </div>
 
           {/* Price Range (Rs) */}
           <div className="mb-5 pb-5 border-b border-gray-100">
@@ -218,7 +306,7 @@ function SearchContent() {
               ].map(({ key, label, Icon }) => (
                 <button
                   key={key}
-                  onClick={() => setPropertyType(key)}
+                  onClick={() => setPropertyType(propertyType === key ? '' : key)}
                   className={`flex flex-col items-center justify-center py-3 px-2 border rounded-xl text-[10px] font-semibold transition ${
                     propertyType === key
                       ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white'
@@ -304,7 +392,9 @@ function SearchContent() {
         </aside>
 
         {/* Column 2: Listings results (Center) */}
-        <main className="flex-1 bg-white p-6 overflow-y-auto no-scrollbar">
+        <main className={`flex-1 bg-white p-6 overflow-y-auto no-scrollbar ${
+          showMap ? 'hidden lg:block' : 'block'
+        }`}>
           {/* Search Header */}
           <div className="flex items-center flex-wrap gap-2.5 mb-6">
               {/* Toggle Filters Button */}
@@ -347,12 +437,12 @@ function SearchContent() {
                   </div>
                 </div>
               ))
-            ) : listings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="col-span-full py-12 text-center text-gray-500 font-semibold">
                 No properties found matching your search.
               </div>
             ) : (
-              listings.map((listing) => (
+              filteredListings.map((listing) => (
                 <Link 
                   key={listing.id}
                   href={`/properties/${listing.id}`}
@@ -428,11 +518,13 @@ function SearchContent() {
 
         {/* Column 3: Google Map (Right) */}
         <section className={`bg-[#E8EEF0] relative overflow-hidden shrink-0 flex flex-col transition-all duration-300 ${
-          showMap ? 'w-full lg:w-[42%] min-h-[300px] lg:min-h-0 opacity-100 border-l border-gray-100' : 'w-0 min-h-0 opacity-0 pointer-events-none'
+          showMap 
+            ? 'w-full lg:w-[42%] min-h-[300px] lg:min-h-0 opacity-100 border-l border-gray-100 flex' 
+            : 'w-0 h-0 min-h-0 opacity-0 pointer-events-none hidden'
         }`}>
           {showMap && (
             <SearchMap 
-              listings={listings}
+              listings={filteredListings}
               activePropertyId={activePropertyId}
               onActivePropertyChange={(id) => setActivePropertyId(id)}
             />

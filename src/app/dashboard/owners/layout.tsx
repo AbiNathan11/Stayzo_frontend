@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
 import OwnerNavbar from '@/components/OwnerNavbar';
@@ -11,6 +11,66 @@ export default function OwnerDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const token = Cookies.get('stayzo_token');
+    if (!token) {
+      window.location.href = '/auth?role=landlord';
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const email = payload.email || '';
+      if (!email) {
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth?role=landlord';
+        return;
+      }
+
+      fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (res.status === 401 || res.status === 404) {
+            Cookies.remove('stayzo_token');
+            Cookies.remove('stayzo_refresh_token');
+            window.location.href = '/auth?role=landlord';
+            throw new Error('Invalid session');
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (data.user) {
+            setIsAuthenticated(true);
+          } else {
+            Cookies.remove('stayzo_token');
+            Cookies.remove('stayzo_refresh_token');
+            window.location.href = '/auth?role=landlord';
+          }
+        })
+        .catch(() => {
+          // Fallback if offline/DB issue, trust client-parsed token
+          setIsAuthenticated(true);
+        });
+    } catch (e) {
+      Cookies.remove('stayzo_token');
+      Cookies.remove('stayzo_refresh_token');
+      window.location.href = '/auth?role=landlord';
+    }
+  }, []);
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const checkAuth = () => {

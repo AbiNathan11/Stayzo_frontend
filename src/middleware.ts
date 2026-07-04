@@ -3,32 +3,26 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('stayzo_token')?.value;
+  const { pathname } = request.nextUrl;
 
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
-
-  // If trying to access dashboard without a token, redirect to auth
-  if (isDashboardRoute && !token) {
-    const response = NextResponse.redirect(new URL('/auth', request.url));
-    // Set headers to prevent caching of the redirect response
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    return response;
+  if (pathname.startsWith('/dashboard/tenant')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/auth', request.url));
+    }
   }
 
-  const response = NextResponse.next();
-
-  // Set headers to prevent caching for dashboard routes
-  // This ensures the back/forward buttons will re-evaluate authentication
-  if (isDashboardRoute) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
+  if (pathname.startsWith('/dashboard/owners')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/auth?role=landlord', request.url));
+    }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: [
+    '/dashboard/tenant/:path*',
+    '/dashboard/owners/:path*',
+  ],
 };

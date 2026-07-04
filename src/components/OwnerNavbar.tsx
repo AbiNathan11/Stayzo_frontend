@@ -32,15 +32,53 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        const email = payload.email || '';
         setUser({
           firstName: payload.firstName || '',
           lastName: payload.lastName || '',
-          email: payload.email || '',
+          email: email,
           profileImage: payload.profileImage || null
         });
+
+        if (email) {
+          fetch(`http://localhost:3001/api/auth/profile/${email}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+            .then(res => {
+              if (res.status === 401 || res.status === 404) {
+                Cookies.remove('stayzo_token');
+                Cookies.remove('stayzo_refresh_token');
+                window.location.href = '/auth?role=landlord';
+                throw new Error('Session invalid, logged out');
+              }
+              return res.json();
+            })
+            .then(data => {
+              if (data.user) {
+                setUser({
+                  firstName: data.user.firstName || payload.firstName || '',
+                  lastName: data.user.lastName || payload.lastName || '',
+                  email: data.user.email || payload.email || '',
+                  profileImage: data.user.profileImage || null
+                });
+              } else if (data.error) {
+                Cookies.remove('stayzo_token');
+                Cookies.remove('stayzo_refresh_token');
+                window.location.href = '/auth?role=landlord';
+              }
+            })
+            .catch(err => console.warn("Owner navbar profile fetch issue:", err));
+        }
       } catch (e) {
         console.error('Failed to parse token', e);
+        Cookies.remove('stayzo_token');
+        Cookies.remove('stayzo_refresh_token');
+        window.location.href = '/auth?role=landlord';
       }
+    } else {
+      window.location.href = '/auth?role=landlord';
     }
   }, []);
 
