@@ -72,6 +72,28 @@ export default function OwnerDashboardLayout({
     );
   }
 
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = Cookies.get('stayzo_token');
+      if (!token) {
+        window.location.replace('/auth?role=landlord');
+      }
+    };
+
+    checkAuth();
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
+
   if (pathname.includes('/start_listing')) {
     return <>{children}</>;
   }
