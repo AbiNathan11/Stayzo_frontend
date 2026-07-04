@@ -279,7 +279,7 @@ export default function OwnerAppointmentsPage() {
         </div>
         <button
           onClick={() => { setNewSlot(f => ({ ...f, date: selectedDate })); setShowCreateModal(true); setCreateMode("single"); }}
-          className="flex items-center gap-2 bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#4F46E5] px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition cursor-pointer"
+          className="shrink-0 flex items-center gap-2 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Availability
         </button>

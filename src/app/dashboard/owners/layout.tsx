@@ -63,15 +63,6 @@ export default function OwnerDashboardLayout({
     }
   }, []);
 
-  if (isAuthenticated === null) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest animate-pulse">Verifying Session...</p>
-      </div>
-    );
-  }
-
   useEffect(() => {
     const checkAuth = () => {
       const token = Cookies.get('stayzo_token');
@@ -93,6 +84,15 @@ export default function OwnerDashboardLayout({
       window.removeEventListener('pageshow', handlePageShow);
     };
   }, []);
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
 
   if (pathname.includes('/start_listing')) {
     return <>{children}</>;
