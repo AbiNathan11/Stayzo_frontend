@@ -230,7 +230,7 @@ export default function OwnerListings() {
           </div>
           <Link 
             href="/dashboard/owners/start_listing"
-            className="bg-[#EEF2FF] text-[#4F46E5] px-5 py-2.5 text-[11px] font-black tracking-widest uppercase hover:bg-[#E0E7FF] transition-colors rounded-xl shadow-sm"
+            className="shrink-0 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs cursor-pointer"
           >
             + Create New Listing
           </Link>
