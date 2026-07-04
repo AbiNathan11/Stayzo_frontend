@@ -201,16 +201,16 @@ function VisitsPageContent() {
       <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">Visit Scheduler</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-[#1A1A1A]">Visit Scheduler</h2>
           <p className="text-gray-500 text-xs font-semibold mt-1">
             Browse available slots and book property viewings.
           </p>
         </div>
         <button
           onClick={() => setShowBookModal(true)}
-          className="flex items-center gap-2 bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition duration-200"
+          className="shrink-0 flex items-center gap-2 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Request New Visit
         </button>

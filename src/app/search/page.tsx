@@ -405,6 +405,7 @@ function SearchContent() {
                     ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:bg-black shadow-sm' 
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-xs'
                 }`}
+                suppressHydrationWarning={true}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>Filters</span>
@@ -418,6 +419,7 @@ function SearchContent() {
                     ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:bg-black shadow-sm' 
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-xs'
                 }`}
+                suppressHydrationWarning={true}
               >
                 <Map className="w-3.5 h-3.5" />
                 <span>Map</span>
