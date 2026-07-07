@@ -210,6 +210,7 @@ export default function StartListingPage() {
   const [billOcrName, setBillOcrName] = useState("");
   const [billOcrAddress, setBillOcrAddress] = useState("");
   const [billVerificationError, setBillVerificationError] = useState("");
+  const [billErrorType, setBillErrorType] = useState<string | null>(null);
   
   // Controls to toggle mock OCR outcomes
   const [simulateMismatchAddress, setSimulateMismatchAddress] = useState(false);
@@ -224,52 +225,66 @@ export default function StartListingPage() {
   const [gpsVerificationDetails, setGpsVerificationDetails] = useState<string>("");
 
   // Document verification logic
-  const triggerBillVerification = (imgData: string) => {
+  const triggerBillVerification = async (imgData: string) => {
     if (!imgData) return;
     setIsVerifyingBill(true);
     setBillVerificationError("");
+    setBillErrorType(null);
     setBillVerified(false);
 
-    let landlordName = "Abiramy Nathan";
+    let expectedName = "Abiramy Nathan";
     const token = Cookies.get('stayzo_token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        if (payload.firstName) landlordName = `${payload.firstName} ${payload.lastName || ''}`.trim();
+        if (payload.firstName) expectedName = `${payload.firstName} ${payload.lastName || ''}`.trim();
       } catch {}
     }
 
-    setTimeout(() => {
-      setIsVerifyingBill(false);
+    const expectedAddress = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street ? formData.street + ', ' : ''}${formData.streetLine2 ? formData.streetLine2 + ', ' : ''}${formData.city}`;
+
+    try {
+      const res = await fetch("http://localhost:3001/api/properties/verify-bill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imgData, expectedName, expectedAddress })
+      });
+      const data = await res.json();
       
-      const extractedName = simulateMismatchName ? "John Doe" : landlordName;
-      const extractedAddress = simulateMismatchAddress 
-        ? "No. 450, Alvis Place, Galle Road, Galle (Mismatched)" 
-        : `${formData.street ? formData.street + ', ' : ''}${formData.city}`;
-
-      setBillOcrName(extractedName);
-      setBillOcrAddress(extractedAddress);
-
-      // Verify street or city contains match
-      const streetMatch = extractedAddress.toLowerCase().includes(formData.street.toLowerCase().split(' ')[0]);
-      const cityMatch = extractedAddress.toLowerCase().includes(formData.city.toLowerCase());
-
-      if (!streetMatch && !cityMatch) {
-        setBillVerificationError("Address mismatch: The document address does not match your Step 1 input.");
-        setBillVerified(false);
-        toast.error("Address on the bill does not match the property address.", { id: "bill-verify" });
-        return;
-      }
-
-      if (extractedName.toLowerCase() !== landlordName.toLowerCase()) {
-        setFormData(prev => ({ ...prev, ownershipType: "Broker" }));
-        setBillVerified(true);
-        toast("Name mismatch detected! Property relationship set to 'Broker'. Please fill in the owner details.", { id: "bill-verify", icon: "⚠️" });
+      if (!res.ok || !data.isValid) {
+        if (data.errorType === "NAME_MISMATCH") {
+          // It's just a name mismatch (address is fine)
+          setBillVerificationError(data.reason || "Name mismatch detected.");
+          setBillErrorType("NAME_MISMATCH");
+          setBillVerified(true); // Allow them to proceed!
+          setFormData(prev => ({ ...prev, ownershipType: "Broker" }));
+          toast("Name mismatch detected! Property relationship set to 'Broker'.", { id: "bill-verify", icon: "⚠️" });
+          if (data.extractedName) setBillOcrName(data.extractedName);
+          if (data.extractedAddress) setBillOcrAddress(data.extractedAddress);
+        } else {
+          // Hard error (address mismatch, invalid document, or both)
+          setBillVerificationError(data.reason || data.error || "Verification failed");
+          setBillErrorType(data.errorType || null);
+          setBillVerified(false);
+          toast.error(data.reason || "Image is not a valid utility bill or address does not match.", { id: "bill-verify" });
+          if (data.extractedName) setBillOcrName(data.extractedName);
+          if (data.extractedAddress) setBillOcrAddress(data.extractedAddress);
+        }
       } else {
         setBillVerified(true);
-        toast.success("Document verified successfully!", { id: "bill-verify" });
+        setBillErrorType(null);
+        toast.success("Document verified successfully! Ownership details matched.", { id: "bill-verify" });
+        setBillOcrName(data.extractedName || expectedName);
+        setBillOcrAddress(data.extractedAddress || expectedAddress);
       }
-    }, 1800);
+    } catch (err) {
+      setBillVerificationError("Server error during verification.");
+      setBillErrorType(null);
+      setBillVerified(false);
+      toast.error("Server error during verification.", { id: "bill-verify" });
+    } finally {
+      setIsVerifyingBill(false);
+    }
   };
 
   // Re-run bill verification if simulation toggles change
@@ -785,7 +800,32 @@ export default function StartListingPage() {
                     <span className="text-sm font-bold text-green-600 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" /> Document Attached Successfully
                     </span>
-                    <p className="text-xs text-gray-400 mt-1">Click to replace or select another document</p>
+                    
+                    {billVerificationError && !isVerifyingBill && (
+                      billErrorType === "NAME_MISMATCH" ? (
+                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-center max-w-sm">
+                          <span className="text-sm font-bold text-yellow-700 block mb-1">
+                            ⚠️ Name Mismatch Detected
+                          </span>
+                          <span className="text-xs font-semibold text-yellow-600">
+                            The owner name extracted from the bill does not match your NIC name. If you are a broker, please click "Broker" as the relationship to this property.
+                          </span>
+                          <span className="text-[10px] text-yellow-500 block mt-1">({billVerificationError})</span>
+                        </div>
+                      ) : (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-center max-w-sm">
+                          <span className="text-sm font-bold text-red-600 block mb-1">
+                            ⚠️ Invalid Document Detected
+                          </span>
+                          <span className="text-xs font-semibold text-red-500">
+                            You must upload a valid Ceylon Electricity Board (CEB) or Water Board bill with a matching address.
+                          </span>
+                          <span className="text-[10px] text-red-400 block mt-1">({billVerificationError})</span>
+                        </div>
+                      )
+                    )}
+                    
+                    <p className="text-xs text-gray-400 mt-2">Click to replace or select another document</p>
                     <button
                       type="button"
                       onClick={(e) => {
