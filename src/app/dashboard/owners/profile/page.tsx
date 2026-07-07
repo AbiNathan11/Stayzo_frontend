@@ -47,43 +47,13 @@ export default function OwnerProfilePage() {
     }
   };
 
-  const fetchReviews = async (name: string) => {
+  const fetchReviews = async (ownerId: string) => {
+    if (!ownerId) return;
     try {
-      const response = await fetch('http://localhost:3001/api/reviews', { cache: 'no-store' });
+      const response = await fetch(`http://localhost:3001/api/reviews/owner/${ownerId}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
-        // Filter reviews given to this landlord (targetName matches landlord name)
-        const filtered = data.filter((r: any) => 
-          r.targetName?.toLowerCase().includes(name.toLowerCase()) || 
-          r.targetName?.toLowerCase().includes('vishnnu') || // fallback match
-          r.targetName?.toLowerCase().includes('owner')
-        );
-        
-        if (filtered.length > 0) {
-          setReviews(filtered);
-        } else {
-          // Provide beautiful realistic mock reviews if database doesn't have any matching yet
-          setReviews([
-            {
-              id: "mock-1",
-              authorName: "Abiramy Thirulinganathan",
-              authorEmail: "abiramy@example.com",
-              rating: 5,
-              comment: "Great landlord! Vishnnu is extremely responsive and resolved the minor plumbing issue within a couple of hours. Very pleasant to communicate with.",
-              createdAt: new Date().toISOString(),
-              targetName: name
-            },
-            {
-              id: "mock-2",
-              authorName: "Saman Perera",
-              authorEmail: "saman@example.com",
-              rating: 4,
-              comment: "Excellent experience renting the apartment. The property is well-maintained and the agreement processing was very smooth.",
-              createdAt: new Date().toISOString(),
-              targetName: name
-            }
-          ]);
-        }
+        setReviews(data);
       }
     } catch (err) {
       console.error("Error fetching reviews:", err);
@@ -98,6 +68,7 @@ export default function OwnerProfilePage() {
         const email = payload.email || 'yogarajahvishnnu@gmail.com';
         const firstName = payload.firstName || 'Vishnnu';
         const lastName = payload.lastName || 'Yoharajah';
+        const ownerId = payload.id;
         
         setUser({
           firstName,
@@ -109,7 +80,9 @@ export default function OwnerProfilePage() {
         });
 
         fetchAgreements(email);
-        fetchReviews(firstName);
+        if (ownerId) {
+          fetchReviews(ownerId);
+        }
 
         // Fetch live profile from DB
         fetch(`http://localhost:3001/api/auth/profile/${email}`, {
@@ -130,7 +103,9 @@ export default function OwnerProfilePage() {
                 nicFront: data.user.nicFront || null,
                 nicBack: data.user.nicBack || null
               }));
-              fetchReviews(liveFirst);
+              if (data.user.id) {
+                fetchReviews(data.user.id);
+              }
             }
             if (data.stats && data.stats.owner) {
               setStats(data.stats.owner);

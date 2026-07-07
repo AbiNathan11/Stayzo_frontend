@@ -156,34 +156,9 @@ export default function TenantOverviewPage() {
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
 
   const [activeReviewTab, setActiveReviewTab] = useState<'pending' | 'submitted'>('pending');
-  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([
-    {
-      id: 1,
-      propertyTitle: "Colombo Heights Apartment",
-      landlordName: "Nimal Bandara",
-      stayDates: "Stayed Jan 2024",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: 2,
-      propertyTitle: "Villa in Galle",
-      landlordName: "Saman Perera",
-      stayDates: "Stayed Oct 2026",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    }
-  ]);
+  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
 
-  const [submittedReviews, setSubmittedReviews] = useState<SubmittedReview[]>([
-    {
-      id: 101,
-      propertyTitle: "Villa in Hapugala",
-      landlordName: "Saman Perera",
-      rating: 5,
-      comment: "Absolutely magnificent property and incredibly helpful hosting from Saman.",
-      date: "Reviewed May 15, 2026",
-      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-    }
-  ]);
+  const [submittedReviews, setSubmittedReviews] = useState<SubmittedReview[]>([]);
 
   // Modal form states
   const [selectedPending, setSelectedPending] = useState<PendingReview | null>(null);
@@ -216,6 +191,75 @@ export default function TenantOverviewPage() {
     }
   };
 
+  const loadTenantReviews = async (email: string) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/reviews', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        // Filter reviews given by this tenant (matches email)
+        const filtered = data
+          .filter((item: any) => item.authorEmail?.toLowerCase() === email.toLowerCase())
+          .map((item: any) => ({
+            id: item.id,
+            propertyTitle: item.property?.title || item.targetName || 'Property Stay',
+            landlordName: item.property?.owner ? `${item.property.owner.firstName || ''} ${item.property.owner.lastName || ''}`.trim() : 'Host',
+            rating: item.rating,
+            comment: item.comment,
+            date: `Reviewed ${new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+            image: item.property?.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=300"
+          }));
+        setSubmittedReviews(filtered);
+      }
+    } catch (err) {
+      console.error("Error fetching tenant reviews:", err);
+    }
+  };
+
+  const loadPendingReviews = async () => {
+    const token = Cookies.get('stayzo_token');
+    if (!token) return;
+    try {
+      const bookingsRes = await fetch('http://localhost:3001/api/bookings/tenant', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      let dbPending: PendingReview[] = [];
+      if (bookingsRes.ok) {
+        const bookings = await bookingsRes.json();
+        const confirmedBookings = bookings.filter((b: any) => b.status === 'CONFIRMED' || b.status === 'COMPLETED');
+        confirmedBookings.forEach((b: any) => {
+          if (b.property) {
+            dbPending.push({
+              id: b.property.id,
+              propertyTitle: b.property.title,
+              landlordName: 'Verified Host',
+              stayDates: `Stayed ${new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`,
+              image: b.property.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300"
+            });
+          }
+        });
+      }
+
+      // If no bookings, fallback to all properties from DB as reviewable properties
+      if (dbPending.length === 0) {
+        const propRes = await fetch('http://localhost:3001/api/properties');
+        if (propRes.ok) {
+          const props = await propRes.json();
+          dbPending = props.slice(0, 3).map((p: any) => ({
+            id: p.id,
+            propertyTitle: p.title,
+            landlordName: p.owner ? `${p.owner.firstName || ''} ${p.owner.lastName || ''}`.trim() || 'Host' : 'Host',
+            stayDates: "Stayed recently",
+            image: p.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300"
+          }));
+        }
+      }
+      
+      setPendingReviews(dbPending);
+    } catch (err) {
+      console.error("Error loading pending reviews:", err);
+    }
+  };
+
   useEffect(() => {
     const token = Cookies.get('stayzo_token');
     if (token) {
@@ -239,6 +283,10 @@ export default function TenantOverviewPage() {
 
         // Fetch live agreements from database
         fetchAgreements(email);
+        
+        // Fetch reviews and bookings dynamically
+        loadTenantReviews(email);
+        loadPendingReviews();
 
         // Fetch live profile from DB
         fetch(`http://localhost:3001/api/auth/profile/${email}`, {
@@ -274,7 +322,6 @@ export default function TenantOverviewPage() {
           })
           .catch(err => {
             console.warn("Live profile fetch issue:", err);
-            // Fallback: trust token payload if offline/DB issue
           });
       } catch (e) {
         Cookies.remove('stayzo_token');
@@ -294,9 +341,6 @@ export default function TenantOverviewPage() {
       }
     }
   }, []);
-
-
-
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -358,30 +402,55 @@ export default function TenantOverviewPage() {
     }
   };
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPending || rating === 0 || !reviewComment.trim()) return;
 
-    const newReview: SubmittedReview = {
-      id: Date.now(),
-      propertyTitle: selectedPending.propertyTitle,
-      landlordName: selectedPending.landlordName,
-      rating,
-      comment: reviewComment,
-      date: "Reviewed Just now",
-      image: selectedPending.image
-    };
+    const token = Cookies.get('stayzo_token');
+    if (!token) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
 
-    setSubmittedReviews([newReview, ...submittedReviews]);
-    setPendingReviews(pendingReviews.filter(p => p.id !== selectedPending.id));
-    setShowSuccess(true);
+    try {
+      const response = await fetch('http://localhost:3001/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          propertyId: selectedPending.id,
+          rating: rating,
+          comment: reviewComment.trim()
+        })
+      });
 
-    setTimeout(() => {
-      setSelectedPending(null);
-      setShowSuccess(false);
-      setActiveReviewTab('submitted');
-    }, 1800);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit review');
+      }
+
+      setShowSuccess(true);
+      toast.success('Review submitted successfully!');
+
+      setTimeout(() => {
+        setSelectedPending(null);
+        setShowSuccess(false);
+        setActiveReviewTab('submitted');
+        
+        if (user?.email) {
+          loadTenantReviews(user.email);
+        }
+        loadPendingReviews();
+      }, 1800);
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to submit review.');
+    }
   };
+
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
 

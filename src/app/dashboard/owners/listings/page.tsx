@@ -19,6 +19,8 @@ import {
   Clock,
   CheckCircle2
 } from 'lucide-react';
+import PropertyReviews from '@/components/PropertyReviews';
+
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Listing {
