@@ -14,6 +14,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useNearbyAmenities } from '@/hooks/useNearbyAmenities';
 import type { AmenityCategory } from '@/services/google/places';
+import PropertyReviews from '@/components/PropertyReviews';
 
 // Dynamically import map component to avoid SSR issues
 const PropertyMap      = dynamic(() => import('@/components/maps/PropertyMap'),      { ssr: false, loading: () => <div className="w-full h-[320px] rounded-3xl bg-gray-100 animate-pulse" /> });
@@ -48,6 +49,8 @@ interface Property {
   };
   latitude: number | null;
   longitude: number | null;
+  averageRating?: number;
+  reviewCount?: number;
   noisePrediction?: {
     noiseLevelScore: number;
     label: 'Low' | 'Medium' | 'High';
@@ -593,6 +596,22 @@ export default function PropertyDetailPage({
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />{property.type}
                 </span>
                 <span className="capitalize text-emerald-600 font-bold">{property.status}</span>
+                {property.averageRating !== undefined && property.averageRating > 0 ? (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1 text-gray-700 font-medium">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 stroke-none" />
+                      {property.averageRating.toFixed(1)} ({property.reviewCount} {property.reviewCount === 1 ? 'Review' : 'Reviews'})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1 text-gray-400 italic">
+                      No reviews yet
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -841,6 +860,12 @@ export default function PropertyDetailPage({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Reviews list right under Request Visit / Chat */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Reviews</h4>
+              <PropertyReviews propertyId={id} />
             </div>
           </div>
         </div>

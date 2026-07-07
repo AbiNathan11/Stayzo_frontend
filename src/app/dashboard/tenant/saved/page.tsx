@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Heart, BedDouble, Bath, Maximize2 } from 'lucide-react';
+import PropertyReviews from '@/components/PropertyReviews';
 
 interface WishlistItem {
   id: string | number;
@@ -181,6 +182,8 @@ export default function SavedPropertiesPage() {
                     {item.sqft.toLocaleString()} sqft
                   </span>
                 </div>
+
+                <PropertyReviews propertyId={String(item.id)} />
 
                 {/* Price + View Button */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
