@@ -85,6 +85,8 @@ export default function PropertyDetailPage({
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isBookingRequested, setIsBookingRequested] = useState(false);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
 
   useEffect(() => {
     const token = Cookies.get('stayzo_token');
@@ -182,24 +184,84 @@ export default function PropertyDetailPage({
     }
   };
 
-  // ── Fetch property by ID ────────────────────────────────────────────────────
+  // ── Fetch property by ID and Booking Status ────────────────────────────────
   useEffect(() => {
     if (!id) return;
-    const fetchProperty = async () => {
+    const fetchPropertyAndStatus = async () => {
       setLoading(true);
       try {
         const res = await fetch(`http://localhost:3001/api/properties/${id}`);
         if (!res.ok) throw new Error(res.status === 404 ? 'Property not found.' : 'Failed to load property.');
         const data: Property = await res.json();
         setProperty(data);
+
+        const token = Cookies.get('stayzo_token');
+        if (token) {
+          const statusRes = await fetch(`http://localhost:3001/api/properties/${id}/booking-status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            setIsBookingRequested(statusData.requested);
+          }
+        }
       } catch (err: any) {
         setError(err.message || 'Something went wrong.');
       } finally {
         setLoading(false);
       }
     };
-    fetchProperty();
+    fetchPropertyAndStatus();
   }, [id]);
+
+  const handleBookNow = async () => {
+    const token = Cookies.get('stayzo_token');
+    if (!token) {
+      triggerToast('Please sign in to book this property.');
+      setTimeout(() => router.push(`/auth?redirect=/properties/${id}`), 1500);
+      return;
+    }
+    setIsBookingLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/properties/${id}/book`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to book');
+      }
+      setIsBookingRequested(true);
+      triggerToast('Booking requested successfully!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error requesting booking');
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    const token = Cookies.get('stayzo_token');
+    if (!token) return;
+    setIsBookingLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/properties/${id}/book`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to cancel');
+      }
+      setIsBookingRequested(false);
+      triggerToast('Booking request cancelled.');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error cancelling booking');
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
+
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -758,6 +820,26 @@ export default function PropertyDetailPage({
                   <MessageCircle className="w-4 h-4" />
                   Chat with owner
                 </button>
+                {!isOwner && (
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      onClick={isBookingRequested ? undefined : handleBookNow}
+                      disabled={isBookingLoading}
+                      className="w-full text-white bg-[#4F46E5] hover:bg-[#4338CA] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                    >
+                      {isBookingLoading ? 'Processing...' : isBookingRequested ? 'Requested' : 'Book now'}
+                    </button>
+                    {isBookingRequested && (
+                      <button
+                        onClick={handleCancelBooking}
+                        disabled={isBookingLoading}
+                        className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
