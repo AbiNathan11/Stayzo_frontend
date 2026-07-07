@@ -5,6 +5,7 @@ import Link from 'next/link'; // Use simple link or button to redirect
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import SearchMap from '../../components/maps/SearchMap';
+import PropertyReviews from '@/components/PropertyReviews';
 import { 
   Home, Building2, Landmark, Map, HelpCircle, 
   Search, Bookmark, Bell, ChevronDown, 
@@ -109,7 +110,8 @@ function SearchContent() {
             ...item,
             lat,
             lng,
-            rating: 4.8 + (Math.random() * 0.2),
+            rating: item.averageRating !== undefined && item.averageRating > 0 ? item.averageRating : 0,
+            reviewCount: item.reviewCount || 0,
             guestFavorite: index % 3 === 0,
             image: item.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
             beds: item.bedrooms || 1,
@@ -503,8 +505,11 @@ function SearchContent() {
                         <span>{listing.price} <span className="text-xs text-gray-400 font-normal">/ mo</span></span>
                         <span className="mx-1.5">•</span>
                         <span className="flex items-center text-gray-700 font-medium">
-                          <Star className="w-3.5 h-3.5 fill-gray-900 stroke-none mr-0.5" />
-                          {listing.rating.toFixed(2)}
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 stroke-none mr-0.5 animate-pulse" />
+                          {listing.rating > 0 
+                            ? `${listing.rating.toFixed(1)} (${listing.reviewCount} ${listing.reviewCount === 1 ? 'Review' : 'Reviews'})` 
+                            : 'No reviews'
+                          }
                         </span>
                       </div>
                       <div className="text-xs text-gray-400 mt-0.5 font-medium">
