@@ -97,10 +97,11 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
   }, []);
 
   const notifTypeIcon = (type: string) => {
-    if (type === 'booking_confirmed') return '✅';
-    if (type === 'booking_cancelled') return '❌';
-    if (type === 'booking_request')   return '📅';
-    if (type === 'booking_reminder')  return '⏰';
+    const t = type.toLowerCase();
+    if (t === 'booking_confirmed') return '✅';
+    if (t === 'booking_cancelled') return '❌';
+    if (t === 'booking_request')   return '📅';
+    if (t === 'booking_reminder')  return '⏰';
     return '🔔';
   };
 
@@ -206,10 +207,10 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                     </div>
                   ) : (
                     notifications.slice(0, 10).map(n => (
-                      <button
+                      <div
                         key={n.id}
                         onClick={() => markOneRead(n.id)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 ${
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 cursor-pointer ${
                           !n.isRead ? 'bg-blue-50/50' : ''
                         }`}
                       >
@@ -219,12 +220,20 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                             {n.title}
                           </p>
                           <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                          {n.type === 'BOOKING_REQUEST' && (
+                            <Link 
+                              href="/dashboard/owners/appointments"
+                              className="mt-2 inline-block bg-[#4F46E5] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-[#4338CA] transition"
+                            >
+                              View Booking Request
+                            </Link>
+                          )}
                           <p className="text-[9px] text-gray-300 mt-1">
                             {new Date(n.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                         {!n.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />}
-                      </button>
+                      </div>
                     ))
                   )}
                 </div>
