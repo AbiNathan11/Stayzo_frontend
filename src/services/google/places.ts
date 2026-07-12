@@ -9,11 +9,11 @@ import type { LatLng } from './geocode';
 export type AmenityCategory =
   | 'hospital'
   | 'supermarket'
-  | 'bus_station'
-  | 'school'
-  | 'university'
-  | 'restaurant'
-  | 'pharmacy';
+  | 'fish_market'
+  | 'fuel_station'
+  | 'atm_bank'
+  | 'pharmacy'
+  | 'school';
 
 export interface Amenity {
   id: string;
@@ -32,22 +32,22 @@ export const CATEGORY_META: Record<
   { label: string; emoji: string; color: string; markerColor: string }
 > = {
   hospital: { label: 'Hospital', emoji: '🏥', color: 'bg-red-100 text-red-700', markerColor: '#ef4444' },
-  supermarket: { label: 'Supermarket', emoji: '🛒', color: 'bg-green-100 text-green-700', markerColor: '#22c55e' },
-  bus_station: { label: 'Bus Stop', emoji: '🚌', color: 'bg-blue-100 text-blue-700', markerColor: '#3b82f6' },
-  school: { label: 'School', emoji: '🏫', color: 'bg-yellow-100 text-yellow-700', markerColor: '#eab308' },
-  university: { label: 'University', emoji: '🎓', color: 'bg-purple-100 text-purple-700', markerColor: '#a855f7' },
-  restaurant: { label: 'Restaurant', emoji: '🍽️', color: 'bg-orange-100 text-orange-700', markerColor: '#f97316' },
+  supermarket: { label: 'Super market', emoji: '🛒', color: 'bg-green-100 text-green-700', markerColor: '#22c55e' },
+  fish_market: { label: 'Fish Market', emoji: '🐟', color: 'bg-blue-100 text-blue-700', markerColor: '#3b82f6' },
+  fuel_station: { label: 'Fuel Station', emoji: '⛽', color: 'bg-yellow-100 text-yellow-700', markerColor: '#eab308' },
+  atm_bank: { label: 'ATM & Banks', emoji: '🏦', color: 'bg-slate-100 text-slate-700', markerColor: '#475569' },
   pharmacy: { label: 'Pharmacy', emoji: '💊', color: 'bg-pink-100 text-pink-700', markerColor: '#ec4899' },
+  school: { label: 'School', emoji: '🏫', color: 'bg-yellow-100 text-yellow-700', markerColor: '#eab308' },
 };
 
 export const AMENITY_CATEGORIES: AmenityCategory[] = [
   'hospital',
   'supermarket',
-  'bus_station',
-  'school',
-  'university',
-  'restaurant',
+  'fish_market',
+  'fuel_station',
+  'atm_bank',
   'pharmacy',
+  'school',
 ];
 
 /** Haversine distance in metres between two lat/lng points */
@@ -70,44 +70,57 @@ async function fetchCategory(
   radiusMetres: number,
   apiKey: string
 ): Promise<Amenity[]> {
-  // bus_station maps to 'transit_station' in Places API
-  const placeType = category === 'bus_station' ? 'transit_station' : category;
+  const fetchSingle = async (type?: string, keyword?: string) => {
+    const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
+    url.searchParams.append('location', `${origin.lat},${origin.lng}`);
+    url.searchParams.append('radius', radiusMetres.toString());
+    url.searchParams.append('key', apiKey);
+    if (type) url.searchParams.append('type', type);
+    if (keyword) url.searchParams.append('keyword', keyword);
 
-  const url =
-    `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-    `?location=${origin.lat},${origin.lng}` +
-    `&radius=${radiusMetres}` +
-    `&type=${placeType}` +
-    `&key=${apiKey}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Places API HTTP error: ${res.status}`);
-  const data = await res.json();
-
-  if (!['OK', 'ZERO_RESULTS'].includes(data.status)) {
-    console.warn('[placesService] Unexpected status:', data.status, 'for type:', placeType);
-    return [];
-  }
-
-  return (data.results ?? []).slice(0, 5).map((place: any) => ({
-    id: place.place_id,
-    name: place.name,
-    category,
-    lat: place.geometry.location.lat,
-    lng: place.geometry.location.lng,
-    rating: place.rating,
-    vicinity: place.vicinity,
-    distance: Math.round(haversineDistance(origin, {
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`Places API HTTP error: ${res.status}`);
+    const data = await res.json();
+    if (!['OK', 'ZERO_RESULTS'].includes(data.status)) {
+      console.warn('[placesService] Unexpected status:', data.status, 'for:', type || keyword);
+      return [];
+    }
+    return (data.results ?? []).slice(0, 5).map((place: any) => ({
+      id: place.place_id,
+      name: place.name,
+      category,
       lat: place.geometry.location.lat,
       lng: place.geometry.location.lng,
-    })),
-  }));
+      rating: place.rating,
+      vicinity: place.vicinity,
+      distance: Math.round(haversineDistance(origin, {
+        lat: place.geometry.location.lat,
+        lng: place.geometry.location.lng,
+      })),
+    }));
+  };
+
+  if (category === 'fish_market') {
+    return fetchSingle(undefined, 'fish market');
+  } else if (category === 'fuel_station') {
+    return fetchSingle('gas_station');
+  } else if (category === 'atm_bank') {
+    const [atms, banks] = await Promise.all([
+      fetchSingle('atm'),
+      fetchSingle('bank')
+    ]);
+    const merged = [...atms, ...banks];
+    const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+    return unique.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)).slice(0, 5);
+  } else {
+    return fetchSingle(category);
+  }
 }
 
 /** Fetch all amenity categories in parallel */
 export async function fetchNearbyAmenities(
   origin: LatLng,
-  radiusMetres = 3000
+  radiusMetres = 10000
 ): Promise<Amenity[]> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
