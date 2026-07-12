@@ -11,7 +11,8 @@ export type AmenityCategory =
   | 'supermarket'
   | 'fish_market'
   | 'fuel_station'
-  | 'atm_bank'
+  | 'atm'
+  | 'bank'
   | 'pharmacy'
   | 'school';
 
@@ -35,7 +36,8 @@ export const CATEGORY_META: Record<
   supermarket: { label: 'Super market', emoji: '🛒', color: 'bg-green-100 text-green-700', markerColor: '#22c55e' },
   fish_market: { label: 'Fish Market', emoji: '🐟', color: 'bg-blue-100 text-blue-700', markerColor: '#3b82f6' },
   fuel_station: { label: 'Fuel Station', emoji: '⛽', color: 'bg-yellow-100 text-yellow-700', markerColor: '#eab308' },
-  atm_bank: { label: 'ATM & Banks', emoji: '🏦', color: 'bg-slate-100 text-slate-700', markerColor: '#475569' },
+  atm: { label: 'ATM', emoji: '🏧', color: 'bg-slate-100 text-slate-700', markerColor: '#64748b' },
+  bank: { label: 'Bank', emoji: '🏦', color: 'bg-indigo-100 text-indigo-700', markerColor: '#4f46e5' },
   pharmacy: { label: 'Pharmacy', emoji: '💊', color: 'bg-pink-100 text-pink-700', markerColor: '#ec4899' },
   school: { label: 'School', emoji: '🏫', color: 'bg-yellow-100 text-yellow-700', markerColor: '#eab308' },
 };
@@ -45,7 +47,8 @@ export const AMENITY_CATEGORIES: AmenityCategory[] = [
   'supermarket',
   'fish_market',
   'fuel_station',
-  'atm_bank',
+  'atm',
+  'bank',
   'pharmacy',
   'school',
 ];
@@ -104,14 +107,6 @@ async function fetchCategory(
     return fetchSingle(undefined, 'fish market');
   } else if (category === 'fuel_station') {
     return fetchSingle('gas_station');
-  } else if (category === 'atm_bank') {
-    const [atms, banks] = await Promise.all([
-      fetchSingle('atm'),
-      fetchSingle('bank')
-    ]);
-    const merged = [...atms, ...banks];
-    const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
-    return unique.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)).slice(0, 5);
   } else {
     return fetchSingle(category);
   }
