@@ -371,7 +371,7 @@ export default function PropertyDetailPage({
 
   // ── Nearby amenities via Google Maps APIs ───────────────────────────────────
   const { coords, amenities, loading: amenitiesLoading, error: amenitiesError } =
-    useNearbyAmenities(fullAddress || null, property?.latitude, property?.longitude, 3000);
+    useNearbyAmenities(fullAddress || null, property?.latitude, property?.longitude, 10000);
 
   // ── Loading / Error states ──────────────────────────────────────────────────
   if (loading) return (
@@ -717,7 +717,7 @@ export default function PropertyDetailPage({
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nearby Amenities</h4>
                 {!amenitiesLoading && (
                   <span className="text-[10px] font-extrabold text-gray-400 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full">
-                    within 3 km
+                    within 10 km
                   </span>
                 )}
               </div>

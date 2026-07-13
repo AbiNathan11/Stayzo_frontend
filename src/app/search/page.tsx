@@ -99,6 +99,13 @@ function SearchContent() {
           return { lat: 6.9271 + offsetLat, lng: 79.8612 + offsetLng };
         };
 
+        if (!Array.isArray(data)) {
+          console.error('API Error: Expected an array of listings but received:', data);
+          setListings([]);
+          setLoading(false);
+          return;
+        }
+
         const mapped = data.map((item: any, index: number) => {
           const parsedLat = Number(item.latitude);
           const parsedLng = Number(item.longitude);
