@@ -2,7 +2,7 @@
 import Cookies from 'js-cookie';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Edit3, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
+import { Home, CalendarClock, Bell, FileSignature, ShieldCheck, Download, UploadCloud, Camera, Star, ArrowRight, CheckCircle2, Smartphone, Scale } from 'lucide-react';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 // @ts-ignore
@@ -134,16 +134,8 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
 }
 
 
-interface PendingReview {
-  id: number;
-  propertyTitle: string;
-  landlordName: string;
-  stayDates: string;
-  image: string;
-}
-
 interface SubmittedReview {
-  id: number;
+  id: string;
   propertyTitle: string;
   landlordName: string;
   rating: number;
@@ -155,17 +147,7 @@ interface SubmittedReview {
 export default function TenantOverviewPage() {
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; profileImage?: string | null } | null>(null);
 
-  const [activeReviewTab, setActiveReviewTab] = useState<'pending' | 'submitted'>('pending');
-  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
-
   const [submittedReviews, setSubmittedReviews] = useState<SubmittedReview[]>([]);
-
-  // Modal form states
-  const [selectedPending, setSelectedPending] = useState<PendingReview | null>(null);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [rating, setRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
 
   // Edit Profile States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -215,51 +197,6 @@ export default function TenantOverviewPage() {
     }
   };
 
-  const loadPendingReviews = async () => {
-    const token = Cookies.get('stayzo_token');
-    if (!token) return;
-    try {
-      const bookingsRes = await fetch('http://localhost:3001/api/bookings/tenant', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      let dbPending: PendingReview[] = [];
-      if (bookingsRes.ok) {
-        const bookings = await bookingsRes.json();
-        const confirmedBookings = bookings.filter((b: any) => b.status === 'CONFIRMED' || b.status === 'COMPLETED');
-        confirmedBookings.forEach((b: any) => {
-          if (b.property) {
-            dbPending.push({
-              id: b.property.id,
-              propertyTitle: b.property.title,
-              landlordName: 'Verified Host',
-              stayDates: `Stayed ${new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`,
-              image: b.property.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300"
-            });
-          }
-        });
-      }
-
-      // If no bookings, fallback to all properties from DB as reviewable properties
-      if (dbPending.length === 0) {
-        const propRes = await fetch('http://localhost:3001/api/properties');
-        if (propRes.ok) {
-          const props = await propRes.json();
-          dbPending = props.slice(0, 3).map((p: any) => ({
-            id: p.id,
-            propertyTitle: p.title,
-            landlordName: p.owner ? `${p.owner.firstName || ''} ${p.owner.lastName || ''}`.trim() || 'Host' : 'Host',
-            stayDates: "Stayed recently",
-            image: p.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300"
-          }));
-        }
-      }
-      
-      setPendingReviews(dbPending);
-    } catch (err) {
-      console.error("Error loading pending reviews:", err);
-    }
-  };
-
   useEffect(() => {
     const token = Cookies.get('stayzo_token');
     if (token) {
@@ -286,7 +223,6 @@ export default function TenantOverviewPage() {
         
         // Fetch reviews and bookings dynamically
         loadTenantReviews(email);
-        loadPendingReviews();
 
         // Fetch live profile from DB
         fetch(`http://localhost:3001/api/auth/profile/${email}`, {
@@ -402,54 +338,7 @@ export default function TenantOverviewPage() {
     }
   };
 
-  const handleReviewSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPending || rating === 0 || !reviewComment.trim()) return;
 
-    const token = Cookies.get('stayzo_token');
-    if (!token) {
-      toast.error('Session expired. Please log in again.');
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:3001/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          propertyId: selectedPending.id,
-          rating: rating,
-          comment: reviewComment.trim()
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit review');
-      }
-
-      setShowSuccess(true);
-      toast.success('Review submitted successfully!');
-
-      setTimeout(() => {
-        setSelectedPending(null);
-        setShowSuccess(false);
-        setActiveReviewTab('submitted');
-        
-        if (user?.email) {
-          loadTenantReviews(user.email);
-        }
-        loadPendingReviews();
-      }, 1800);
-
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to submit review.');
-    }
-  };
 
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() || 'A';
@@ -594,100 +483,42 @@ export default function TenantOverviewPage() {
                 </div>
                 <h3 className="text-lg font-black text-[#1A1A1A]">My Reviews</h3>
               </div>
-
-              {/* Mini Tab Switcher */}
-              <div className="flex bg-[#EEF2FF] p-0.5 rounded-lg shrink-0">
-                <button
-                  onClick={() => setActiveReviewTab('pending')}
-                  className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${
-                    activeReviewTab === 'pending'
-                      ? 'bg-white text-[#4F46E5] shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  Pending ({pendingReviews.length})
-                </button>
-                <button
-                  onClick={() => setActiveReviewTab('submitted')}
-                  className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold transition ${
-                    activeReviewTab === 'submitted'
-                      ? 'bg-white text-[#4F46E5] shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  Submitted ({submittedReviews.length})
-                </button>
-              </div>
             </div>
 
-            {/* Tab content */}
+            {/* List of Submitted Reviews */}
             <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
-              {activeReviewTab === 'pending' ? (
-                pendingReviews.length === 0 ? (
-                  <div className="bg-[#EEF2FF] border border-indigo-100/60 rounded-2xl p-8 text-center space-y-3">
-                    <CheckCircle2 className="w-6 h-6 text-[#4F46E5] mx-auto" />
-                    <p className="text-xs font-bold text-[#1A1A1A]">All caught up!</p>
-                  </div>
-                ) : (
-                  pendingReviews.map((item) => (
-                    <div key={item.id} className="bg-white border border-gray-200/80 rounded-2xl p-4 flex gap-4 hover:border-gray-300 transition duration-200">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-50">
-                        <img src={item.image} alt={item.propertyTitle} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0 flex-1 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-extrabold text-xs text-[#1A1A1A] truncate">{item.propertyTitle}</h4>
-                          <p className="text-[10px] text-gray-500 font-semibold mt-0.5">Host: {item.landlordName}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedPending(item);
-                            setRating(0);
-                            setReviewComment("");
-                            setShowSuccess(false);
-                          }}
-                          className="w-max bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition flex items-center gap-1 shadow-xs"
-                        >
-                          <Edit3 className="w-3 h-3" /> Write Review
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )
+              {submittedReviews.length === 0 ? (
+                <div className="bg-[#EEF2FF] border border-indigo-100/60 rounded-2xl p-8 text-center text-gray-400 text-xs font-semibold">
+                  No submitted reviews.
+                </div>
               ) : (
-                submittedReviews.length === 0 ? (
-                  <div className="bg-[#EEF2FF] border border-indigo-100/60 rounded-2xl p-8 text-center text-gray-400 text-xs font-semibold">
-                    No submitted reviews.
-                  </div>
-                ) : (
-                  submittedReviews.map((item) => (
-                    <div key={item.id} className="bg-white border border-gray-200/80 rounded-2xl p-4 space-y-3 hover:border-gray-300 transition duration-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-50 shrink-0">
-                           <img src={item.image} alt={item.propertyTitle} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-extrabold text-xs text-[#1A1A1A] truncate">{item.propertyTitle}</h4>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            {Array.from({ length: 5 }, (_, idx) => (
-                              <Star 
-                                key={idx} 
-                                className={`w-3 h-3 ${
-                                  idx < item.rating 
-                                    ? "fill-amber-400 text-amber-400" 
-                                    : "text-gray-300"
-                                  }`} 
-                              />
-                            ))}
-                          </div>
+                submittedReviews.map((item) => (
+                  <div key={item.id} className="bg-white border border-gray-200/80 rounded-2xl p-4 space-y-3 hover:border-gray-300 transition duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-50 shrink-0">
+                         <img src={item.image} alt={item.propertyTitle} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-xs text-[#1A1A1A] truncate">{item.propertyTitle}</h4>
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                          {Array.from({ length: 5 }, (_, idx) => (
+                            <Star 
+                              key={idx} 
+                              className={`w-3 h-3 ${
+                                idx < item.rating 
+                                  ? "fill-amber-400 text-amber-400" 
+                                  : "text-gray-300"
+                                }`} 
+                            />
+                          ))}
                         </div>
                       </div>
-                      <p className="text-[11px] font-semibold text-gray-600 italic bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                        "{item.comment}"
-                      </p>
                     </div>
-                  ))
-                )
+                    <p className="text-[11px] font-semibold text-gray-600 italic bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                      "{item.comment}"
+                    </p>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -695,114 +526,6 @@ export default function TenantOverviewPage() {
 
       </div>
 
-      {/* Review Modal Form overlay */}
-      {selectedPending && (
-        <div className="fixed inset-0 bg-[#1A1A1A]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white border border-gray-200 rounded-[32px] w-full max-w-lg p-6 md:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
-            
-            <div className="mb-6">
-              <h3 className="text-xl font-extrabold text-[#1A1A1A]">Review Landlord & Property</h3>
-              <p className="text-xs text-gray-500 font-semibold mt-1">
-                Rate your hosting experience for {selectedPending.propertyTitle}.
-              </p>
-            </div>
-
-            {showSuccess ? (
-              <div className="py-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[#EEF2FF] flex items-center justify-center mx-auto shadow-xs">
-                  <CheckCircle2 className="w-8 h-8 text-[#4F46E5]" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-[#1A1A1A]">Review Submitted!</h4>
-                  <p className="text-gray-500 text-xs font-semibold mt-1">
-                    Your valuable feedback has been posted successfully.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleReviewSubmit} className="space-y-6">
-                
-                <div className="flex items-center gap-4 bg-[#EEF2FF] rounded-2xl p-4 border border-indigo-50/50">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 shrink-0">
-                    <img src={selectedPending.image} alt={selectedPending.propertyTitle} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-sm text-[#1A1A1A]">{selectedPending.propertyTitle}</h4>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Owner/Host: {selectedPending.landlordName}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2">
-                    Select Rating
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: 5 }, (_, idx) => {
-                      const starValue = idx + 1;
-                      const isActive = starValue <= (hoverRating || rating);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setRating(starValue)}
-                          onMouseEnter={() => setHoverRating(starValue)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          className="p-1 transition-transform active:scale-90"
-                        >
-                          <Star 
-                            className={`w-8 h-8 transition duration-150 ${
-                              isActive 
-                                ? "fill-amber-400 text-amber-400 scale-105" 
-                                : "text-gray-300"
-                            }`} 
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2">
-                    Your Review & Experience
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    required
-                    placeholder="Write details about the property, location, hosting, and landlord..."
-                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm outline-none focus:border-gray-400 focus:bg-white transition duration-200 resize-none font-semibold text-gray-700"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPending(null)}
-                    className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-2xl py-3 text-xs font-bold transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={rating === 0 || !reviewComment.trim()}
-                    className={`flex-1 rounded-2xl py-3 text-xs font-bold shadow-sm transition duration-200 ${
-                      rating === 0 || !reviewComment.trim()
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "bg-[#4F46E5] text-white hover:bg-[#4338CA] active:scale-95"
-                    }`}
-                  >
-                    Submit Review
-                  </button>
-                </div>
-
-              </form>
-            )}
-
-          </div>
-        </div>
-      )}
 
       {/* Edit Profile Modal Form overlay */}
       {showEditModal && (
