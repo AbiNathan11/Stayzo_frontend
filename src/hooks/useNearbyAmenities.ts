@@ -20,7 +20,7 @@ export function useNearbyAmenities(
   address: string | null | undefined,
   lat?: number | null,
   lng?: number | null,
-  radiusMetres = 3000
+  radiusMetres = 10000
 ): UseNearbyAmenitiesResult {
   const [coords, setCoords] = useState<LatLng | null>(null);
   const [amenities, setAmenities] = useState<Amenity[]>([]);

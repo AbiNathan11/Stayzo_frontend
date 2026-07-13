@@ -360,6 +360,68 @@ function DesktopCanvasPad({ onSave }: { onSave: (dataUrl: string) => void }) {
   );
 }
 
+const calculateEndDate = (startDateStr: string, durationStr: string): string => {
+  try {
+    let date: Date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(startDateStr)) {
+      const parts = startDateStr.split('-');
+      date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    } else {
+      date = new Date(startDateStr);
+    }
+    
+    if (isNaN(date.getTime())) {
+      date = new Date(Date.parse(startDateStr));
+      if (isNaN(date.getTime())) {
+        return "";
+      }
+    }
+
+    const normalized = durationStr.toLowerCase().trim();
+    let monthsToAdd = 0;
+
+    const matchMonths = normalized.match(/(\d+)\s*month/);
+    const matchYears = normalized.match(/(\d+)\s*year/);
+    const matchDigits = normalized.match(/^(\d+)$/);
+
+    if (matchMonths) {
+      monthsToAdd = parseInt(matchMonths[1], 10);
+    } else if (matchYears) {
+      monthsToAdd = parseInt(matchYears[1], 10) * 12;
+    } else if (matchDigits) {
+      monthsToAdd = parseInt(matchDigits[1], 10);
+    } else {
+      if (normalized.includes("six")) monthsToAdd = 6;
+      else if (normalized.includes("twelve")) monthsToAdd = 12;
+      else if (normalized.includes("one")) monthsToAdd = 12;
+      else monthsToAdd = 12;
+    }
+
+    date.setMonth(date.getMonth() + monthsToAdd);
+    date.setDate(date.getDate() - 1);
+
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (err) {
+    console.error("Error calculating end date:", err);
+    return "";
+  }
+};
+
+const formatDateToReadable = (dateStr: string): string => {
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const parts = dateStr.split('-');
+      const date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+    }
+    return dateStr;
+  } catch {
+    return dateStr;
+  }
+};
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function OwnerAgreementPage() {
   const pathname = usePathname();
@@ -457,7 +519,7 @@ export default function OwnerAgreementPage() {
   // Build QR code URL using auto-detected LAN IP so phones on same Wi-Fi can reach it
   const getQrCodeUrl = () => {
     const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
-    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
+    return `http://${localNetIp}${port}/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
   };
 
   // Listen to Storage events (fallback from phone signature pads on same device)
@@ -489,8 +551,7 @@ export default function OwnerAgreementPage() {
       let mapped: SavedAgreement[] = [];
       if (response.ok) {
         const data = await response.json();
-        const activeAgreements = data.filter((item: any) => item.status === 'Active');
-        mapped = activeAgreements.map((item: any) => ({
+        mapped = data.map((item: any) => ({
           id: item.id,
           templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
           templateTitle: 'Rental Lease Agreement',
@@ -663,6 +724,7 @@ export default function OwnerAgreementPage() {
     setCurrentFieldIdx(0);
     setLandlordSig(null);
     setTenantSig(null);
+    setIsAgreementSent(false); // Reset sent state on starting a new draft
 
     // Reset values
     const initialValues: Record<string, string> = {};
@@ -685,7 +747,12 @@ export default function OwnerAgreementPage() {
 
   // Exit current drafting
   const handleExitDraft = () => {
-    setShowExitConfirm(true);
+    const isUnfinishedOrUnsigned = getProgressPercentage() < 100 || !landlordSig;
+    if (isUnfinishedOrUnsigned && !isAgreementSent) {
+      setShowExitConfirm(true);
+    } else {
+      handleConfirmExit();
+    }
   };
 
   const handleConfirmExit = () => {
@@ -695,6 +762,7 @@ export default function OwnerAgreementPage() {
     setLandlordSig(null);
     setTenantSig(null);
     setShowExitConfirm(false);
+    setIsAgreementSent(false); // Reset sent state on exit
   };
 
   // Simulate bot typing delay
@@ -706,14 +774,32 @@ export default function OwnerAgreementPage() {
     setTimeout(() => {
       setIsTyping(false);
 
-      const isFinished = nextIdx >= selectedTemplate.fields.length;
+      let isFinished = nextIdx >= selectedTemplate.fields.length;
       let botText = '';
+      let skippedEndDate = false;
+      let calculatedEndVal = '';
+
+      // Skip the 'endDate' field if it was automatically calculated
+      if (!isFinished && selectedTemplate.fields[nextIdx].id === 'endDate') {
+        skippedEndDate = true;
+        calculatedEndVal = currentVals.endDate || '';
+        nextIdx = nextIdx + 1;
+        isFinished = nextIdx >= selectedTemplate.fields.length;
+      }
 
       if (isFinished) {
-        botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
+        if (skippedEndDate) {
+          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\n📅 I have automatically calculated the Lease End Date as "${calculatedEndVal}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
+        } else {
+          botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
+        }
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
-        botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
+        if (skippedEndDate) {
+          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\n📅 I have automatically calculated the Lease End Date as "${calculatedEndVal}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
+        } else {
+          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
+        }
       }
 
       setChatHistory(prev => [
@@ -744,7 +830,7 @@ export default function OwnerAgreementPage() {
     if (fieldId === 'tenantName') {
       const nameRegex = /^[A-Za-z\s.'-]{2,}$/;
       if (!nameRegex.test(trimmed)) {
-        return "Please enter a valid tenant name (at least 2 characters, alphabetic letters only).";
+        return "Please enter a valid tenant name (at least 2 characters, alphabetic letters and spaces only).";
       }
     }
 
@@ -762,27 +848,50 @@ export default function OwnerAgreementPage() {
     }
 
     if (['rentAmount', 'advancePayment', 'depositAmount', 'lateFee'].includes(fieldId)) {
-      // Must contain at least one digit
       if (!/\d/.test(trimmed)) {
         return "Please include a numeric amount in your response (e.g., Rs 30,000).";
       }
     }
 
     if (fieldId === 'startDate') {
-      if (trimmed.length < 4) {
-        return "Please enter a valid starting date (e.g., June 1, 2026).";
+      const parsedDate = new Date(trimmed);
+      if (isNaN(parsedDate.getTime())) {
+        return "Please provide a valid starting date (e.g., June 1, 2026 or select it from the calendar).";
       }
     }
 
     if (fieldId === 'duration') {
-      if (trimmed.length < 2) {
-        return "Please enter a valid lease duration (e.g., 12 Months).";
+      const durationVal = trimmed.toLowerCase();
+      if (!/\d/.test(durationVal)) {
+        return "Please specify a numeric duration (e.g., '12 Months' or '1 Year').";
+      }
+      if (!durationVal.includes('month') && !durationVal.includes('year') && !durationVal.includes('day')) {
+        return "Please specify the time unit, such as 'Months' or 'Years' (e.g., '12 Months').";
       }
     }
 
     if (fieldId === 'endDate') {
-      if (trimmed.length < 4) {
-        return "Please enter a valid lease end date (e.g., December 1, 2026).";
+      const parsedDate = new Date(trimmed);
+      if (isNaN(parsedDate.getTime())) {
+        return "Please provide a valid ending date (e.g., December 1, 2026).";
+      }
+    }
+
+    if (fieldId === 'utilities') {
+      if (trimmed.length < 5) {
+        return "Please describe utility responsibilities in more detail (at least 5 characters).";
+      }
+    }
+
+    if (fieldId === 'petPolicy') {
+      if (trimmed.length < 3) {
+        return "Please specify the pet policy (e.g. 'No pets allowed' or 'Pets under 25 lbs allowed').";
+      }
+    }
+
+    if (fieldId === 'maintenance') {
+      if (trimmed.length < 5) {
+        return "Please specify maintenance rules in more detail (at least 5 characters).";
       }
     }
 
@@ -791,7 +900,7 @@ export default function OwnerAgreementPage() {
 
   // Handle Send Chat
   const handleSendChat = (textToSend?: string) => {
-    const text = (textToSend !== undefined ? textToSend : chatInput).trim();
+    let text = (textToSend !== undefined ? textToSend : chatInput).trim();
     if (!text || !selectedTemplate) return;
 
     if (currentFieldIdx >= selectedTemplate.fields.length) {
@@ -805,6 +914,11 @@ export default function OwnerAgreementPage() {
     }
 
     const currentField = selectedTemplate.fields[currentFieldIdx];
+
+    // Format date automatically from calendar format (YYYY-MM-DD) to readable format (Month DD, YYYY)
+    if (currentField.id === 'startDate') {
+      text = formatDateToReadable(text);
+    }
 
     // Validate answer!
     const validationError = validateField(currentField.id, text);
@@ -829,7 +943,19 @@ export default function OwnerAgreementPage() {
       return;
     }
 
-    const nextVals = { ...fieldValues, [currentField.id]: text };
+    let nextVals = { ...fieldValues, [currentField.id]: text };
+
+    // Auto-calculate end date after lease duration is answered
+    if (currentField.id === 'duration') {
+      const startVal = nextVals.startDate;
+      if (startVal) {
+        const calculatedEnd = calculateEndDate(startVal, text);
+        if (calculatedEnd) {
+          nextVals.endDate = calculatedEnd;
+        }
+      }
+    }
+
     setFieldValues(nextVals);
 
     const userMessage = {
@@ -1001,6 +1127,10 @@ export default function OwnerAgreementPage() {
       const savedData = await response.json();
       showToast("Agreement signed and successfully sent to Tenant!");
       setIsAgreementSent(true); // Lock the agreement from further editing
+
+      // Clear the temporary local draft since it is successfully completed and sent!
+      localStorage.removeItem('stayzo_ongoing_agreement_draft');
+      setHasSavedDraft(false);
 
       if (landlordUser?.email) {
         fetchAgreementsFromDb(landlordUser.email);
@@ -2142,7 +2272,11 @@ export default function OwnerAgreementPage() {
                   ) : (
                   <div className="flex items-center gap-2 border border-gray-200 focus-within:border-gray-400 rounded-xl p-1 bg-white transition-colors">
                     <input
-                      type="text"
+                      type={
+                        currentFieldIdx < selectedTemplate.fields.length && selectedTemplate.fields[currentFieldIdx].id === 'startDate'
+                          ? 'date'
+                          : 'text'
+                      }
                       placeholder={
                         currentFieldIdx < selectedTemplate.fields.length
                           ? `Type ${selectedTemplate.fields[currentFieldIdx].label}...`
@@ -2170,7 +2304,13 @@ export default function OwnerAgreementPage() {
                       <span>Answer assistant prompts to compile agreement clauses.</span>
                       {selectedTemplate.fields[currentFieldIdx].placeholder && (
                         <button
-                          onClick={() => setChatInput(selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, ''))}
+                          onClick={() => {
+                            let val = selectedTemplate.fields[currentFieldIdx].placeholder.replace(/^e\.g\.\s+/, '');
+                            if (selectedTemplate.fields[currentFieldIdx].id === 'startDate') {
+                              val = '2026-06-01';
+                            }
+                            setChatInput(val);
+                          }}
                           className="text-[#4F46E5] font-bold hover:underline"
                         >
                           Use Suggestion

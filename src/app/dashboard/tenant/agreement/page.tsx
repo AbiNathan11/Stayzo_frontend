@@ -291,7 +291,7 @@ export default function TenantAgreementPage() {
   const getQrCodeUrl = () => {
     if (!selectedAgreement) return '';
     const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
-    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=tenant&draftId=${selectedAgreement.id}&backendIp=${localNetIp}`;
+    return `http://${localNetIp}${port}/sign?role=tenant&draftId=${selectedAgreement.id}&backendIp=${localNetIp}`;
   };
 
   const submitTenantSignature = async () => {
@@ -629,7 +629,7 @@ export default function TenantAgreementPage() {
                             href={getQrCodeUrl()}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] font-black text-purple-700 hover:underline uppercase tracking-wider block mt-2"
+                            className="text-[10px] font-black text-[#4F46E5] hover:text-[#4338CA] hover:underline uppercase tracking-wider block mt-2"
                           >
                             [Open Mobile Signature Page]
                           </a>
