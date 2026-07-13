@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, BedDouble, Bath, Maximize2 } from 'lucide-react';
+import { Heart, BedDouble, Bath, Maximize2, MapPin, Clock } from 'lucide-react';
 import PropertyReviews from '@/components/PropertyReviews';
+import Cookies from 'js-cookie';
 
 interface WishlistItem {
   id: string | number;
@@ -19,18 +20,21 @@ interface WishlistItem {
 
 export default function SavedPropertiesPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'saved' | 'booking'>('booking');
+  const [bookingTab, setBookingTab] = useState<'requested' | 'accepted' | 'declined'>('requested');
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingBookings, setLoadingBookings] = useState(true);
 
+  // Fetch Wishlist
   useEffect(() => {
     const saved = localStorage.getItem('stayzo_wishlist');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Supports legacy object array or standard ID array format
         const idsArray = parsed.map((item: any) => typeof item === 'object' ? String(item.id) : String(item));
         
-        // Remove legacy mock IDs
         const mockIds = ["1", "3", "11", "12"];
         const cleanIds = idsArray.filter((id: string) => !mockIds.includes(id));
 
@@ -65,7 +69,6 @@ export default function SavedPropertiesPage() {
           const validResults = results.filter(Boolean) as WishlistItem[];
           setWishlist(validResults);
           
-          // Keep localStorage in sync with valid IDs
           const validIds = validResults.map(item => String(item.id));
           localStorage.setItem('stayzo_wishlist', JSON.stringify(validIds));
           setLoading(false);
@@ -80,6 +83,29 @@ export default function SavedPropertiesPage() {
     }
   }, []);
 
+  // Fetch Bookings
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const token = Cookies.get('stayzo_token');
+        if (!token) return;
+        const res = await fetch('http://localhost:3001/api/bookings/tenant', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBookings(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+    fetchBookings();
+  }, []);
+
   const handleRemove = (id: string | number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -91,120 +117,282 @@ export default function SavedPropertiesPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#1A1A1A]">Saved Properties</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Properties
+          </h2>
           <p className="text-gray-500 text-xs font-semibold mt-1">
-            {wishlist.length} {wishlist.length === 1 ? 'property' : 'properties'} saved to your wishlist.
+            Manage your saved properties and booking requests.
           </p>
         </div>
         <Link
           href="/search"
-          className="shrink-0 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs"
+          className="shrink-0 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs cursor-pointer"
         >
           Browse more properties
         </Link>
       </div>
 
-      {/* Loading, Empty state or Card Grid */}
-      {loading ? (
-        <div className="text-center py-24 text-gray-400 font-semibold animate-pulse">
-          Loading saved properties...
-        </div>
-      ) : wishlist.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-[32px] p-16 shadow-sm text-center space-y-5">
-          <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mx-auto">
-            <Heart className="w-7 h-7 text-gray-300" />
-          </div>
-          <div>
-            <h3 className="text-lg font-extrabold text-[#1A1A1A]">Your wishlist is empty</h3>
-            <p className="text-gray-400 text-xs font-semibold mt-1.5 max-w-xs mx-auto">
-              Browse premium properties and save your favourites here to compare later.
-            </p>
-          </div>
-          <Link
-            href="/search"
-            className="inline-block bg-[#1A1A1A] hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition"
-          >
-            Browse Properties
-          </Link>
-        </div>
-      ) : (
-        /* Property Cards Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {wishlist.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => router.push(`/properties/${item.id}?from=saved`)}
-              className="bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group cursor-pointer"
-            >
-              {/* Property Image */}
-              <div className="h-[220px] w-full bg-gray-50 relative shrink-0 overflow-hidden">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                />
+      <div className="flex border-b border-gray-200 mb-8 select-none">
+        <button 
+          onClick={() => setActiveTab('booking')}
+          className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
+            activeTab === 'booking' 
+              ? 'border-[#4F46E5] text-[#4F46E5]' 
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Booking ({bookings.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('saved')}
+          className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
+            activeTab === 'saved' 
+              ? 'border-[#4F46E5] text-[#4F46E5]' 
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Saved ({wishlist.length})
+        </button>
+      </div>
 
-                {/* Remove from wishlist button */}
-                <button
-                  onClick={(e) => handleRemove(item.id, e)}
-                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition z-10"
-                  title="Remove from saved"
-                >
-                  <Heart className="w-4 h-4 fill-[#1A1A1A] text-[#1A1A1A]" />
-                </button>
-              </div>
-
-              {/* Property Details */}
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-bold text-base text-[#1A1A1A] leading-tight group-hover:text-black transition-colors mb-1">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-500 text-xs font-medium mb-4">{item.address}</p>
-                </div>
-
-                {/* Specs row */}
-                <div className="flex items-center gap-4 text-xs font-semibold text-gray-600 mb-4">
-                  <span className="flex items-center gap-1.5">
-                    <BedDouble className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                    {item.beds} Beds
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Bath className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                    {item.baths} Baths
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Maximize2 className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                    {item.sqft.toLocaleString()} sqft
-                  </span>
-                </div>
-
-                <PropertyReviews propertyId={String(item.id)} />
-
-                {/* Price + View Button */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div>
-                    <span className="text-base font-extrabold text-[#1A1A1A]">{item.price}</span>
-                    <span className="text-[10px] text-gray-400 font-semibold uppercase ml-1">/mo</span>
-                  </div>
-
-                  {/* ✅ View navigates to the same detailed page as search results */}
-                  <span
-                    className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold transition duration-200 shadow-sm"
-                  >
-                    View
-                  </span>
-                </div>
-              </div>
+      {activeTab === 'saved' && (
+        <div className="space-y-8">
+          {loading ? (
+            <div className="text-center py-24 text-gray-400 font-semibold animate-pulse">
+              Loading saved properties...
             </div>
-          ))}
+          ) : wishlist.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-[32px] p-16 shadow-sm text-center space-y-5">
+              <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mx-auto">
+                <Heart className="w-7 h-7 text-gray-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-[#1A1A1A]">Your wishlist is empty</h3>
+                <p className="text-gray-400 text-xs font-semibold mt-1.5 max-w-xs mx-auto">
+                  Browse premium properties and save your favourites here to compare later.
+                </p>
+              </div>
+              <Link
+                href="/search"
+                className="inline-block bg-[#1A1A1A] hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition"
+              >
+                Browse Properties
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {wishlist.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => router.push(`/properties/${item.id}?from=saved`)}
+                  className="bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group cursor-pointer"
+                >
+                  <div className="h-[220px] w-full bg-gray-50 relative shrink-0 overflow-hidden">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <button
+                      onClick={(e) => handleRemove(item.id, e)}
+                      className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition z-10"
+                      title="Remove from saved"
+                    >
+                      <Heart className="w-4 h-4 fill-[#1A1A1A] text-[#1A1A1A]" />
+                    </button>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-base text-[#1A1A1A] leading-tight group-hover:text-black transition-colors mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-gray-500 text-xs font-medium mb-4">{item.address}</p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs font-semibold text-gray-600 mb-4">
+                      <span className="flex items-center gap-1.5">
+                        <BedDouble className="w-3.5 h-3.5 text-[#1A1A1A]" />
+                        {item.beds} Beds
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Bath className="w-3.5 h-3.5 text-[#1A1A1A]" />
+                        {item.baths} Baths
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Maximize2 className="w-3.5 h-3.5 text-[#1A1A1A]" />
+                        {item.sqft.toLocaleString()} sqft
+                      </span>
+                    </div>
+                    <PropertyReviews propertyId={String(item.id)} />
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div>
+                        <span className="text-base font-extrabold text-[#1A1A1A]">{item.price}</span>
+                        <span className="text-[10px] text-gray-400 font-semibold uppercase ml-1">/mo</span>
+                      </div>
+                      <span className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold transition duration-200 shadow-sm">
+                        View
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {activeTab === 'booking' && (
+        <div className="space-y-6">
+          <div className="flex gap-3 mb-6 select-none overflow-x-auto pb-2">
+            <button
+              onClick={() => setBookingTab('requested')}
+              className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-colors whitespace-nowrap ${
+                bookingTab === 'requested' ? 'bg-[#1A1A1A] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-[#1A1A1A]'
+              }`}
+            >
+              Requested ({bookings.filter(b => b.status === 'PENDING').length})
+            </button>
+            <button
+              onClick={() => setBookingTab('accepted')}
+              className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-colors whitespace-nowrap ${
+                bookingTab === 'accepted' ? 'bg-[#1A1A1A] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-[#1A1A1A]'
+              }`}
+            >
+              Accepted ({bookings.filter(b => b.status === 'CONFIRMED').length})
+            </button>
+            <button
+              onClick={() => setBookingTab('declined')}
+              className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-colors whitespace-nowrap ${
+                bookingTab === 'declined' ? 'bg-[#1A1A1A] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-[#1A1A1A]'
+              }`}
+            >
+              Declined ({bookings.filter(b => b.status === 'CANCELLED' || b.status === 'REJECTED').length})
+            </button>
+          </div>
+
+          {loadingBookings ? (
+            <div className="text-center py-24 text-gray-400 font-semibold animate-pulse">
+              Loading bookings...
+            </div>
+          ) : (() => {
+            const filtered = bookings.filter(b => {
+              if (bookingTab === 'requested') return b.status === 'PENDING';
+              if (bookingTab === 'accepted') return b.status === 'CONFIRMED';
+              if (bookingTab === 'declined') return b.status === 'CANCELLED' || b.status === 'REJECTED';
+              return false;
+            });
+            return filtered.length === 0 ? (
+              <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
+                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Bookings Found</p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Your requested properties will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.map((request) => (
+                  <div key={request.id} className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition">
+                  {request.property?.images?.[0] && (
+                    <div className="h-40 w-full overflow-hidden shrink-0">
+                      <img src={request.property.images[0]} alt={request.property.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                        request.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                        request.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {request.status}
+                      </span>
+                      <p className="text-[10px] font-bold text-gray-400">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    
+                    <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate">
+                      {request.property?.title}
+                    </h3>
+                    
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5 mb-4 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                      {request.property?.address}
+                    </p>
+                    
+                    <p className="text-xs text-gray-600 line-clamp-2 mb-4 leading-relaxed">
+                      {request.property?.description || "No description provided."}
+                    </p>
+
+                    <div className="bg-gray-50 rounded-xl p-3 space-y-2 mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Rent Amount</span>
+                        <span className="text-xs font-black text-[#1A1A1A]">Rs. {request.property?.price?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      {request.slot && (
+                        <div className="flex justify-between">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Slot</span>
+                          <span className="text-[11px] font-bold text-gray-700">{new Date(request.slot.date).toLocaleDateString()} at {request.slot.startTime}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {request.status === 'PENDING' ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (request.property?.id) router.push(`/properties/${request.property.id}?from=booking`);
+                          }}
+                          className="flex-1 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                        >
+                          View Property
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm('Are you sure you want to cancel this booking request?')) return;
+                            try {
+                              const token = Cookies.get('stayzo_token');
+                              if (!token) return;
+                              const res = await fetch(`http://localhost:3001/api/bookings/${request.id}/cancel`, {
+                                method: 'PATCH',
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                              if (res.ok) {
+                                setBookings(prev => prev.map(b => b.id === request.id ? { ...b, status: 'CANCELLED' } : b));
+                              } else {
+                                alert('Failed to cancel booking');
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                        >
+                          Cancel Booking
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (request.property?.id) router.push(`/properties/${request.property.id}?from=booking`);
+                        }}
+                        className="w-full bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                      >
+                        View Property
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

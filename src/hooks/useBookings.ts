@@ -153,7 +153,8 @@ export function useOwnerBookings() {
       if (!res.ok) {
         handleAuthError(res, data);
       } else {
-        setBookings(Array.isArray(data) ? data : []);
+        // Only return scheduled visits (Booking) which have a slot, not direct PropertyBookings
+        setBookings(Array.isArray(data) ? data.filter((b: any) => b.slot !== null) : []);
       }
     } catch {}
     finally { setLoading(false); }

@@ -193,7 +193,8 @@ export default function OwnerListings() {
         });
         if (bookingsRes.ok) {
           const bookingsData = await bookingsRes.json();
-          setBookingRequests(bookingsData.filter((b: any) => b.status === 'PENDING'));
+          // Only show direct property bookings (PropertyBooking) which have no slot
+          setBookingRequests(bookingsData.filter((b: any) => b.status === 'PENDING' && b.slot === null));
         }
       } catch (err) {
         console.error('Error fetching data:', err);
