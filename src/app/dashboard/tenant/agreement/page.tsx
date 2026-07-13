@@ -629,7 +629,7 @@ export default function TenantAgreementPage() {
                             href={getQrCodeUrl()}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] font-black text-purple-700 hover:underline uppercase tracking-wider block mt-2"
+                            className="text-[10px] font-black text-[#4F46E5] hover:text-[#4338CA] hover:underline uppercase tracking-wider block mt-2"
                           >
                             [Open Mobile Signature Page]
                           </a>
