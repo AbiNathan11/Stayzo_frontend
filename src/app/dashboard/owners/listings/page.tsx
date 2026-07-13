@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import { 
   Pencil, 
@@ -17,7 +17,9 @@ import {
   Maximize, 
   AlertCircle, 
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Check,
+  X
 } from 'lucide-react';
 import PropertyReviews from '@/components/PropertyReviews';
 
@@ -110,11 +112,18 @@ function decodeToken(token: string): Record<string, any> | null {
 
 export default function OwnerListings() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [ownerId, setOwnerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'active' | 'processing'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'processing' | 'booking_request'>(
+    tabParam === 'booking_request' ? 'booking_request' : 'active'
+  );
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+  const [declineConfirmId, setDeclineConfirmId] = useState<string | null>(null);
   const [draft, setDraft] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -151,30 +160,88 @@ export default function OwnerListings() {
     }
   }, []);
 
+  useEffect(() => {
+    if (tabParam === 'booking_request') {
+      setActiveTab('booking_request');
+    }
+  }, [tabParam]);
+
   // Fetch only this owner's properties whenever ownerId is resolved
   useEffect(() => {
     if (!ownerId) return;
-    const fetchListings = async () => {
-      setLoading(true);
+    const fetchData = async () => {
+      if (listings.length === 0) setLoading(true);
       try {
         const token = Cookies.get('stayzo_token');
-        const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`, {
+        
+        // Fetch properties
+        if (listings.length === 0) {
+          const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data: Listing[] = await res.json();
+            setListings(data);
+          } else {
+            console.error('Failed to fetch owner listings:', res.status);
+          }
+        }
+
+        // Fetch bookings
+        const bookingsRes = await fetch(`http://localhost:3001/api/bookings/owner`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data: Listing[] = await res.json();
-          setListings(data);
-        } else {
-          console.error('Failed to fetch owner listings:', res.status);
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json();
+          setBookingRequests(bookingsData.filter((b: any) => b.status === 'PENDING'));
         }
       } catch (err) {
-        console.error('Error fetching listings:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchListings();
-  }, [ownerId]);
+    fetchData();
+  }, [ownerId, activeTab]);
+
+  const handleApproveBooking = async (id: string) => {
+    try {
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch(`http://localhost:3001/api/bookings/${id}/approve`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success('Booking approved successfully');
+        setBookingRequests(prev => prev.filter(b => b.id !== id));
+      } else {
+        toast.error('Failed to approve booking');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred');
+    }
+  };
+
+  const handleDeclineBooking = async (id: string) => {
+    try {
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch(`http://localhost:3001/api/bookings/${id}/reject`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success('Booking declined');
+        setBookingRequests(prev => prev.filter(b => b.id !== id));
+        setDeclineConfirmId(null);
+      } else {
+        toast.error('Failed to decline booking');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred');
+    }
+  };
 
   const totalPages = Math.ceil(listings.length / 6) || 1;
 
@@ -251,7 +318,7 @@ export default function OwnerListings() {
           </button>
           <button 
             onClick={() => setActiveTab('processing')}
-            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'processing' 
                 ? 'border-[#4F46E5] text-[#4F46E5]' 
                 : 'border-transparent text-gray-400 hover:text-gray-600'
@@ -259,6 +326,16 @@ export default function OwnerListings() {
           >
             In Progress & Drafts ({draft ? 1 : 0})
             {draft && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('booking_request')}
+            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+              activeTab === 'booking_request' 
+                ? 'border-[#4F46E5] text-[#4F46E5]' 
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Booking Request
           </button>
         </div>
 
@@ -479,6 +556,71 @@ export default function OwnerListings() {
           </div>
         )}
 
+        {/* ── Booking Request Tab ── */}
+        {activeTab === 'booking_request' && (
+          <div className="space-y-6">
+            {bookingRequests.length === 0 ? (
+              <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
+                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Booking Requests Found</p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Any booking requests from potential tenants will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bookingRequests.map((request) => (
+                  <div key={request.id} className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition">
+                    <div className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="bg-blue-100 text-blue-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                          New Request
+                        </span>
+                        <p className="text-[10px] font-bold text-gray-400">
+                          {new Date(request.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      
+                      <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate">
+                        {request.property?.title}
+                      </h3>
+                      
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5 mb-4">
+                        <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                        {request.property?.address}
+                      </p>
+
+                      <div className="bg-gray-50 rounded-xl p-3 mb-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Rent Amount</span>
+                          <span className="text-xs font-black text-[#1A1A1A]">Rs. {request.property?.price?.toLocaleString() || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tenant</span>
+                          <span className="text-xs font-black text-[#1A1A1A]">{request.tenant?.firstName} {request.tenant?.lastName}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleApproveBooking(request.id)}
+                          className="flex-1 flex justify-center items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Accept
+                        </button>
+                        <button 
+                          onClick={() => setDeclineConfirmId(request.id)}
+                          className="flex-1 flex justify-center items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
+                        >
+                          <X className="w-3.5 h-3.5" /> Decline
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Pagination ── */}
         {activeTab === 'active' && listings.length > 0 && (
           <div className="flex items-center justify-between mt-12 pt-6 border-t border-gray-100">
@@ -609,6 +751,39 @@ export default function OwnerListings() {
                   <button type="submit" className="px-6 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-colors shadow-sm">Publish Listing</button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Decline Confirmation Modal ── */}
+      {declineConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Decline Request</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to decline this booking request? The tenant will be notified, and this action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setDeclineConfirmId(null)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => handleDeclineBooking(declineConfirmId)}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
         </div>
