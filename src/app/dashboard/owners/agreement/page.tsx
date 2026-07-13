@@ -457,7 +457,7 @@ export default function OwnerAgreementPage() {
   // Build QR code URL using auto-detected LAN IP so phones on same Wi-Fi can reach it
   const getQrCodeUrl = () => {
     const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':3000';
-    return `http://${localNetIp}${port}/dashboard/owners/agreement/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
+    return `http://${localNetIp}${port}/sign?role=${showSigModal}&draftId=${activeDraftId}&backendIp=${localNetIp}`;
   };
 
   // Listen to Storage events (fallback from phone signature pads on same device)
