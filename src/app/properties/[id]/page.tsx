@@ -101,6 +101,62 @@ export default function PropertyDetailPage({
     }
   }, []);
 
+  useEffect(() => {
+    if (activeModal === 'tour' && property?.panoramaImage) {
+      // 1. Load CSS
+      if (!document.getElementById('pannellum-css')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css';
+        link.id = 'pannellum-css';
+        document.head.appendChild(link);
+      }
+
+      // Helper function to initialize Pannellum viewer
+      const initViewer = () => {
+        if ((window as any).pannellum && property?.panoramaImage) {
+          try {
+            (window as any).pannellum.viewer('panorama-container', {
+              type: 'equirectangular',
+              panorama: property.panoramaImage,
+              autoLoad: true,
+              compass: false,
+              mouseZoom: true,
+            });
+          } catch (e) {
+            console.error('Pannellum initialization failed:', e);
+          }
+        }
+      };
+
+      // 2. Load JS
+      if ((window as any).pannellum) {
+        const timer = setTimeout(initViewer, 100);
+        return () => clearTimeout(timer);
+      } else {
+        const existingScript = document.getElementById('pannellum-js');
+        if (!existingScript) {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js';
+          script.id = 'pannellum-js';
+          script.async = true;
+          script.onload = () => {
+            initViewer();
+          };
+          document.body.appendChild(script);
+        } else {
+          const checkInterval = setInterval(() => {
+            if ((window as any).pannellum) {
+              clearInterval(checkInterval);
+              initViewer();
+            }
+          }, 100);
+          return () => clearInterval(checkInterval);
+        }
+      }
+    }
+  }, [activeModal, property?.panoramaImage]);
+
   const isOwner = property?.owner?.email === currentUserEmail;
 
   const handleBoostListing = async (propertyId: string) => {
@@ -897,26 +953,19 @@ export default function PropertyDetailPage({
 
       {/* 360° Tour Modal */}
       {activeModal === 'tour' && property.panoramaImage && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden relative shadow-2xl">
-            <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 bg-white/95 p-2 rounded-full shadow-md transition z-10">
-              <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden relative shadow-2xl">
+            <button 
+              onClick={() => setActiveModal(null)} 
+              className="absolute top-4 right-4 bg-white/95 p-2 rounded-full shadow-md transition z-50 hover:bg-gray-100"
+            >
+              <X className="w-5 h-5 text-gray-800" />
             </button>
-            <div className="relative h-[450px] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-              <img src={property.panoramaImage} alt="360 Panorama" className="absolute inset-0 w-full h-full object-cover opacity-80 brightness-75" />
-              <div className="absolute inset-0 bg-black/30" />
-              <div className="relative z-10 text-center space-y-4 max-w-sm px-6">
-                <div className="w-20 h-20 rounded-full border-2 border-white/55 flex items-center justify-center mx-auto" style={{ animation: 'spin 12s linear infinite' }}>
-                  <Compass className="w-8 h-8 text-white" />
-                </div>
-                <h4 className="text-lg font-black text-white">360° Virtual Tour</h4>
-                <p className="text-xs text-gray-300 font-semibold">Drag to explore the panoramic view of this property.</p>
-                <button
-                  onClick={() => window.open(property.panoramaImage!, '_blank')}
-                  className="bg-white text-[#1A1A1A] hover:bg-gray-100 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 mx-auto"
-                >
-                  Open Full View <ExternalLink className="w-3.5 h-3.5" />
-                </button>
+            <div className="relative h-[550px] w-full bg-slate-950 overflow-hidden">
+              <div id="panorama-container" className="w-full h-full" />
+              <div className="absolute top-4 left-4 bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-full pointer-events-none z-10 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5" />
+                <span>360° Interactive Viewer</span>
               </div>
             </div>
           </div>
