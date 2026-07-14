@@ -232,6 +232,7 @@ export default function TenantAuth() {
                         disabled={isUpgrading}
                         className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                         placeholder="Jane"
+                        suppressHydrationWarning
                       />
                     </div>
                     <div className="space-y-2">
@@ -244,6 +245,7 @@ export default function TenantAuth() {
                         disabled={isUpgrading}
                         className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                         placeholder="Doe"
+                        suppressHydrationWarning
                       />
                     </div>
                   </div>
@@ -259,6 +261,7 @@ export default function TenantAuth() {
                     disabled={isUpgrading}
                     className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-sm text-gray-800 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed"
                     placeholder="jane@example.com"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -312,6 +315,7 @@ export default function TenantAuth() {
                   type="submit"
                   disabled={loading}
                   className="w-full bg-[#1A1A1A] hover:bg-black disabled:opacity-50 text-white py-3.5 rounded-full text-xs font-bold tracking-wider uppercase transition shadow-sm mt-4 select-none cursor-pointer"
+                  suppressHydrationWarning
                 >
                   {loading ? 'Processing...' : (mode === 'login' ? 'Send Login Code' : 'Send Verification Code')}
                 </button>
@@ -333,6 +337,7 @@ export default function TenantAuth() {
                         setError('');
                       }}
                       className="text-[#1A1A1A] hover:underline font-extrabold cursor-pointer"
+                      suppressHydrationWarning
                     >
                       {mode === 'login' ? 'Sign up' : 'Log in'}
                     </button>
@@ -370,6 +375,7 @@ export default function TenantAuth() {
                     maxLength={6}
                     className="w-full bg-[#F5F7F8] border border-transparent rounded-xl px-4 py-3.5 outline-none focus:bg-white focus:border-[#1A1A1A] transition text-2xl tracking-[0.5em] text-center text-[#1A1A1A] font-extrabold"
                     placeholder="••••••"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -377,6 +383,7 @@ export default function TenantAuth() {
                   type="submit"
                   disabled={loading}
                   className="w-full bg-[#1A1A1A] hover:bg-black disabled:opacity-50 text-white py-3.5 rounded-full text-xs font-bold tracking-wider uppercase transition shadow-sm mt-4 select-none cursor-pointer"
+                  suppressHydrationWarning
                 >
                   {loading ? 'Verifying...' : 'Verify & Continue'}
                 </button>
