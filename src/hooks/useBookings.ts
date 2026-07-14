@@ -71,7 +71,8 @@ export function useTenantBookings() {
         handleAuthError(res, data);
         throw new Error(data.error);
       }
-      setBookings(data);
+      // Only return scheduled visits (Booking) which have a slot, not direct PropertyBookings
+      setBookings(Array.isArray(data) ? data.filter((b: any) => b.slot !== null) : []);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }, []);

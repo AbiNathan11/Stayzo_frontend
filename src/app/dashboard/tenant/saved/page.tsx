@@ -95,7 +95,8 @@ export default function SavedPropertiesPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setBookings(data);
+          // Only show direct property bookings (PropertyBooking) which have no slot
+          setBookings(Array.isArray(data) ? data.filter((b: any) => b.slot === null) : []);
         }
       } catch (err) {
         console.error(err);
