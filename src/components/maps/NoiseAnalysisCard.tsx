@@ -107,7 +107,7 @@ export default function NoiseAnalysisCard({ noisePrediction }: NoiseAnalysisCard
           <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
             <span>Quiet (0)</span>
             <span>Moderate (33)</span>
-            <span>Active (66+)</span>
+            <span>High (66+)</span>
           </div>
         </div>
       </div>
@@ -120,42 +120,7 @@ export default function NoiseAnalysisCard({ noisePrediction }: NoiseAnalysisCard
         </p>
       </div>
 
-      {/* Contributing Factors */}
-      {noisePrediction.factors && noisePrediction.factors.length > 0 && (
-        <div className="space-y-4 pt-2">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Contributing Factors
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {noisePrediction.factors.map((f) => {
-              const isPositive = f.contribution > 0;
-              const isNeutral  = f.contribution === 0;
-              const badgeClass = isNeutral
-                ? 'text-gray-500 bg-gray-50 border-gray-200'
-                : isPositive
-                  ? 'text-rose-600 bg-rose-50 border-rose-100'
-                  : 'text-emerald-600 bg-emerald-50 border-emerald-100';
 
-              return (
-                <div
-                  key={f.name}
-                  className="border border-gray-100 rounded-2xl p-4 bg-white hover:border-gray-300 transition flex flex-col justify-between gap-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs font-black text-[#1A1A1A] leading-tight">{f.name}</span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border shrink-0 ${badgeClass}`}>
-                      {isPositive ? '+' : ''}{f.contribution} pts
-                    </span>
-                  </div>
-                  <p className="text-[10px] font-semibold text-gray-400 leading-relaxed">
-                    {f.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Live indicator */}
       <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
