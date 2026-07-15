@@ -545,7 +545,10 @@ export default function StartListingPage() {
           jobName: formData.jobName || null,
           jobPhone: formData.jobPhone || null,
           foodFacilities: (formData.foodFacilitiesList || []).filter((item: any) => item.name.trim() !== "" || item.phone.trim() !== ""),
-          partTimeJobs: (formData.partTimeJobsList || []).filter((item: any) => item.position.trim() !== "" || item.phone.trim() !== "")
+          partTimeJobs: (formData.partTimeJobsList || []).filter((item: any) => item.position.trim() !== "" || item.phone.trim() !== ""),
+          ownershipType: formData.ownershipType,
+          realOwnerName: formData.realOwnerName,
+          realOwnerEmail: formData.realOwnerEmail
         };
 
         const submitToBackend = async (transactionData?: any) => {
