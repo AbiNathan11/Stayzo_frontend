@@ -14,6 +14,11 @@ export default function OwnerDashboardLayout({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (pathname.includes('/broker')) {
+      setIsAuthenticated(true);
+      return;
+    }
+
     const token = Cookies.get('stayzo_token');
     if (!token) {
       window.location.href = '/auth?role=landlord';
@@ -65,6 +70,7 @@ export default function OwnerDashboardLayout({
 
   useEffect(() => {
     const checkAuth = () => {
+      if (pathname.includes('/broker')) return;
       const token = Cookies.get('stayzo_token');
       if (!token) {
         window.location.replace('/auth?role=landlord');
@@ -94,7 +100,7 @@ export default function OwnerDashboardLayout({
     );
   }
 
-  if (pathname.includes('/start_listing')) {
+  if (pathname.includes('/start_listing') || pathname.includes('/broker')) {
     return <>{children}</>;
   }
 

@@ -10,7 +10,7 @@ import {
   Home, Building2, Landmark, Map, HelpCircle, 
   Search, Bookmark, Bell, ChevronDown, 
   Plus, Minus, BedDouble, Bath, Maximize2, MapPin,
-  SlidersHorizontal, Heart, Star
+  SlidersHorizontal, Heart, Star, Sparkles
 } from 'lucide-react';
 
 interface Listing {
@@ -26,6 +26,7 @@ interface Listing {
   lng: number;
   rating: number;
   guestFavorite?: boolean;
+  isBoosted?: boolean;
 }
 
 function SearchContent() {
@@ -125,7 +126,8 @@ function SearchContent() {
             baths: item.bathrooms || 1,
             sqft: item.sqft || 1000,
             price: `Rs. ${Number(item.price).toLocaleString()}`,
-            address: item.address || `${item.city || 'Anytown'}, ${item.state || 'ST'}`
+            address: item.address || `${item.city || 'Anytown'}, ${item.state || 'ST'}`,
+            isBoosted: item.isBoosted || false
           };
         });
         setListings(mapped);
@@ -235,7 +237,13 @@ function SearchContent() {
     return true;
   });
 
-  const selectedProperty = filteredListings.find(l => l.id === activePropertyId) || filteredListings[0];
+  const sortedListings = [...filteredListings].sort((a, b) => {
+    if (a.isBoosted && !b.isBoosted) return -1;
+    if (!a.isBoosted && b.isBoosted) return 1;
+    return 0;
+  });
+
+  const selectedProperty = sortedListings.find(l => l.id === activePropertyId) || sortedListings[0];
 
   // Dynamically determine grid columns based on open panels
   let gridColsClass = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"; // Both closed (max 7)
@@ -448,12 +456,12 @@ function SearchContent() {
                   </div>
                 </div>
               ))
-            ) : filteredListings.length === 0 ? (
+            ) : sortedListings.length === 0 ? (
               <div className="col-span-full py-12 text-center text-gray-500 font-semibold">
                 No properties found matching your search.
               </div>
             ) : (
-              filteredListings.map((listing) => (
+              sortedListings.map((listing) => (
                 <Link 
                   key={listing.id}
                   href={`/properties/${listing.id}`}
@@ -468,12 +476,19 @@ function SearchContent() {
                       className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                     />
                     
-                    {/* Guest favorite Badge */}
-                    {listing.guestFavorite && (
-                      <div className="absolute top-2.5 left-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-bold text-gray-900 shadow-sm uppercase tracking-wide">
-                        Guest favorite
-                      </div>
-                    )}
+                    {/* Top Left Badges */}
+                    <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1 items-start">
+                      {listing.isBoosted && (
+                        <div className="bg-[#4F46E5]/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm uppercase tracking-wide flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Boosted
+                        </div>
+                      )}
+                      {listing.guestFavorite && (
+                        <div className="bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-bold text-gray-900 shadow-sm uppercase tracking-wide">
+                          Guest favorite
+                        </div>
+                      )}
+                    </div>
                     
                     {/* 360 Badge */}
                     {listing.panoramaImage && (
@@ -538,7 +553,7 @@ function SearchContent() {
         }`}>
           {showMap && (
             <SearchMap 
-              listings={filteredListings}
+              listings={sortedListings}
               activePropertyId={activePropertyId}
               onActivePropertyChange={(id) => setActivePropertyId(id)}
             />
