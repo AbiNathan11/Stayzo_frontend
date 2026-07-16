@@ -177,6 +177,7 @@ export default function StartListingPage() {
     postalCode: "",
     propertyCategory: "" as PropertyCategory,
     kitchens: 1,
+    halls: 1,
     bedrooms: 1,
     beds: 1,
     attachedBathrooms: 0,
@@ -532,7 +533,7 @@ export default function StartListingPage() {
           zipCode: formData.postalCode,
           bedrooms: formData.bedrooms.toString(),
           bathrooms: (formData.attachedBathrooms + formData.separateBathrooms).toString(),
-          sqft: 1200,
+          hall: formData.halls || 1,
           type: formData.propertyCategory || "Apartment",
           images: filteredImages,
           panoramaImage: formData.panoramaImage || null,
@@ -1045,6 +1046,7 @@ export default function StartListingPage() {
               <div className="space-y-6 max-w-lg">
                 {[
                   { label: "Kitchens", field: "kitchens" },
+                  { label: "Halls", field: "halls" },
                   { label: "Bedrooms", field: "bedrooms" },
                   { label: "Beds", field: "beds" },
                   { label: "Attached Bathrooms", field: "attachedBathrooms" },

@@ -35,7 +35,7 @@ interface Listing {
   state: string;
   bedrooms: number;
   bathrooms: number;
-  sqft: number;
+  hall: number;
   images: string[];
   panoramaImage?: string;
   status: string;
@@ -128,7 +128,7 @@ export default function OwnerListings() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', address: '', city: '', 
-    type: 'Apartment', bedrooms: '', bathrooms: '', sqft: '', 
+    type: 'Apartment', bedrooms: '', bathrooms: '', hall: '', 
     panoramaImage: '', waterBillImage: '', image: ''
   });
 
@@ -274,7 +274,7 @@ export default function OwnerListings() {
         const newProp: Listing = await res.json();
         setListings([newProp, ...listings]);
         setIsModalOpen(false);
-        setFormData({ title: '', description: '', price: '', address: '', city: '', type: 'Apartment', bedrooms: '', bathrooms: '', sqft: '', panoramaImage: '', waterBillImage: '', image: '' });
+        setFormData({ title: '', description: '', price: '', address: '', city: '', type: 'Apartment', bedrooms: '', bathrooms: '', hall: '', panoramaImage: '', waterBillImage: '', image: '' });
       }
     } catch (err) {
       console.error('Error creating property:', err);
@@ -454,10 +454,10 @@ export default function OwnerListings() {
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Size</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Halls</p>
                           <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
                             <Maximize className="w-3 h-3 text-gray-500" />
-                            {listing.sqft || 950}
+                            {listing.hall || 1}
                           </p>
                         </div>
                       </div>
@@ -701,8 +701,8 @@ export default function OwnerListings() {
                       <input type="number" step="0.5" value={formData.bathrooms} onChange={e => setFormData({...formData, bathrooms: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Sqft</label>
-                      <input type="number" value={formData.sqft} onChange={e => setFormData({...formData, sqft: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Halls</label>
+                      <input type="number" value={formData.hall} onChange={e => setFormData({...formData, hall: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
                     </div>
                   </div>
 

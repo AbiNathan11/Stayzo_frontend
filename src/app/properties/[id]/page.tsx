@@ -33,7 +33,7 @@ interface Property {
   zipCode: string | null;
   bedrooms: number;
   bathrooms: number;
-  sqft: number;
+  hall: number;
   type: string;
   status: string;
   isBoosted?: boolean;
@@ -601,17 +601,6 @@ export default function PropertyDetailPage({
                 <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full shadow-md flex items-center justify-center transition active:scale-95 z-10">
                   <ChevronRight className="w-5 h-5" />
                 </button>
-                <div className="absolute top-4 left-4 flex gap-2 z-10">
-                  <div className="bg-white/90 text-gray-800 text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <HelpCircle className="w-3.5 h-3.5 text-gray-500" /><span>Premium Stay?</span>
-                  </div>
-                  <div className="bg-[#1A1A1A] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /><span>Confirmed</span>
-                  </div>
-                </div>
-                <button onClick={() => triggerToast('Property link copied!')} className="absolute top-4 right-4 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-md transition z-10">
-                  <Share2 className="w-4 h-4" />
-                </button>
                 {/* Image counter */}
                 <div className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10">
                   {activeImgIndex + 1} / {images.length}
@@ -683,20 +672,6 @@ export default function PropertyDetailPage({
               </div>
             </div>
 
-            {/* Amenities */}
-            {property.amenities?.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Amenities</h4>
-                <div className="flex flex-wrap gap-2.5">
-                  {property.amenities.map((a, i) => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A1A1A] flex items-center gap-1.5 shadow-sm hover:border-gray-300 transition">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Description */}
             {property.description && (
@@ -725,7 +700,7 @@ export default function PropertyDetailPage({
                 {[
                   { label: 'Bedrooms', val: property.bedrooms, Icon: BedDouble },
                   { label: 'Bathrooms', val: property.bathrooms, Icon: Bath },
-                  { label: 'Size (sqft)', val: property.sqft, Icon: Maximize2 },
+                  { label: 'Halls', val: property.hall, Icon: Maximize2 },
                 ].map(({ label, val, Icon }) => (
                   <div key={label} className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
                     <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100 shrink-0">
@@ -865,7 +840,7 @@ export default function PropertyDetailPage({
               </div>
 
               <p className="text-xs text-gray-500 font-semibold leading-relaxed border-t border-gray-100 pt-4">
-                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.sqft} sqft — {property.type}.
+                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.hall} hall{property.hall !== 1 ? 's' : ''} — {property.type}.
               </p>
 
               <div className="flex flex-col gap-3 mt-4">
@@ -906,7 +881,11 @@ export default function PropertyDetailPage({
             {/* Reviews list right under Request Visit / Chat */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Reviews</h4>
-              <PropertyReviews propertyId={id} />
+              <PropertyReviews 
+                propertyId={id} 
+                isOwner={isOwner} 
+                onOwnerClick={() => setActiveModal('ownerWarning')}
+              />
             </div>
           </div>
         </div>

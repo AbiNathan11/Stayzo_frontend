@@ -162,12 +162,12 @@ export default function NearbyAmenities({
             })}
           </div>
           
-          {!showAll && filtered.length > 6 && (
+          {filtered.length > 6 && (
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => setShowAll(!showAll)}
               className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-[#1A1A1A] text-xs font-bold rounded-2xl transition shadow-sm"
             >
-              View More ({filtered.length - 6} more)
+              {showAll ? 'View Less' : `View More (${filtered.length - 6} more)`}
             </button>
           )}
         </div>
