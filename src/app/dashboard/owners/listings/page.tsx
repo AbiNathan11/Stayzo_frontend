@@ -126,6 +126,7 @@ export default function OwnerListings() {
   const [declineConfirmId, setDeclineConfirmId] = useState<string | null>(null);
   const [draft, setDraft] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDeleteDraftConfirm, setShowDeleteDraftConfirm] = useState(false);
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', address: '', city: '', 
     type: 'Apartment', bedrooms: '', bathrooms: '', hall: '', 
@@ -145,10 +146,13 @@ export default function OwnerListings() {
   }, []);
 
   const handleDeleteDraft = () => {
-    if (window.confirm("Are you sure you want to discard this in-progress listing draft?")) {
-      localStorage.removeItem('stayzo_listing_draft');
-      setDraft(null);
-    }
+    setShowDeleteDraftConfirm(true);
+  };
+
+  const confirmDeleteDraft = () => {
+    localStorage.removeItem('stayzo_listing_draft');
+    setDraft(null);
+    setShowDeleteDraftConfirm(false);
   };
 
   // Decode JWT once on mount to get the real owner ID
@@ -336,7 +340,7 @@ export default function OwnerListings() {
                 : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
-            Booking Request
+            Booking Request ({bookingRequests.length})
           </button>
         </div>
 
@@ -397,27 +401,9 @@ export default function OwnerListings() {
                       <img 
                         src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'} 
                         alt={listing.title}
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                       />
-                      <div className="absolute top-4 left-4 flex gap-2">
-                        <span className="bg-black text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
-                          Active
-                        </span>
-                        {listing.noisePrediction && (
-                          <span className={`text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md border ${
-                            listing.noisePrediction.label === 'Low'    ? 'bg-emerald-600 border-emerald-500' :
-                            listing.noisePrediction.label === 'Medium' ? 'bg-amber-500 border-amber-400' :
-                            'bg-rose-600 border-rose-500'
-                          }`}>
-                            🔊 {listing.noisePrediction.label} Noise
-                          </span>
-                        )}
-                      </div>
-                      {listing.panoramaImage && (
-                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-purple-700 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
-                          360° Tour
-                        </div>
-                      )}
+
                     </div>
 
                     {/* Card Content */}
@@ -780,6 +766,39 @@ export default function OwnerListings() {
                 </button>
                 <button 
                   onClick={() => handleDeclineBooking(declineConfirmId)}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Draft Confirmation Modal ── */}
+      {showDeleteDraftConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Delete Draft</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to discard this in-progress listing draft? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setShowDeleteDraftConfirm(false)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDeleteDraft}
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
                 >
                   Confirm

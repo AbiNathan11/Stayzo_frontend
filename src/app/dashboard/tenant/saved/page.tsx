@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, BedDouble, Bath, Maximize2, MapPin, Clock } from 'lucide-react';
+import { Heart, BedDouble, Bath, Maximize2, MapPin, Clock, X } from 'lucide-react';
 import PropertyReviews from '@/components/PropertyReviews';
 import Cookies from 'js-cookie';
 
@@ -26,6 +26,26 @@ export default function SavedPropertiesPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (id: string) => {
+    try {
+      const token = Cookies.get('stayzo_token');
+      if (!token) return;
+      const res = await fetch(`http://localhost:3001/api/bookings/${id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'CANCELLED' } : b));
+        setCancelConfirmId(null);
+      } else {
+        alert('Failed to cancel booking');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Fetch Wishlist
   useEffect(() => {
@@ -351,24 +371,9 @@ export default function SavedPropertiesPage() {
                           View Property
                         </button>
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            if (!confirm('Are you sure you want to cancel this booking request?')) return;
-                            try {
-                              const token = Cookies.get('stayzo_token');
-                              if (!token) return;
-                              const res = await fetch(`http://localhost:3001/api/bookings/${request.id}/cancel`, {
-                                method: 'PATCH',
-                                headers: { Authorization: `Bearer ${token}` }
-                              });
-                              if (res.ok) {
-                                setBookings(prev => prev.map(b => b.id === request.id ? { ...b, status: 'CANCELLED' } : b));
-                              } else {
-                                alert('Failed to cancel booking');
-                              }
-                            } catch (err) {
-                              console.error(err);
-                            }
+                            setCancelConfirmId(request.id);
                           }}
                           className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
                         >
@@ -392,6 +397,39 @@ export default function SavedPropertiesPage() {
             </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ── Cancel Booking Confirmation Modal ── */}
+      {cancelConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Cancel Booking Request</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to cancel this booking request? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setCancelConfirmId(null)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={() => handleCancelBooking(cancelConfirmId)}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

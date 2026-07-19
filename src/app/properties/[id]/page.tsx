@@ -83,7 +83,7 @@ export default function PropertyDetailPage({
   const [planType, setPlanType]             = useState<'month' | 'dates'>('dates');
   const [checkInDate, setCheckInDate]       = useState('2026-06-10');
   const [checkOutDate, setCheckOutDate]     = useState('2026-07-16');
-  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | null>(null);
+  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | 'cancelBooking' | null>(null);
   const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
@@ -318,6 +318,7 @@ export default function PropertyDetailPage({
       }
       setIsBookingRequested(false);
       triggerToast('Booking request cancelled.');
+      setActiveModal(null);
     } catch (err: any) {
       triggerToast(err.message || 'Error cancelling booking');
     } finally {
@@ -867,7 +868,7 @@ export default function PropertyDetailPage({
                     </button>
                     {isBookingRequested && (
                       <button
-                        onClick={handleCancelBooking}
+                        onClick={() => setActiveModal('cancelBooking')}
                         disabled={isBookingLoading}
                         className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
                       >
@@ -954,6 +955,40 @@ export default function PropertyDetailPage({
               <div className="absolute top-4 left-4 bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-full pointer-events-none z-10 flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5" />
                 <span>360° Interactive Viewer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Modal */}
+      {activeModal === 'cancelBooking' && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Cancel Booking Request</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to cancel this booking request? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setActiveModal(null)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={handleCancelBooking}
+                  disabled={isBookingLoading}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition disabled:opacity-50"
+                >
+                  {isBookingLoading ? 'Processing...' : 'Confirm'}
+                </button>
               </div>
             </div>
           </div>
