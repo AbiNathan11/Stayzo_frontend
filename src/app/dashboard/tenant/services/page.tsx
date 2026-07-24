@@ -49,57 +49,34 @@ export default function ServicesPage() {
     const dbFood: FoodService[] = [];
     
     properties.forEach((p: any) => {
-      // 1. Check if multiple food facilities are stored in foodFacilities JSON string
-      if (p.foodFacilities) {
+      if (p.foodName && p.foodName.trim() !== '') {
+        let parsedSpecialty = 'Available Food & Catering Option';
         try {
-          const parsed = typeof p.foodFacilities === 'string' ? JSON.parse(p.foodFacilities) : p.foodFacilities;
-          if (Array.isArray(parsed)) {
-            parsed.forEach((item: any, idx: number) => {
-              if (item.name || item.phone) {
-                dbFood.push({
-                  id: `${p.id}-food-${idx}`,
-                  name: item.name || 'Food Facility',
-                  owner: p.title || 'Landlord Listing',
-                  area: item.area || p.address || p.city || 'Sri Lanka',
-                  phone: item.phone || 'N/A',
-                  specialty: item.specialty || 'Available Food & Catering Option',
-                  isFromDb: true
-                });
-              }
-            });
+          if (p.foodFacilities) {
+            const parsed = typeof p.foodFacilities === 'string' ? JSON.parse(p.foodFacilities) : p.foodFacilities;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parsedSpecialty = parsed.join(', ');
+            } else if (typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
+              parsedSpecialty = p.foodFacilities;
+            }
           }
         } catch (e) {
-          console.error('Failed to parse foodFacilities JSON', e);
+          parsedSpecialty = p.foodFacilities || 'Available Food & Catering Option';
         }
-      }
 
-      // 2. Fallback to single foodName/foodPhone if present and not already processed
-      if (p.foodName && p.foodName.trim() !== '') {
-        const alreadyAdded = dbFood.some((item) => item.name === p.foodName && item.phone === p.foodPhone);
-        if (!alreadyAdded) {
-          dbFood.push({
-            id: `${p.id}-food-legacy`,
-            name: p.foodName,
-            owner: p.title || 'Landlord Listing',
-            area: p.address || p.city || 'Sri Lanka',
-            phone: p.foodPhone || '0771234567',
-            specialty: 'Available Food & Catering Option',
-            isFromDb: true
-          });
-        }
+        dbFood.push({
+          id: `${p.id}-food`,
+          name: p.foodName,
+          owner: p.title || 'Landlord Listing',
+          area: p.address || p.city || 'Sri Lanka',
+          phone: p.foodPhone || 'No contact provided',
+          specialty: parsedSpecialty,
+          isFromDb: true
+        });
       }
     });
 
-    const mockFood = [
-      { id: 'mock-1', name: "Amma's Homely Meals", owner: "Mrs. Shanthi Fernando", area: "Union Place, Colombo 02", phone: "+94 77 123 4567", specialty: "Authentic Sri Lankan Rice & Curry", isFromDb: false },
-      { id: 'mock-2', name: "Spice Route Catering", owner: "Kamal Perera", area: "Dehiwala, Mount Lavinia", phone: "+94 71 987 6543", specialty: "Biryani & Indian Cuisine", isFromDb: false },
-      { id: 'mock-3', name: "Green Leaf Organics", owner: "Nethmi Silva", area: "Rajagiriya, Battaramulla", phone: "+94 70 456 7890", specialty: "Healthy Salads & Vegan Bowls", isFromDb: false },
-      { id: 'mock-4', name: "Taste of Jaffna", owner: "Rajesh Kumar", area: "Wellawatte, Bambalapitiya", phone: "+94 76 234 5678", specialty: "Traditional Northern Cuisine", isFromDb: false },
-      { id: 'mock-5', name: "Sunrise Breakfast Hub", owner: "Nuwan & Sanduni", area: "Nugegoda, Maharagama", phone: "+94 77 345 6789", specialty: "Hoppers, String Hoppers & Roti", isFromDb: false },
-      { id: 'mock-6', name: "Ocean Catch Kitchen", owner: "Dinesh Mendis", area: "Negombo, Wattala", phone: "+94 71 567 8901", specialty: "Fresh Seafood & Devilled Dishes", isFromDb: false }
-    ];
-
-    return [...dbFood, ...mockFood];
+    return dbFood;
   };
 
   // ── 2. Job Opportunities Data Processing ──
@@ -107,55 +84,33 @@ export default function ServicesPage() {
     const dbJobs: JobOpportunity[] = [];
 
     properties.forEach((p: any) => {
-      // 1. Check if multiple jobs are stored in partTimeJobs JSON string
-      if (p.partTimeJobs) {
+      if (p.jobName && p.jobName.trim() !== '') {
+        let parsedPosition = p.jobName;
         try {
-          const parsed = typeof p.partTimeJobs === 'string' ? JSON.parse(p.partTimeJobs) : p.partTimeJobs;
-          if (Array.isArray(parsed)) {
-            parsed.forEach((item: any, idx: number) => {
-              if (item.position || item.phone) {
-                dbJobs.push({
-                  id: `${p.id}-job-${idx}`,
-                  company: item.company || p.title || 'Landlord Listing',
-                  position: item.position || 'Part-time Job',
-                  location: item.location || p.address || p.city || 'Sri Lanka',
-                  phone: item.phone || 'N/A',
-                  isFromDb: true
-                });
-              }
-            });
+          if (p.partTimeJobs) {
+            const parsed = typeof p.partTimeJobs === 'string' ? JSON.parse(p.partTimeJobs) : p.partTimeJobs;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parsedPosition = `${p.jobName} - ${parsed.join(', ')}`;
+            } else if (typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
+              parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
+            }
           }
         } catch (e) {
-          console.error('Failed to parse partTimeJobs JSON', e);
+          if (p.partTimeJobs) parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
         }
-      }
 
-      // 2. Fallback to single jobName/jobPhone if present and not already processed
-      if (p.jobName && p.jobName.trim() !== '') {
-        const alreadyAdded = dbJobs.some((item) => item.position === p.jobName && item.phone === p.jobPhone);
-        if (!alreadyAdded) {
-          dbJobs.push({
-            id: `${p.id}-job-legacy`,
-            company: p.title || 'Landlord Listing',
-            position: p.jobName,
-            location: p.address || p.city || 'Sri Lanka',
-            phone: p.jobPhone || '0771234567',
-            isFromDb: true
-          });
-        }
+        dbJobs.push({
+          id: `${p.id}-job`,
+          company: p.title || 'Landlord Listing',
+          position: parsedPosition,
+          location: p.address || p.city || 'Sri Lanka',
+          phone: p.jobPhone || 'No contact provided',
+          isFromDb: true
+        });
       }
     });
 
-    const mockJobs = [
-      { id: 'mock-1', company: "Keells Supermarket", position: "Cashier (Evening Shift)", location: "Union Place, Colombo 02", phone: "+94 11 234 5678", isFromDb: false },
-      { id: 'mock-2', company: "Java Lounge", position: "Barista Trainee", location: "Jawatte Road, Colombo 05", phone: "+94 77 987 6543", isFromDb: false },
-      { id: 'mock-3', company: "TechWorld Electronics", position: "Sales Assistant", location: "Liberty Plaza, Colombo 03", phone: "+94 71 456 7890", isFromDb: false },
-      { id: 'mock-4', company: "Burger King", position: "Service Crew", location: "Mount Lavinia", phone: "+94 76 234 5678", isFromDb: false },
-      { id: 'mock-5', company: "City Bookshop", position: "Inventory Assistant", location: "Nugegoda, Colombo", phone: "+94 70 345 6789", isFromDb: false },
-      { id: 'mock-6', company: "FitLife Gym", position: "Front Desk Receptionist", location: "Battaramulla, Colombo", phone: "+94 71 567 8901", isFromDb: false }
-    ];
-
-    return [...dbJobs, ...mockJobs];
+    return dbJobs;
   };
 
   // ── Filtered Collections ──

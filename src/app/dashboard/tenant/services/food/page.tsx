@@ -26,44 +26,40 @@ export default function FoodServicesPage() {
         return res.json();
       })
       .then((data: any[]) => {
-        // Extract food accommodation services added by landlords in listing section
         const dbFood = data
           .filter((p: any) => p.foodName && p.foodName.trim() !== '')
-          .map((p: any) => ({
-            id: p.id,
-            name: p.foodName,
-            owner: p.title || 'Landlord Listing',
-            area: p.address || p.city || 'Sri Lanka',
-            phone: p.foodPhone || '0771234567',
-            specialty: 'Available Food / Catering',
-            isFromDb: true
-          }));
+          .map((p: any) => {
+            let parsedSpecialty = 'Available Food / Catering';
+            try {
+              if (p.foodFacilities) {
+                const parsed = JSON.parse(p.foodFacilities);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  parsedSpecialty = parsed.join(', ');
+                } else if (typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
+                  parsedSpecialty = p.foodFacilities;
+                }
+              }
+            } catch (e) {
+              parsedSpecialty = p.foodFacilities || 'Available Food / Catering';
+            }
 
-        // Fallback default food services in neighborhood
-        const mockFood = [
-          { id: 'mock-1', name: "Amma's Homely Meals", owner: "Mrs. Shanthi Fernando", area: "Union Place, Colombo 02", phone: "+94 77 123 4567", specialty: "Authentic Sri Lankan Rice & Curry", isFromDb: false },
-          { id: 'mock-2', name: "Spice Route Catering", owner: "Kamal Perera", area: "Dehiwala, Mount Lavinia", phone: "+94 71 987 6543", specialty: "Biryani & Indian Cuisine", isFromDb: false },
-          { id: 'mock-3', name: "Green Leaf Organics", owner: "Nethmi Silva", area: "Rajagiriya, Battaramulla", phone: "+94 70 456 7890", specialty: "Healthy Salads & Vegan Bowls", isFromDb: false },
-          { id: 'mock-4', name: "Taste of Jaffna", owner: "Rajesh Kumar", area: "Wellawatte, Bambalapitiya", phone: "+94 76 234 5678", specialty: "Traditional Northern Cuisine", isFromDb: false },
-          { id: 'mock-5', name: "Sunrise Breakfast Hub", owner: "Nuwan & Sanduni", area: "Nugegoda, Maharagama", phone: "+94 77 345 6789", specialty: "Hoppers, String Hoppers & Roti", isFromDb: false },
-          { id: 'mock-6', name: "Ocean Catch Kitchen", owner: "Dinesh Mendis", area: "Negombo, Wattala", phone: "+94 71 567 8901", specialty: "Fresh Seafood & Devilled Dishes", isFromDb: false }
-        ];
+            return {
+              id: p.id,
+              name: p.foodName,
+              owner: p.title || 'Landlord Listing',
+              area: p.address || p.city || 'Sri Lanka',
+              phone: p.foodPhone || 'No contact provided',
+              specialty: parsedSpecialty,
+              isFromDb: true
+            };
+          });
 
-        setFoodServices([...dbFood, ...mockFood]);
+        setFoodServices(dbFood);
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to load listings', err);
-        // Load fallback food services on network/API failure so app remains functional
-        const mockFood = [
-          { id: 'mock-1', name: "Amma's Homely Meals", owner: "Mrs. Shanthi Fernando", area: "Union Place, Colombo 02", phone: "+94 77 123 4567", specialty: "Authentic Sri Lankan Rice & Curry", isFromDb: false },
-          { id: 'mock-2', name: "Spice Route Catering", owner: "Kamal Perera", area: "Dehiwala, Mount Lavinia", phone: "+94 71 987 6543", specialty: "Biryani & Indian Cuisine", isFromDb: false },
-          { id: 'mock-3', name: "Green Leaf Organics", owner: "Nethmi Silva", area: "Rajagiriya, Battaramulla", phone: "+94 70 456 7890", specialty: "Healthy Salads & Vegan Bowls", isFromDb: false },
-          { id: 'mock-4', name: "Taste of Jaffna", owner: "Rajesh Kumar", area: "Wellawatte, Bambalapitiya", phone: "+94 76 234 5678", specialty: "Traditional Northern Cuisine", isFromDb: false },
-          { id: 'mock-5', name: "Sunrise Breakfast Hub", owner: "Nuwan & Sanduni", area: "Nugegoda, Maharagama", phone: "+94 77 345 6789", specialty: "Hoppers, String Hoppers & Roti", isFromDb: false },
-          { id: 'mock-6', name: "Ocean Catch Kitchen", owner: "Dinesh Mendis", area: "Negombo, Wattala", phone: "+94 71 567 8901", specialty: "Fresh Seafood & Devilled Dishes", isFromDb: false }
-        ];
-        setFoodServices(mockFood);
+        setFoodServices([]);
         setLoading(false);
       });
   }, []);

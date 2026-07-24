@@ -147,6 +147,7 @@ export default function StartListingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   // Load draft from localStorage on mount
   useEffect(() => {
@@ -167,6 +168,34 @@ export default function StartListingPage() {
     router.push("/dashboard/owners/listings");
   };
 
+  const handleExitWithoutSave = () => {
+    localStorage.removeItem('stayzo_listing_draft');
+    router.push("/dashboard/owners/listings");
+  };
+
+  // Intercept navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ''; 
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      setShowExitModal(true);
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // --- Form State ---
   const [formData, setFormData] = useState({
     houseNo: "",
@@ -177,6 +206,7 @@ export default function StartListingPage() {
     postalCode: "",
     propertyCategory: "" as PropertyCategory,
     kitchens: 1,
+    halls: 1,
     bedrooms: 1,
     beds: 1,
     attachedBathrooms: 0,
@@ -532,7 +562,7 @@ export default function StartListingPage() {
           zipCode: formData.postalCode,
           bedrooms: formData.bedrooms.toString(),
           bathrooms: (formData.attachedBathrooms + formData.separateBathrooms).toString(),
-          sqft: 1200,
+          hall: formData.halls || 1,
           type: formData.propertyCategory || "Apartment",
           images: filteredImages,
           panoramaImage: formData.panoramaImage || null,
@@ -670,7 +700,7 @@ export default function StartListingPage() {
       <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
-        <Link href="/" className="flex items-center space-x-2 group">
+        <button onClick={() => setShowExitModal(true)} className="flex items-center space-x-2 group">
           <div className="flex items-end space-x-1 h-5">
             <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
             <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
@@ -678,7 +708,7 @@ export default function StartListingPage() {
             <div className="w-[3px] h-2.5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
           </div>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
-        </Link>
+        </button>
         <button 
           onClick={handleSaveAndExit}
           className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer"
@@ -1045,6 +1075,7 @@ export default function StartListingPage() {
               <div className="space-y-6 max-w-lg">
                 {[
                   { label: "Kitchens", field: "kitchens" },
+                  { label: "Halls", field: "halls" },
                   { label: "Bedrooms", field: "bedrooms" },
                   { label: "Beds", field: "beds" },
                   { label: "Attached Bathrooms", field: "attachedBathrooms" },
@@ -1665,6 +1696,40 @@ export default function StartListingPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Exit Modal ── */}
+      {showExitModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white max-w-sm w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <h3 className="text-[20px] font-black uppercase text-[#1A1A1A] mb-2 tracking-wide">Exit Listing Process?</h3>
+              <p className="text-[13px] font-medium text-gray-500 mb-6 leading-relaxed">
+                You have unsaved progress. What would you like to do before exiting?
+              </p>
+              <div className="space-y-3">
+                <button 
+                  onClick={handleSaveAndExit}
+                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm"
+                >
+                  Save & Exit
+                </button>
+                <button 
+                  onClick={handleExitWithoutSave}
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition"
+                >
+                  Exit (Without Save)
+                </button>
+                <button 
+                  onClick={() => setShowExitModal(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

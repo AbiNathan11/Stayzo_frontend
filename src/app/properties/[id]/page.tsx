@@ -33,7 +33,7 @@ interface Property {
   zipCode: string | null;
   bedrooms: number;
   bathrooms: number;
-  sqft: number;
+  hall: number;
   type: string;
   status: string;
   isBoosted?: boolean;
@@ -83,7 +83,7 @@ export default function PropertyDetailPage({
   const [planType, setPlanType]             = useState<'month' | 'dates'>('dates');
   const [checkInDate, setCheckInDate]       = useState('2026-06-10');
   const [checkOutDate, setCheckOutDate]     = useState('2026-07-16');
-  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | null>(null);
+  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | 'cancelBooking' | null>(null);
   const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
@@ -318,6 +318,7 @@ export default function PropertyDetailPage({
       }
       setIsBookingRequested(false);
       triggerToast('Booking request cancelled.');
+      setActiveModal(null);
     } catch (err: any) {
       triggerToast(err.message || 'Error cancelling booking');
     } finally {
@@ -601,17 +602,6 @@ export default function PropertyDetailPage({
                 <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full shadow-md flex items-center justify-center transition active:scale-95 z-10">
                   <ChevronRight className="w-5 h-5" />
                 </button>
-                <div className="absolute top-4 left-4 flex gap-2 z-10">
-                  <div className="bg-white/90 text-gray-800 text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <HelpCircle className="w-3.5 h-3.5 text-gray-500" /><span>Premium Stay?</span>
-                  </div>
-                  <div className="bg-[#1A1A1A] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /><span>Confirmed</span>
-                  </div>
-                </div>
-                <button onClick={() => triggerToast('Property link copied!')} className="absolute top-4 right-4 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-md transition z-10">
-                  <Share2 className="w-4 h-4" />
-                </button>
                 {/* Image counter */}
                 <div className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10">
                   {activeImgIndex + 1} / {images.length}
@@ -683,20 +673,6 @@ export default function PropertyDetailPage({
               </div>
             </div>
 
-            {/* Amenities */}
-            {property.amenities?.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Amenities</h4>
-                <div className="flex flex-wrap gap-2.5">
-                  {property.amenities.map((a, i) => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A1A1A] flex items-center gap-1.5 shadow-sm hover:border-gray-300 transition">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Description */}
             {property.description && (
@@ -725,7 +701,7 @@ export default function PropertyDetailPage({
                 {[
                   { label: 'Bedrooms', val: property.bedrooms, Icon: BedDouble },
                   { label: 'Bathrooms', val: property.bathrooms, Icon: Bath },
-                  { label: 'Size (sqft)', val: property.sqft, Icon: Maximize2 },
+                  { label: 'Halls', val: property.hall, Icon: Maximize2 },
                 ].map(({ label, val, Icon }) => (
                   <div key={label} className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
                     <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100 shrink-0">
@@ -865,7 +841,7 @@ export default function PropertyDetailPage({
               </div>
 
               <p className="text-xs text-gray-500 font-semibold leading-relaxed border-t border-gray-100 pt-4">
-                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.sqft} sqft — {property.type}.
+                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.hall} hall{property.hall !== 1 ? 's' : ''} — {property.type}.
               </p>
 
               <div className="flex flex-col gap-3 mt-4">
@@ -892,7 +868,7 @@ export default function PropertyDetailPage({
                     </button>
                     {isBookingRequested && (
                       <button
-                        onClick={handleCancelBooking}
+                        onClick={() => setActiveModal('cancelBooking')}
                         disabled={isBookingLoading}
                         className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
                       >
@@ -906,7 +882,11 @@ export default function PropertyDetailPage({
             {/* Reviews list right under Request Visit / Chat */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Reviews</h4>
-              <PropertyReviews propertyId={id} />
+              <PropertyReviews 
+                propertyId={id} 
+                isOwner={isOwner} 
+                onOwnerClick={() => setActiveModal('ownerWarning')}
+              />
             </div>
           </div>
         </div>
@@ -975,6 +955,40 @@ export default function PropertyDetailPage({
               <div className="absolute top-4 left-4 bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-full pointer-events-none z-10 flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5" />
                 <span>360° Interactive Viewer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Modal */}
+      {activeModal === 'cancelBooking' && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Cancel Booking Request</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to cancel this booking request? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setActiveModal(null)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={handleCancelBooking}
+                  disabled={isBookingLoading}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition disabled:opacity-50"
+                >
+                  {isBookingLoading ? 'Processing...' : 'Confirm'}
+                </button>
               </div>
             </div>
           </div>
