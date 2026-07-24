@@ -25,32 +25,55 @@ export default function JobServicesPage() {
         return res.json();
       })
       .then((data: any[]) => {
-        const dbJobs = data
-          .filter((p: any) => p.jobName && p.jobName.trim() !== '')
-          .map((p: any) => {
-            let parsedPosition = p.jobName;
+        const dbJobs: JobOpportunity[] = [];
+
+        data.forEach((p: any) => {
+          let parsedJobs: any[] = [];
+          if (p.partTimeJobs) {
             try {
-              if (p.partTimeJobs) {
-                const parsed = JSON.parse(p.partTimeJobs);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  parsedPosition = `${p.jobName} - ${parsed.join(', ')}`;
-                } else if (typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
-                  parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
-                }
+              if (typeof p.partTimeJobs === 'string') {
+                parsedJobs = JSON.parse(p.partTimeJobs);
+              } else if (Array.isArray(p.partTimeJobs)) {
+                parsedJobs = p.partTimeJobs;
               }
             } catch (e) {
-              if (p.partTimeJobs) parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
+              // Not JSON format
             }
+          }
 
-            return {
-              id: p.id,
+          if (Array.isArray(parsedJobs) && parsedJobs.length > 0) {
+            parsedJobs.forEach((item: any, idx: number) => {
+              if (item && (item.position || item.company || item.phone || item.location)) {
+                dbJobs.push({
+                  id: `${p.id}-job-${idx}`,
+                  company: item.company || p.title || 'Landlord Listing',
+                  position: item.position || p.jobName || 'Part-Time Vacancy',
+                  location: item.location || p.address || p.city || 'Sri Lanka',
+                  phone: item.phone || p.jobPhone || 'No contact provided',
+                  isFromDb: true
+                });
+              }
+            });
+          } else if (p.partTimeJobs && typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
+            dbJobs.push({
+              id: `${p.id}-job-str`,
               company: p.title || 'Landlord Listing',
-              position: parsedPosition,
+              position: p.jobName || p.partTimeJobs,
               location: p.address || p.city || 'Sri Lanka',
               phone: p.jobPhone || 'No contact provided',
               isFromDb: true
-            };
-          });
+            });
+          } else if (p.jobName && p.jobName.trim() !== '') {
+            dbJobs.push({
+              id: `${p.id}-job-legacy`,
+              company: p.title || 'Landlord Listing',
+              position: p.jobName,
+              location: p.address || p.city || 'Sri Lanka',
+              phone: p.jobPhone || 'No contact provided',
+              isFromDb: true
+            });
+          }
+        });
 
         setJobs(dbJobs);
         setLoading(false);
@@ -63,7 +86,9 @@ export default function JobServicesPage() {
   }, []);
 
   const filteredJobs = jobs.filter(job => 
-    job.location.toLowerCase().includes(filterLocation.toLowerCase())
+    job.location.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    job.position.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    job.company.toLowerCase().includes(filterLocation.toLowerCase())
   );
 
   return (
