@@ -238,14 +238,6 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                     ))
                   )}
                 </div>
-
-                <Link
-                  href="/dashboard/owners/appointments"
-                  onClick={() => setShowNotifications(false)}
-                  className="block text-center text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] py-3 border-t border-gray-100 transition"
-                >
-                  View Appointments →
-                </Link>
               </div>
             )}
           </div>

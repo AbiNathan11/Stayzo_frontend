@@ -174,10 +174,10 @@ Signature                                Signature`
       { id: 'duration', label: 'Lease Duration', question: 'What is the duration of the lease?', placeholder: 'e.g. 12 Months' },
       { id: 'endDate', label: 'Lease End Date', question: 'What is the lease end date?', placeholder: 'e.g. May 31, 2027' },
       { id: 'advancePayment', label: 'Advanced Payment', question: 'What are the advanced payment details?', placeholder: 'e.g. 3 months rent (Rs 180,000)' },
-      { id: 'utilities', label: 'Utilities Terms', question: 'Who is responsible for utility payments (water, electricity, gas, internet)?', placeholder: 'e.g. Tenant pays electricity and water; Landlord pays gas and internet.' },
-      { id: 'petPolicy', label: 'Pet Policy', question: 'What is the policy regarding pets in the property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a Rs 20,000 pet fee; no aggressive breeds.' },
+      { id: 'utilities', label: 'Utilities Terms', question: 'What are the utility terms for this property? (e.g. who pays water, electricity, gas, internet)', placeholder: 'e.g. Tenant pays electricity and water; Landlord pays gas and internet.' },
+      { id: 'petPolicy', label: 'Pet Policy', question: 'What are the pet policies for this property?', placeholder: 'e.g. Small pets under 15 lbs allowed with a Rs 20,000 pet fee; no aggressive breeds.' },
       { id: 'lateFee', label: 'Late Rent Penalty', question: 'What is the penalty for late rent payments?', placeholder: 'e.g. A late fee of Rs 5,000 plus 1% daily for payments made after the 5th of the month.' },
-      { id: 'maintenance', label: 'Maintenance Rules', question: 'Who handles property maintenance and minor repairs?', placeholder: 'e.g. Tenant handles repairs under Rs 5,000; Landlord handles structural and appliance failures.' }
+      { id: 'maintenance', label: 'Maintenance Rules', question: 'What are the maintenance rules and responsibilities for this property?', placeholder: 'e.g. Tenant handles repairs under Rs 5,000; Landlord handles structural and appliance failures.' }
     ],
     generateText: (values) => `COMPREHENSIVE LEASE AGREEMENT
 
@@ -551,29 +551,62 @@ export default function OwnerAgreementPage() {
       let mapped: SavedAgreement[] = [];
       if (response.ok) {
         const data = await response.json();
-        mapped = data.map((item: any) => ({
-          id: item.id,
-          templateId: item.termLength === '12 Months' ? 'standard-agreement' : item.termLength === '3 Months' || item.termLength === '6 Months' ? 'simple-agreement' : 'detailed-agreement',
-          templateTitle: 'Rental Lease Agreement',
-          complexity: item.termLength === '12 Months' ? 'Standard' : 'Simple',
-          tenantName: item.tenantName,
-          propertyAddress: item.listingName,
-          rentAmount: `Rs ${item.monthlyRent.toLocaleString()}`,
-          dateCreated: new Date(item.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-          visualTheme: 'classic-legal',
-          values: {
+
+        // Load the locally-stored field values map (saved after each successful send)
+        let savedFieldValuesMap: Record<string, Record<string, string>> = {};
+        try {
+          const raw = localStorage.getItem('stayzo_agreement_fields_map');
+          if (raw) savedFieldValuesMap = JSON.parse(raw);
+        } catch { }
+
+        mapped = data.map((item: any) => {
+          // Derive the correct templateId from the stored contractText header
+          // rather than guessing from termLength (which is unreliable)
+          let templateId = 'simple-agreement';
+          let complexity: SavedAgreement['complexity'] = 'Simple';
+          if (item.contractText) {
+            const firstLine = item.contractText.trim().split('\n')[0].toUpperCase();
+            if (firstLine.includes('COMPREHENSIVE')) {
+              templateId = 'detailed-agreement';
+              complexity = 'Detailed';
+            } else if (firstLine.includes('STANDARD')) {
+              templateId = 'standard-agreement';
+              complexity = 'Standard';
+            } else {
+              templateId = 'simple-agreement';
+              complexity = 'Simple';
+            }
+          }
+
+          // Fallback field values from backend fields; override with richer locally-saved copy if available
+          const backendValues: Record<string, string> = {
             tenantName: item.tenantName,
             tenantEmail: item.tenantEmail,
             propertyAddress: item.listingName,
             rentAmount: `Rs ${item.monthlyRent.toLocaleString()}`,
             startDate: item.startDate,
             duration: item.termLength,
+            endDate: item.endDate || '',
             depositAmount: `Rs ${item.securityDeposit.toLocaleString()}`
-          },
-          landlordSig: item.landlordSig || undefined,
-          tenantSig: item.tenantSig || undefined,
-          savedInLandlordWallet: item.savedInLandlordWallet || false
-        }));
+          };
+          const restoredValues = savedFieldValuesMap[item.id] || backendValues;
+
+          return {
+            id: item.id,
+            templateId,
+            templateTitle: AGREEMENT_TEMPLATES.find(t => t.id === templateId)?.title || 'Rental Lease Agreement',
+            complexity,
+            tenantName: item.tenantName,
+            propertyAddress: item.listingName,
+            rentAmount: `Rs ${item.monthlyRent.toLocaleString()}`,
+            dateCreated: new Date(item.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+            visualTheme: item.visualTheme || 'classic-legal',
+            values: restoredValues,
+            landlordSig: item.landlordSig || undefined,
+            tenantSig: item.tenantSig || undefined,
+            savedInLandlordWallet: item.savedInLandlordWallet || false
+          };
+        });
       }
 
       // Check if we have an ongoing local draft and append it to the vault!
@@ -747,8 +780,8 @@ export default function OwnerAgreementPage() {
 
   // Exit current drafting
   const handleExitDraft = () => {
-    const isUnfinishedOrUnsigned = getProgressPercentage() < 100 || !landlordSig;
-    if (isUnfinishedOrUnsigned && !isAgreementSent) {
+    const hasAnyChanges = Object.values(fieldValues).some(v => v && v.trim() !== '') || landlordSig;
+    if (hasAnyChanges && !isAgreementSent) {
       setShowExitConfirm(true);
     } else {
       handleConfirmExit();
@@ -774,29 +807,15 @@ export default function OwnerAgreementPage() {
     setTimeout(() => {
       setIsTyping(false);
 
-      let isFinished = nextIdx >= selectedTemplate.fields.length;
+      const isFinished = nextIdx >= selectedTemplate.fields.length;
       let botText = '';
-      let skippedEndDate = false;
-      let calculatedEndVal = '';
-
-      // Skip the 'endDate' field if it was automatically calculated
-      if (!isFinished && selectedTemplate.fields[nextIdx].id === 'endDate') {
-        skippedEndDate = true;
-        calculatedEndVal = currentVals.endDate || '';
-        nextIdx = nextIdx + 1;
-        isFinished = nextIdx >= selectedTemplate.fields.length;
-      }
 
       if (isFinished) {
-        if (skippedEndDate) {
-          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\n📅 I have automatically calculated the Lease End Date as "${calculatedEndVal}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
-        } else {
-          botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
-        }
+        botText = `Excellent! I have recorded the ${prevFieldName} as "${previousAnswer}".\n\n🎉 All details for the agreement have been filled! \n\nYou can now switch between visual themes on the right preview pane, apply your signature, and click "Sign & Send to Tenant" to send the document to the tenant.`;
       } else {
         const nextField = selectedTemplate.fields[nextIdx];
-        if (skippedEndDate) {
-          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\n📅 I have automatically calculated the Lease End Date as "${calculatedEndVal}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
+        if (nextField.id === 'endDate' && currentVals.endDate) {
+          botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\n📅 Based on the start date and duration, I calculated the Lease End Date as "${currentVals.endDate}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question} (You can confirm this by pressing Enter, or provide a different date)`;
         } else {
           botText = `Got it. Registered ${prevFieldName} as "${previousAnswer}".\n\nQuestion ${nextIdx + 1} of ${selectedTemplate.fields.length}: ${nextField.question}`;
         }
@@ -901,7 +920,15 @@ export default function OwnerAgreementPage() {
   // Handle Send Chat
   const handleSendChat = (textToSend?: string) => {
     let text = (textToSend !== undefined ? textToSend : chatInput).trim();
-    if (!text || !selectedTemplate) return;
+    if (!selectedTemplate) return;
+
+    if (!text) {
+      if (currentFieldIdx < selectedTemplate.fields.length && fieldValues[selectedTemplate.fields[currentFieldIdx].id]) {
+        text = fieldValues[selectedTemplate.fields[currentFieldIdx].id];
+      } else {
+        return;
+      }
+    }
 
     if (currentFieldIdx >= selectedTemplate.fields.length) {
       setChatHistory(prev => [
@@ -1128,6 +1155,15 @@ export default function OwnerAgreementPage() {
       showToast("Agreement signed and successfully sent to Tenant!");
       setIsAgreementSent(true); // Lock the agreement from further editing
 
+      // Persist the full field values keyed by the new DB agreement ID so they
+      // can be restored correctly when the landlord reopens the agreement.
+      try {
+        const raw = localStorage.getItem('stayzo_agreement_fields_map');
+        const fieldsMap: Record<string, Record<string, string>> = raw ? JSON.parse(raw) : {};
+        fieldsMap[savedData.id] = { ...fieldValues };
+        localStorage.setItem('stayzo_agreement_fields_map', JSON.stringify(fieldsMap));
+      } catch { }
+
       // Clear the temporary local draft since it is successfully completed and sent!
       localStorage.removeItem('stayzo_ongoing_agreement_draft');
       setHasSavedDraft(false);
@@ -1183,125 +1219,124 @@ export default function OwnerAgreementPage() {
   };
 
   // Print function
+  // Download PDF function using html2pdf
   const handlePrint = () => {
     const printContent = document.getElementById('contract-printable-area');
     if (!printContent) return;
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const templateTitle = selectedTemplate?.title || "Rental Agreement";
-      const textHtml = printContent.innerHTML;
+    // Build a self-contained print stylesheet using only plain rgb() colors.
+    // This is injected into the html2canvas clone AFTER all Tailwind stylesheets
+    // are removed, so html2canvas never encounters oklab() / oklch() tokens.
+    const getPrintCSS = () => {
+      const isClassic = selectedTheme === 'classic-legal';
+      const isModern  = selectedTheme === 'modern-clean';
 
-      let themeStyles = '';
-      if (selectedTheme === 'classic-legal') {
-        themeStyles = `
-         body {
-           font-family: 'Times New Roman', Times, serif;
-           line-height: 1.8;
-           padding: 50px;
-           color: #000;
-           background-color: #fff;
-         }
-         .printable-paper {
-           border: 4px double #000;
-           padding: 40px;
-         }
-         h1, h2, h3, .doc-title {
-           text-align: center;
-           font-weight: bold;
-           text-transform: uppercase;
-           letter-spacing: 1px;
-           margin-bottom: 25px;
-           border-bottom: 2px solid #000;
-           padding-bottom: 10px;
-         }
-         p { margin-bottom: 1.2rem; text-align: justify; }
-         .clause-title { font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
-         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-       `;
-      } else if (selectedTheme === 'modern-clean') {
-        themeStyles = `
-         body {
-           font-family: 'Inter', system-ui, sans-serif;
-           line-height: 1.6;
-           padding: 40px;
-           color: #2D3748;
-           background-color: #fff;
-         }
-         .doc-title {
-           font-size: 24px;
-           font-weight: 800;
-           color: #1A1A1A;
-           margin-bottom: 30px;
-           text-transform: uppercase;
-           border-left: 5px solid #1A1A1A;
-           padding-left: 15px;
-         }
-         p { margin-bottom: 1rem; }
-         .clause-title { font-weight: 700; color: #1A1A1A; margin-top: 1.8rem; margin-bottom: 0.5rem; }
-         .highlight-card { background-color: #F7FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin: 15px 0; }
-         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
-       `;
-      } else { // executive-elite
-        themeStyles = `
-         body {
-           font-family: 'Georgia', serif;
-           line-height: 1.7;
-           padding: 45px;
-           color: #1A202C;
-           background-color: #fff;
-         }
-         .doc-title {
-           text-align: center;
-           font-size: 20px;
-           font-weight: 900;
-           color: #0F172A;
-           letter-spacing: 0.05em;
-           margin-bottom: 30px;
-           padding-bottom: 15px;
-           border-bottom: 3px double #0F172A;
-         }
-         p { margin-bottom: 1.1rem; text-align: justify; }
-         .clause-title { font-weight: 800; color: #0F172A; margin-top: 1.6rem; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 13px; }
-         .highlight-card { border-left: 4px solid #0F172A; background-color: #F8FAFC; padding: 15px; margin: 15px 0; }
-         .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-       `;
-      }
+      const fontFamily  = isClassic ? "'Times New Roman', Times, serif"
+                        : isModern  ? "'Inter', system-ui, sans-serif"
+                        :             "'Georgia', serif";
+      const bodyColor   = isClassic ? 'rgb(0,0,0)'       : isModern ? 'rgb(45,55,72)' : 'rgb(26,32,44)';
+      const bgColor     = 'rgb(255,255,255)';
+      const accentColor = isClassic ? 'rgb(0,0,0)'       : isModern ? 'rgb(26,26,26)' : 'rgb(15,23,42)';
+      const mutedColor  = 'rgb(100,116,139)';
+      const cardBg      = isClassic ? 'rgb(249,250,251)' : isModern ? 'rgb(247,250,252)' : 'rgb(248,250,252)';
 
-      printWindow.document.write(`
-       <html>
-         <head>
-           <title>${templateTitle} - Stayzo</title>
-           <style>
-             ${themeStyles}
-             .signature-line { border-bottom: 1px solid #94A3B8; height: 35px; width: 100%; margin-bottom: 5px; }
-             .sig-img-print { max-height: 45px; object-fit: contain; }
-             .hide-on-print { display: none !important; }
-             span {
-               font-family: inherit !important;
-               font-size: inherit !important;
-               font-weight: bold !important;
-               background: none !important;
-               border: none !important;
-               padding: 0 !important;
-               color: inherit !important;
-             }
-           </style>
-         </head>
-         <body>
-           <div class="printable-paper">
-             ${textHtml}
-           </div>
-           <script>
-             window.onload = function() {
-               window.print();
-               window.close();
-             }
-           </script>
-         </body>
-       </html>
-     `);
-      printWindow.document.close();
+      return `
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { font-family: ${fontFamily}; color: ${bodyColor}; background: ${bgColor}; font-size: 12px; line-height: 1.5; }
+        .doc-title {
+          font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em;
+          color: ${accentColor}; border-bottom: ${isClassic ? '2px solid rgb(0,0,0)' : isModern ? 'none; border-left: 5px solid rgb(26,26,26); padding-left: 12px' : '3px double rgb(15,23,42)'};
+          padding-bottom: 8px; margin-bottom: 20px; text-align: ${isModern ? 'left' : 'center'};
+        }
+        p { margin-bottom: 8px; line-height: 1.55; color: ${bodyColor}; }
+        strong { font-weight: 700; color: ${accentColor}; }
+        .clause-title { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: ${accentColor}; margin-top: 16px; margin-bottom: 4px; display: block; }
+        .highlight-card { background: ${cardBg}; border: 1px solid rgb(226,232,240); border-radius: 8px; padding: 12px 14px; margin: 10px 0; }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; padding-top: 24px; border-top: 1px solid rgb(226,232,240); }
+        .signature-line { border-bottom: 1px solid rgb(148,163,184); height: 32px; width: 100%; margin-bottom: 4px; }
+        .sig-img-print { max-height: 45px; object-fit: contain; display: block; margin-bottom: 4px; }
+        .hide-on-print { display: none !important; }
+        span { font-family: inherit !important; background: none !important; border: none !important; padding: 0 !important; color: inherit !important; font-weight: bold; }
+        img { max-width: 100%; display: block; }
+      `;
+    };
+
+    const runHtml2Pdf = () => {
+      const cloned = printContent.cloneNode(true) as HTMLElement;
+
+      // Hide interactive UI overlays that must not appear in the PDF
+      cloned.querySelectorAll('.hide-on-print').forEach(el => (el as HTMLElement).style.display = 'none');
+
+      // Also inline-sanitize any residual oklab on the element's own inline styles
+      // (belt-and-suspenders; the main fix is stylesheet removal in onclone below)
+      const patchInlineStyles = (node: Element) => {
+        if (node instanceof HTMLElement) {
+          const s = node.style;
+          const computed = window.getComputedStyle(node);
+          const props = ['color','backgroundColor','background','borderColor','borderTopColor','borderRightColor','borderBottomColor','borderLeftColor','boxShadow'];
+          const bad = /\b(oklab|oklch|color\(display-p3|lch|lab)\s*\(/i;
+          for (const p of props) {
+            const v = s.getPropertyValue(p);
+            if (v && bad.test(v)) {
+              const resolved = computed.getPropertyValue(p);
+              if (resolved && !bad.test(resolved)) s.setProperty(p, resolved, 'important');
+              else if (p === 'color') s.setProperty(p, 'rgb(26,26,26)', 'important');
+              else s.removeProperty(p);
+            }
+          }
+        }
+        const kids = node.children;
+        if (kids) for (const c of Array.from(kids)) patchInlineStyles(c);
+      };
+      patchInlineStyles(cloned);
+
+      const printCSS = getPrintCSS();
+
+      const opt = {
+        margin:      [12, 12, 12, 12],
+        filename:    `${selectedTemplate?.title || 'Lease_Agreement'}.pdf`,
+        image:       { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          scrollX: 0,
+          scrollY: 0,
+          onclone: (clonedDoc: Document) => {
+            // ── KEY FIX ──────────────────────────────────────────────────────
+            // Remove every <link rel="stylesheet"> and <style> tag so that
+            // html2canvas never encounters Tailwind v4's oklab() color tokens.
+            // We then inject our own safe, plain-rgb stylesheet instead.
+            // ─────────────────────────────────────────────────────────────────
+            clonedDoc.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove());
+
+            const safeStyle = clonedDoc.createElement('style');
+            safeStyle.textContent = printCSS;
+            (clonedDoc.head || clonedDoc.documentElement).appendChild(safeStyle);
+          }
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      // @ts-ignore
+      window.html2pdf().from(cloned).set(opt).save().then(() => {
+        showToast("PDF downloaded successfully!");
+      }).catch((err: any) => {
+        console.error("PDF generation failed:", err);
+        showToast("Failed to generate PDF");
+      });
+    };
+
+    // @ts-ignore
+    if (window.html2pdf) {
+      runHtml2Pdf();
+    } else {
+      showToast("Preparing PDF download...");
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => { runHtml2Pdf(); };
+      script.onerror = () => { showToast("Failed to load PDF library."); };
+      document.head.appendChild(script);
     }
   };
 
@@ -1325,14 +1360,21 @@ export default function OwnerAgreementPage() {
     const isActive = activePreviewField === fieldId;
     return (
       <span
-        onClick={() => handleJumpToField(fieldId)}
-        className={`inline-block cursor-pointer px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${isActive
-          ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md'
-          : val
-            ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200'
-            : 'bg-[#EEF2FF] text-[#4F46E5] border-b-2 border-dashed border-[#C7D2FE] font-bold animate-pulse hover:bg-[#E0E7FF]'
-          }`}
-        title={`Click to edit ${label}`}
+        onClick={() => {
+          if (!isAgreementSent) {
+            handleJumpToField(fieldId);
+          }
+        }}
+        className={`inline-block px-1.5 py-0.5 mx-1 rounded font-mono text-[12px] transition-all duration-200 ${
+          isAgreementSent
+            ? 'bg-gray-50 text-gray-805 border-none font-semibold cursor-default'
+            : isActive
+              ? 'bg-black text-white ring-2 ring-black font-extrabold scale-105 shadow-md cursor-pointer'
+              : val
+                ? 'bg-gray-100 text-gray-900 border-b border-dashed border-gray-400 font-bold hover:bg-gray-200 cursor-pointer'
+                : 'bg-[#EEF2FF] text-[#4F46E5] border-b-2 border-dashed border-[#C7D2FE] font-bold animate-pulse hover:bg-[#E0E7FF] cursor-pointer'
+        }`}
+        title={isAgreementSent ? undefined : `Click to edit ${label}`}
       >
         {val || label}
       </span>
@@ -1356,7 +1398,7 @@ export default function OwnerAgreementPage() {
               alt={`${roleType} Signature`}
               className="h-10 object-contain my-1 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 sig-img-print"
             />
-            {roleType === 'landlord' && (
+            {roleType === 'landlord' && !isAgreementSent && (
               <button
                 onClick={(e) => { e.stopPropagation(); setSig(null); }}
                 className="text-[9px] text-red-500 hover:underline font-sans font-bold hide-on-print"
@@ -1366,24 +1408,31 @@ export default function OwnerAgreementPage() {
             )}
           </div>
         ) : roleType === 'landlord' ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (getProgressPercentage() < 100) {
-                toast.error("Please fill in all details via the assistant before signing.");
-                return;
-              }
-              setShowSigModal('landlord');
-              setSigModalTab('qr');
-            }}
-            className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${getProgressPercentage() < 100
-              ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
-              : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
-              }`}
-          >
-            <FileSignature className="w-3.5 h-3.5" />
-            <span>Click to Sign Contract</span>
-          </button>
+          isAgreementSent ? (
+            <div className="text-[10px] font-bold text-gray-400 italic py-2 mt-2 flex items-center gap-1.5 hide-on-print">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span>Awaiting Landlord Signature (Locked)</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (getProgressPercentage() < 100) {
+                  toast.error("Please fill in all details via the assistant before signing.");
+                  return;
+                }
+                setShowSigModal('landlord');
+                setSigModalTab('qr');
+              }}
+              className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 mt-2 hide-on-print cursor-pointer ${getProgressPercentage() < 100
+                ? 'text-gray-400 bg-gray-100 border border-dashed border-gray-300 opacity-60 cursor-not-allowed'
+                : 'text-[#4F46E5] bg-[#EEF2FF] border border-dashed border-[#C7D2FE] hover:bg-[#E0E7FF] animate-pulse'
+                }`}
+            >
+              <FileSignature className="w-3.5 h-3.5" />
+              <span>Click to Sign Contract</span>
+            </button>
+          )
         ) : (
           <div className="text-[10px] font-bold text-gray-400 italic py-2 mt-2 flex items-center gap-1.5 hide-on-print">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -1576,6 +1625,38 @@ export default function OwnerAgreementPage() {
         </div>
       );
     }
+
+    // Fallback: if templateId is somehow unrecognised, render the simple layout
+    return (
+      <div className="space-y-5">
+        <div className="doc-title text-center font-black tracking-tight text-[16px] md:text-[18px] uppercase border-b pb-3 mb-6">
+          TENANCY AGREEMENT
+        </div>
+        <p className="text-[13px] md:text-[14px]">
+          This Tenancy Agreement is created on this <strong>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, by and between the Landlord, <strong>Stayzo Properties</strong>, and the Tenant:
+        </p>
+        <div className="highlight-card bg-gray-50 border border-gray-100 p-4 rounded-xl">
+          <span className="block text-[9px] font-black text-gray-400 tracking-wider uppercase mb-1">TENANT INFORMATION</span>
+          <strong>TENANT NAME:</strong> {getFieldSpan('tenantName', 'Tenant Name')}
+        </div>
+        <p className="text-[13px] md:text-[14px]">
+          <strong>1. RENTAL PREMISES:</strong><br />
+          {getFieldSpan('propertyAddress', 'Property Address')}
+        </p>
+        <p className="text-[13px] md:text-[14px]">
+          <strong>2. RENT AMOUNT:</strong><br />
+          Monthly rent: {getFieldSpan('rentAmount', 'Monthly Rent')}
+        </p>
+        <p className="text-[13px] md:text-[14px]">
+          <strong>3. TERM:</strong><br />
+          From {getFieldSpan('startDate', 'Start Date')} for {getFieldSpan('duration', 'Duration')}, ending {getFieldSpan('endDate', 'End Date')}.
+        </p>
+        <div className="signature-section border-t border-gray-100 pt-8 mt-12 grid grid-cols-2 gap-12 text-[12px]">
+          {renderSignatureBlock('landlord', 'Stayzo Properties')}
+          {renderSignatureBlock('tenant', tenantName)}
+        </div>
+      </div>
+    );
   };
 
   // Get active visual theme css class
@@ -2121,11 +2202,12 @@ export default function OwnerAgreementPage() {
                                     setLandlordSig(ag.landlordSig || null);
                                     setTenantSig(ag.tenantSig || null);
                                     if (ag.visualTheme) setSelectedTheme(ag.visualTheme as VisualTheme);
+                                    setIsAgreementSent(true);
                                     setChatHistory([
                                       {
                                         id: 'reopen',
                                         sender: 'bot',
-                                        text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. You can preview, edit details, or manage your landlord signature.`,
+                                        text: `Loaded saved ${ag.complexity} agreement for ${ag.tenantName}. This agreement has been sent to the tenant and is locked. You can only view it.`,
                                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                       }
                                     ]);
