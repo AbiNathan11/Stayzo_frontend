@@ -9,6 +9,7 @@ export interface UserProfile {
   lastName: string;
   email: string;
   profileImage?: string | null;
+  isTenant?: boolean;
 }
 
 interface EditProfileModalProps {
