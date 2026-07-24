@@ -486,7 +486,7 @@ export default function TenantOverviewPage() {
             </div>
 
             {/* List of Submitted Reviews */}
-            <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {submittedReviews.length === 0 ? (
                 <div className="bg-[#EEF2FF] border border-indigo-100/60 rounded-2xl p-8 text-center text-gray-400 text-xs font-semibold">
                   No submitted reviews.

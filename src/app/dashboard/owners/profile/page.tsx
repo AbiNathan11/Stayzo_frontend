@@ -290,7 +290,7 @@ export default function OwnerProfilePage() {
               </span>
             </div>
 
-            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {reviews.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-400 text-xs font-semibold">
                   No tenant reviews received yet.
