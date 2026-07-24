@@ -16,6 +16,8 @@ import { useNearbyAmenities } from '@/hooks/useNearbyAmenities';
 import type { AmenityCategory } from '@/services/google/places';
 import PropertyReviews from '@/components/PropertyReviews';
 
+import toast, { Toaster } from 'react-hot-toast';
+
 // Dynamically import map component to avoid SSR issues
 const PropertyMap      = dynamic(() => import('@/components/maps/PropertyMap'),      { ssr: false, loading: () => <div className="w-full h-[320px] rounded-3xl bg-gray-100 animate-pulse" /> });
 const NearbyAmenities  = dynamic(() => import('@/components/maps/NearbyAmenities'),  { ssr: false });
@@ -84,7 +86,6 @@ export default function PropertyDetailPage({
   const [checkInDate, setCheckInDate]       = useState('2026-06-10');
   const [checkOutDate, setCheckOutDate]     = useState('2026-07-16');
   const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | 'cancelBooking' | null>(null);
-  const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -161,7 +162,7 @@ export default function PropertyDetailPage({
 
   const handleBoostListing = async (propertyId: string) => {
     try {
-      triggerToast('Initializing secure payment gateway...');
+      toast.success('Initializing secure payment gateway...');
       
       const response = await fetch('/api/payments/generate-hash', {
         method: 'POST',
@@ -180,7 +181,7 @@ export default function PropertyDetailPage({
 
       // @ts-ignore
       payhere.onCompleted = async function onCompleted(orderId) {
-        triggerToast('Payment successful! Your listing is now boosted.');
+        toast.success('Payment successful! Your listing is now boosted.');
         
         try {
           const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
@@ -206,12 +207,12 @@ export default function PropertyDetailPage({
 
       // @ts-ignore
       payhere.onDismissed = function onDismissed() {
-        triggerToast('Payment cancelled.');
+        toast.error('Payment cancelled.');
       };
 
       // @ts-ignore
       payhere.onError = function onError(error) {
-        triggerToast('An error occurred during payment: ' + error);
+        toast.error('An error occurred during payment: ' + error);
       };
 
       const payment = {
@@ -238,7 +239,7 @@ export default function PropertyDetailPage({
       payhere.startPayment(payment);
       
     } catch (error: any) {
-      triggerToast(error.message || 'Payment initialization failed.');
+      toast.error(error.message || 'Payment initialization failed.');
       console.error(error);
     }
   };
@@ -280,7 +281,7 @@ export default function PropertyDetailPage({
     }
     const token = Cookies.get('stayzo_token');
     if (!token) {
-      triggerToast('Please sign in to book this property.');
+      toast.error('Please sign in to book this property.');
       setTimeout(() => router.push(`/auth?redirect=/properties/${id}`), 1500);
       return;
     }
@@ -295,9 +296,9 @@ export default function PropertyDetailPage({
         throw new Error(errData.error || 'Failed to book');
       }
       setIsBookingRequested(true);
-      triggerToast('Booking requested successfully!');
+      toast.success('Booking requested successfully!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error requesting booking');
+      toast.error(err.message || 'Error requesting booking');
     } finally {
       setIsBookingLoading(false);
     }
@@ -317,20 +318,17 @@ export default function PropertyDetailPage({
         throw new Error(errData.error || 'Failed to cancel');
       }
       setIsBookingRequested(false);
-      triggerToast('Booking request cancelled.');
+      toast.success('Booking request cancelled.');
       setActiveModal(null);
     } catch (err: any) {
-      triggerToast(err.message || 'Error cancelling booking');
+      toast.error(err.message || 'Error cancelling booking');
     } finally {
       setIsBookingLoading(false);
     }
   };
 
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
-  };
+
 
   useEffect(() => {
     if (!id) return;
@@ -352,16 +350,16 @@ export default function PropertyDetailPage({
       let updated;
       if (isBookmarked) {
         updated = idsArray.filter((bId: string) => bId !== idStr);
-        triggerToast('Removed from wishlist.');
+        toast.success('Removed from wishlist.');
       } else {
         updated = [...idsArray, idStr];
-        triggerToast('Saved to your wishlist!');
+        toast.success('Saved to your wishlist!');
       }
       localStorage.setItem('stayzo_wishlist', JSON.stringify(updated));
       setIsBookmarked(!isBookmarked);
     } catch (e) {
       console.error(e);
-      triggerToast('Could not update wishlist.');
+      toast.error('Could not update wishlist.');
     }
   };
 
@@ -376,7 +374,7 @@ export default function PropertyDetailPage({
     }
     const token = Cookies.get('stayzo_token');
     if (!token) {
-      triggerToast('Please sign in to chat with the owner.');
+      toast.error('Please sign in to chat with the owner.');
       setTimeout(() => {
         router.push(`/auth?redirect=/properties/${id}`);
       }, 1500);
@@ -391,7 +389,7 @@ export default function PropertyDetailPage({
         throw new Error('Invalid session');
       }
 
-      triggerToast(`Starting chat with ${ownerName}...`);
+      toast.success(`Starting chat with ${ownerName}...`);
       
       const res = await fetch('http://localhost:3001/api/chat/thread', {
         method: 'POST',
@@ -410,7 +408,7 @@ export default function PropertyDetailPage({
       const data = await res.json();
       router.push(`/dashboard/tenant/chat?threadId=${data.thread.id}`);
     } catch (error: any) {
-      triggerToast(error.message || 'Failed to start chat.');
+      toast.error(error.message || 'Failed to start chat.');
     }
   };
 
@@ -421,7 +419,7 @@ export default function PropertyDetailPage({
     }
     const token = Cookies.get('stayzo_token');
     if (!token) {
-      triggerToast('Please sign in to schedule a visit.');
+      toast.error('Please sign in to schedule a visit.');
       setTimeout(() => {
         router.push(`/auth?redirect=/properties/${id}`);
       }, 1500);
@@ -561,13 +559,7 @@ export default function PropertyDetailPage({
     <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white flex flex-col relative">
       <Script src="https://www.payhere.lk/lib/payhere.js" strategy="lazyOnload" />
 
-      {/* Toast */}
-      {toastMessage && (
-        <div className="fixed top-24 right-6 z-50 bg-[#1A1A1A] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-xs font-bold">{toastMessage}</span>
-        </div>
-      )}
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
 
       <div className="flex-1 max-w-[1200px] w-full mx-auto px-6 sm:px-10 py-8 lg:py-12">
 
