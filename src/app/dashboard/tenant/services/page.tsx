@@ -49,28 +49,51 @@ export default function ServicesPage() {
     const dbFood: FoodService[] = [];
     
     properties.forEach((p: any) => {
-      if (p.foodName && p.foodName.trim() !== '') {
-        let parsedSpecialty = 'Available Food & Catering Option';
+      let parsedFacilities: any[] = [];
+      if (p.foodFacilities) {
         try {
-          if (p.foodFacilities) {
-            const parsed = typeof p.foodFacilities === 'string' ? JSON.parse(p.foodFacilities) : p.foodFacilities;
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              parsedSpecialty = parsed.join(', ');
-            } else if (typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
-              parsedSpecialty = p.foodFacilities;
-            }
+          if (typeof p.foodFacilities === 'string') {
+            parsedFacilities = JSON.parse(p.foodFacilities);
+          } else if (Array.isArray(p.foodFacilities)) {
+            parsedFacilities = p.foodFacilities;
           }
         } catch (e) {
-          parsedSpecialty = p.foodFacilities || 'Available Food & Catering Option';
+          // Not JSON
         }
+      }
 
+      if (Array.isArray(parsedFacilities) && parsedFacilities.length > 0) {
+        parsedFacilities.forEach((item: any, idx: number) => {
+          if (item && (item.name || item.specialty || item.phone || item.area)) {
+            dbFood.push({
+              id: `${p.id}-food-${idx}`,
+              name: item.name || p.foodName || 'Food Facility',
+              owner: p.title || 'Landlord Listing',
+              area: item.area || p.address || p.city || 'Sri Lanka',
+              phone: item.phone || p.foodPhone || 'No contact provided',
+              specialty: item.specialty || 'Food Accommodation Service',
+              isFromDb: true
+            });
+          }
+        });
+      } else if (p.foodFacilities && typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
         dbFood.push({
-          id: `${p.id}-food`,
+          id: `${p.id}-food-str`,
+          name: p.foodName || 'Food Accommodation',
+          owner: p.title || 'Landlord Listing',
+          area: p.address || p.city || 'Sri Lanka',
+          phone: p.foodPhone || 'No contact provided',
+          specialty: p.foodFacilities,
+          isFromDb: true
+        });
+      } else if (p.foodName && p.foodName.trim() !== '') {
+        dbFood.push({
+          id: `${p.id}-food-legacy`,
           name: p.foodName,
           owner: p.title || 'Landlord Listing',
           area: p.address || p.city || 'Sri Lanka',
           phone: p.foodPhone || 'No contact provided',
-          specialty: parsedSpecialty,
+          specialty: 'Food Accommodation Service',
           isFromDb: true
         });
       }
@@ -84,25 +107,46 @@ export default function ServicesPage() {
     const dbJobs: JobOpportunity[] = [];
 
     properties.forEach((p: any) => {
-      if (p.jobName && p.jobName.trim() !== '') {
-        let parsedPosition = p.jobName;
+      let parsedJobs: any[] = [];
+      if (p.partTimeJobs) {
         try {
-          if (p.partTimeJobs) {
-            const parsed = typeof p.partTimeJobs === 'string' ? JSON.parse(p.partTimeJobs) : p.partTimeJobs;
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              parsedPosition = `${p.jobName} - ${parsed.join(', ')}`;
-            } else if (typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
-              parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
-            }
+          if (typeof p.partTimeJobs === 'string') {
+            parsedJobs = JSON.parse(p.partTimeJobs);
+          } else if (Array.isArray(p.partTimeJobs)) {
+            parsedJobs = p.partTimeJobs;
           }
         } catch (e) {
-          if (p.partTimeJobs) parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
+          // Not JSON
         }
+      }
 
+      if (Array.isArray(parsedJobs) && parsedJobs.length > 0) {
+        parsedJobs.forEach((item: any, idx: number) => {
+          if (item && (item.position || item.company || item.phone || item.location)) {
+            dbJobs.push({
+              id: `${p.id}-job-${idx}`,
+              company: item.company || p.title || 'Landlord Listing',
+              position: item.position || p.jobName || 'Part-Time Vacancy',
+              location: item.location || p.address || p.city || 'Sri Lanka',
+              phone: item.phone || p.jobPhone || 'No contact provided',
+              isFromDb: true
+            });
+          }
+        });
+      } else if (p.partTimeJobs && typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
         dbJobs.push({
-          id: `${p.id}-job`,
+          id: `${p.id}-job-str`,
           company: p.title || 'Landlord Listing',
-          position: parsedPosition,
+          position: p.jobName || p.partTimeJobs,
+          location: p.address || p.city || 'Sri Lanka',
+          phone: p.jobPhone || 'No contact provided',
+          isFromDb: true
+        });
+      } else if (p.jobName && p.jobName.trim() !== '') {
+        dbJobs.push({
+          id: `${p.id}-job-legacy`,
+          company: p.title || 'Landlord Listing',
+          position: p.jobName,
           location: p.address || p.city || 'Sri Lanka',
           phone: p.jobPhone || 'No contact provided',
           isFromDb: true
@@ -115,11 +159,15 @@ export default function ServicesPage() {
 
   // ── Filtered Collections ──
   const filteredFood = getFoodServices().filter(item => 
-    item.area.toLowerCase().includes(filterLocation.toLowerCase())
+    item.area.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    item.name.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    item.specialty.toLowerCase().includes(filterLocation.toLowerCase())
   );
 
   const filteredJobs = getJobOpportunities().filter(job => 
-    job.location.toLowerCase().includes(filterLocation.toLowerCase())
+    job.location.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    job.position.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    job.company.toLowerCase().includes(filterLocation.toLowerCase())
   );
 
   return (

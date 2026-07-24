@@ -261,8 +261,8 @@ function SearchContent() {
       <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {/* Top Control Bar: Go Back + Filters/Map */}
-      <div className="w-full bg-white border-b border-gray-100 px-4 py-2 flex flex-col gap-2 shrink-0">
-        {/* Row 1: Go Back */}
+      <div className="w-full bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between shrink-0">
+        {/* Left: Go Back */}
         <div>
           <button
             onClick={() => router.back()}
@@ -272,7 +272,7 @@ function SearchContent() {
             Go Back
           </button>
         </div>
-        {/* Row 2: Filters + Map */}
+        {/* Right: Filters + Map */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowFilters(!showFilters)}

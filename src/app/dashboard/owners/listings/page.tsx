@@ -403,7 +403,12 @@ export default function OwnerListings() {
                         alt={listing.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                       />
-
+                      {(listing.status?.toUpperCase() === 'PENDING' || listing.status === 'Pending') && (
+                        <div className="absolute top-3 left-3 bg-amber-500/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 border border-amber-400/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                          Pending Approval
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Content */}
@@ -512,12 +517,12 @@ export default function OwnerListings() {
                 <div className="mt-6 pt-5 border-t border-gray-100 relative z-10">
                   <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
                     <span>Draft Completeness</span>
-                    <span className="text-amber-700 font-extrabold">Step {draft.currentStep} of 7</span>
+                    <span className="text-amber-700 font-extrabold">Step {draft.currentStep} of 8</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-amber-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${((draft.currentStep - 1) / 6) * 100}%` }}
+                      style={{ width: `${((draft.currentStep - 1) / 7) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -589,13 +594,13 @@ export default function OwnerListings() {
                       <div className="flex gap-2">
                         <button 
                           onClick={() => handleApproveBooking(request.id)}
-                          className="flex-1 flex justify-center items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
+                          className="flex-1 flex justify-center items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" /> Accept
                         </button>
                         <button 
                           onClick={() => setDeclineConfirmId(request.id)}
-                          className="flex-1 flex justify-center items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
+                          className="flex-1 flex justify-center items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" /> Decline
                         </button>
@@ -760,13 +765,13 @@ export default function OwnerListings() {
               <div className="flex gap-3 w-full mt-4">
                 <button 
                   onClick={() => setDeclineConfirmId(null)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={() => handleDeclineBooking(declineConfirmId)}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition cursor-pointer"
                 >
                   Confirm
                 </button>
@@ -793,13 +798,13 @@ export default function OwnerListings() {
               <div className="flex gap-3 w-full mt-4">
                 <button 
                   onClick={() => setShowDeleteDraftConfirm(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={confirmDeleteDraft}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition cursor-pointer"
                 >
                   Confirm
                 </button>

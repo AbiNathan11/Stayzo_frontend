@@ -104,12 +104,9 @@ export default function SearchMap({
           map: mapInstance.current,
           title: activeListing.title,
           icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 12,
-            fillColor: '#4F46E5',
-            fillOpacity: 1.0,
-            strokeColor: '#ffffff',
-            strokeWeight: 2,
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="#1a74d2" d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z"/><circle fill="#ffffff" cx="12" cy="12" r="7"/><circle fill="#2db7f5" cx="12" cy="12" r="4.5"/></svg>'),
+            scaledSize: new window.google.maps.Size(36, 54),
+            anchor: new window.google.maps.Point(18, 54),
           },
           zIndex: 99,
         });

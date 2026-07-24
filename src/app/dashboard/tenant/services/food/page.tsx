@@ -26,33 +26,58 @@ export default function FoodServicesPage() {
         return res.json();
       })
       .then((data: any[]) => {
-        const dbFood = data
-          .filter((p: any) => p.foodName && p.foodName.trim() !== '')
-          .map((p: any) => {
-            let parsedSpecialty = 'Available Food / Catering';
+        const dbFood: FoodService[] = [];
+
+        data.forEach((p: any) => {
+          let parsedFacilities: any[] = [];
+          if (p.foodFacilities) {
             try {
-              if (p.foodFacilities) {
-                const parsed = JSON.parse(p.foodFacilities);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  parsedSpecialty = parsed.join(', ');
-                } else if (typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
-                  parsedSpecialty = p.foodFacilities;
-                }
+              if (typeof p.foodFacilities === 'string') {
+                parsedFacilities = JSON.parse(p.foodFacilities);
+              } else if (Array.isArray(p.foodFacilities)) {
+                parsedFacilities = p.foodFacilities;
               }
             } catch (e) {
-              parsedSpecialty = p.foodFacilities || 'Available Food / Catering';
+              // Not JSON format
             }
+          }
 
-            return {
-              id: p.id,
+          if (Array.isArray(parsedFacilities) && parsedFacilities.length > 0) {
+            parsedFacilities.forEach((item: any, idx: number) => {
+              if (item && (item.name || item.specialty || item.phone || item.area)) {
+                dbFood.push({
+                  id: `${p.id}-food-${idx}`,
+                  name: item.name || p.foodName || 'Food Facility',
+                  owner: p.title || 'Landlord Listing',
+                  area: item.area || p.address || p.city || 'Sri Lanka',
+                  phone: item.phone || p.foodPhone || 'No contact provided',
+                  specialty: item.specialty || 'Food Accommodation Service',
+                  isFromDb: true
+                });
+              }
+            });
+          } else if (p.foodFacilities && typeof p.foodFacilities === 'string' && !p.foodFacilities.startsWith('[')) {
+            dbFood.push({
+              id: `${p.id}-food-str`,
+              name: p.foodName || 'Food Accommodation',
+              owner: p.title || 'Landlord Listing',
+              area: p.address || p.city || 'Sri Lanka',
+              phone: p.foodPhone || 'No contact provided',
+              specialty: p.foodFacilities,
+              isFromDb: true
+            });
+          } else if (p.foodName && p.foodName.trim() !== '') {
+            dbFood.push({
+              id: `${p.id}-food-legacy`,
               name: p.foodName,
               owner: p.title || 'Landlord Listing',
               area: p.address || p.city || 'Sri Lanka',
               phone: p.foodPhone || 'No contact provided',
-              specialty: parsedSpecialty,
+              specialty: 'Food Accommodation Service',
               isFromDb: true
-            };
-          });
+            });
+          }
+        });
 
         setFoodServices(dbFood);
         setLoading(false);
@@ -65,7 +90,9 @@ export default function FoodServicesPage() {
   }, []);
 
   const filteredFood = foodServices.filter(item => 
-    item.area.toLowerCase().includes(filterLocation.toLowerCase())
+    item.area.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    item.name.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    item.specialty.toLowerCase().includes(filterLocation.toLowerCase())
   );
 
   return (

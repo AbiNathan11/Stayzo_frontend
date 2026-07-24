@@ -50,47 +50,78 @@ function ChatPageContent() {
   const [language, setLanguage] = useState("Original");
   const [threadDetails, setThreadDetails] = useState<any>(null);
   const [conversations, setConversations] = useState<any[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const token = Cookies.get('stayzo_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return payload.id || null;
+        } catch (e) {}
+      }
+    }
+    return null;
+  });
   const [isContextOpen, setIsContextOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Decode user from token
+  // Decode user from token if not already loaded
   useEffect(() => {
-    const token = Cookies.get('stayzo_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUserId(payload.id);
-      } catch (e) {
-        console.error("Failed to parse token:", e);
+    if (!userId) {
+      const token = Cookies.get('stayzo_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUserId(payload.id);
+        } catch (e) {
+          console.error("Failed to parse token:", e);
+        }
       }
     }
-  }, []);
+  }, [userId]);
 
-  // Fetch all threads for this owner
+  // Sync activeThreadId from URL query param
+  useEffect(() => {
+    const threadIdFromUrl = searchParams.get('threadId');
+    if (threadIdFromUrl) {
+      setActiveThreadId(threadIdFromUrl);
+    }
+  }, [searchParams]);
+
+  // Fetch all threads for this user
   const fetchThreads = () => {
     if (!userId) return;
     const token = Cookies.get('stayzo_token');
-    fetch(`http://localhost:3001/api/chat/threads/user/${userId}?role=owner`, {
+    fetch(`http://localhost:3001/api/chat/threads/user/${userId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (data.threads) {
+          const currentUrlId = searchParams.get('threadId');
           const formatted = data.threads.map((t: any) => {
             const lastMsg = t.messages?.[0];
+            const isUserTenant = (t.tenantId === userId);
+            const otherUser = isUserTenant ? t.owner : t.tenant;
+            const otherName = otherUser?.firstName 
+              ? `${otherUser.firstName} ${otherUser.lastName || ''}` 
+              : (isUserTenant ? "Owner" : "Tenant");
+            const otherAvatar = otherUser?.firstName?.charAt(0).toUpperCase() || (isUserTenant ? "O" : "T");
+
             return {
               id: t.id,
-              name: t.tenant?.firstName ? `${t.tenant.firstName} ${t.tenant.lastName || ''}` : "Tenant",
+              name: otherName,
               time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
               preview: lastMsg?.text || "No messages yet",
-              active: t.id === activeThreadId,
-              avatar: t.tenant?.firstName?.charAt(0).toUpperCase() || "T",
+              active: t.id === (currentUrlId || activeThreadId),
+              avatar: otherAvatar,
             };
           });
           setConversations(formatted);
-          if (!activeThreadId && formatted.length > 0) {
+          if (currentUrlId) {
+            setActiveThreadId(currentUrlId);
+          } else if (!activeThreadId && formatted.length > 0) {
             setActiveThreadId(formatted[0].id);
           }
         }
@@ -200,6 +231,13 @@ function ChatPageContent() {
     if (e.key === "Enter") sendMessage();
   };
 
+  const isCurrentTenant = threadDetails && userId ? (threadDetails.tenantId === userId) : false;
+  const otherUser = threadDetails ? (isCurrentTenant ? threadDetails.owner : threadDetails.tenant) : null;
+  const otherName = otherUser?.firstName 
+    ? `${otherUser.firstName} ${otherUser.lastName || ''}` 
+    : (threadDetails ? (isCurrentTenant ? "Property Owner" : "Tenant Inquiry") : "Loading...");
+  const otherAvatar = otherUser?.firstName?.charAt(0).toUpperCase() || (isCurrentTenant ? "O" : "T");
+
   return (
     <div
       className="flex w-full max-w-[1200px] mx-auto bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
@@ -274,19 +312,13 @@ function ChatPageContent() {
             {/* Avatar */}
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-[11px] font-bold">
-                {threadDetails?.tenant?.firstName?.charAt(0).toUpperCase() || "T"}
+                {otherAvatar}
               </span>
             </div>
             <div>
               <h3 className="text-[14px] font-black text-[#1A1A1A] leading-tight">
-                {threadDetails?.tenant?.firstName ? `${threadDetails.tenant.firstName} ${threadDetails.tenant.lastName || ''}` : "Tenant"}
+                {otherName}
               </h3>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                <span className="text-[10px] font-bold tracking-widest text-green-600 uppercase">
-                  Available Now
-                </span>
-              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -300,13 +332,6 @@ function ChatPageContent() {
               <option value="Sinhala">Sinhala</option>
               <option value="Tamil">Tamil</option>
             </select>
-            <button
-              id="chat-more-options-btn"
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="More options"
-            >
-              <MoreVertical className="w-4 h-4 text-gray-500" />
-            </button>
             <button
               onClick={() => setIsContextOpen(!isContextOpen)}
               className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isContextOpen ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'hover:bg-gray-100 text-gray-500'}`}
@@ -404,11 +429,11 @@ function ChatPageContent() {
             </span>
           </div>
           <div className="p-2.5">
-            <p className="text-[12px] font-black text-[#1A1A1A] leading-tight truncate" title={threadDetails?.property?.title || "Select a thread"}>
-              {threadDetails?.property?.title || "Chelsea Penthouse B"}
+            <p className="text-[12px] font-black text-[#1A1A1A] leading-tight truncate" title={threadDetails?.property?.title || "Property Listing"}>
+              {threadDetails?.property?.title || (threadDetails ? "Property Listing" : "Loading...")}
             </p>
             <p className="text-[9px] font-bold tracking-widest text-gray-400 uppercase mt-0.5 truncate">
-              {threadDetails?.property?.address ? `${threadDetails.property.address} • ${threadDetails.property.type}` : "Zone 4 • Residential"}
+              {threadDetails?.property?.address ? `${threadDetails.property.address} • ${threadDetails.property.type}` : (threadDetails ? "Location unavailable" : "...")}
             </p>
             {threadDetails?.property?.price && (
               <p className="text-[11px] font-extrabold text-emerald-600 mt-1">
@@ -417,14 +442,6 @@ function ChatPageContent() {
             )}
           </div>
         </div>
-
-        {/* Schedule Site Visit */}
-        <button
-          id="chat-schedule-visit-btn"
-          className="w-full border-2 border-[#4F46E5] text-[#4F46E5] text-[9px] font-black tracking-widest uppercase py-2.5 rounded-lg hover:bg-[#4F46E5] hover:text-white transition-colors"
-        >
-          Schedule Site Visit
-        </button>
       </aside>
       )}
     </div>
