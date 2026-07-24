@@ -25,43 +25,39 @@ export default function JobServicesPage() {
         return res.json();
       })
       .then((data: any[]) => {
-        // Extract jobs added by landlords in listing section
         const dbJobs = data
           .filter((p: any) => p.jobName && p.jobName.trim() !== '')
-          .map((p: any) => ({
-            id: p.id,
-            company: p.title || 'Landlord Listing',
-            position: p.jobName,
-            location: p.address || p.city || 'Sri Lanka',
-            phone: p.jobPhone || '0771234567',
-            isFromDb: true
-          }));
+          .map((p: any) => {
+            let parsedPosition = p.jobName;
+            try {
+              if (p.partTimeJobs) {
+                const parsed = JSON.parse(p.partTimeJobs);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  parsedPosition = `${p.jobName} - ${parsed.join(', ')}`;
+                } else if (typeof p.partTimeJobs === 'string' && !p.partTimeJobs.startsWith('[')) {
+                  parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
+                }
+              }
+            } catch (e) {
+              if (p.partTimeJobs) parsedPosition = `${p.jobName} - ${p.partTimeJobs}`;
+            }
 
-        // Fallback default jobs in neighborhood
-        const mockJobs = [
-          { id: 'mock-1', company: "Keells Supermarket", position: "Cashier (Evening Shift)", location: "Union Place, Colombo 02", phone: "+94 11 234 5678", isFromDb: false },
-          { id: 'mock-2', company: "Java Lounge", position: "Barista Trainee", location: "Jawatte Road, Colombo 05", phone: "+94 77 987 6543", isFromDb: false },
-          { id: 'mock-3', company: "TechWorld Electronics", position: "Sales Assistant", location: "Liberty Plaza, Colombo 03", phone: "+94 71 456 7890", isFromDb: false },
-          { id: 'mock-4', company: "Burger King", position: "Service Crew", location: "Mount Lavinia", phone: "+94 76 234 5678", isFromDb: false },
-          { id: 'mock-5', company: "City Bookshop", position: "Inventory Assistant", location: "Nugegoda, Colombo", phone: "+94 70 345 6789", isFromDb: false },
-          { id: 'mock-6', company: "FitLife Gym", position: "Front Desk Receptionist", location: "Battaramulla, Colombo", phone: "+94 71 567 8901", isFromDb: false }
-        ];
+            return {
+              id: p.id,
+              company: p.title || 'Landlord Listing',
+              position: parsedPosition,
+              location: p.address || p.city || 'Sri Lanka',
+              phone: p.jobPhone || 'No contact provided',
+              isFromDb: true
+            };
+          });
 
-        setJobs([...dbJobs, ...mockJobs]);
+        setJobs(dbJobs);
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to load listings', err);
-        // Load fallback jobs on network/API failure so app remains functional
-        const mockJobs = [
-          { id: 'mock-1', company: "Keells Supermarket", position: "Cashier (Evening Shift)", location: "Union Place, Colombo 02", phone: "+94 11 234 5678", isFromDb: false },
-          { id: 'mock-2', company: "Java Lounge", position: "Barista Trainee", location: "Jawatte Road, Colombo 05", phone: "+94 77 987 6543", isFromDb: false },
-          { id: 'mock-3', company: "TechWorld Electronics", position: "Sales Assistant", location: "Liberty Plaza, Colombo 03", phone: "+94 71 456 7890", isFromDb: false },
-          { id: 'mock-4', company: "Burger King", position: "Service Crew", location: "Mount Lavinia", phone: "+94 76 234 5678", isFromDb: false },
-          { id: 'mock-5', company: "City Bookshop", position: "Inventory Assistant", location: "Nugegoda, Colombo", phone: "+94 70 345 6789", isFromDb: false },
-          { id: 'mock-6', company: "FitLife Gym", position: "Front Desk Receptionist", location: "Battaramulla, Colombo", phone: "+94 71 567 8901", isFromDb: false }
-        ];
-        setJobs(mockJobs);
+        setJobs([]);
         setLoading(false);
       });
   }, []);

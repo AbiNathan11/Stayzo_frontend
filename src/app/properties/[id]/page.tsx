@@ -9,7 +9,7 @@ import {
   Heart, BedDouble, Bath, Maximize2,
   ChevronLeft, ChevronRight, Share2, HelpCircle,
   CheckCircle, Calendar, MapPin, Sparkles, Star,
-  Play, Compass, ArrowLeft, X, Check, ExternalLink, MessageCircle
+  Play, Compass, ArrowLeft, X, Check, ExternalLink, MessageCircle, AlertCircle
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useNearbyAmenities } from '@/hooks/useNearbyAmenities';
@@ -33,7 +33,7 @@ interface Property {
   zipCode: string | null;
   bedrooms: number;
   bathrooms: number;
-  sqft: number;
+  hall: number;
   type: string;
   status: string;
   isBoosted?: boolean;
@@ -83,7 +83,7 @@ export default function PropertyDetailPage({
   const [planType, setPlanType]             = useState<'month' | 'dates'>('dates');
   const [checkInDate, setCheckInDate]       = useState('2026-06-10');
   const [checkOutDate, setCheckOutDate]     = useState('2026-07-16');
-  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | null>(null);
+  const [activeModal, setActiveModal]       = useState<'photos' | 'video' | 'tour' | 'ownerWarning' | 'cancelBooking' | null>(null);
   const [toastMessage, setToastMessage]     = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked]     = useState(false);
   const [mapActiveCategories, setMapActiveCategories] = useState<AmenityCategory[]>([]);
@@ -274,6 +274,10 @@ export default function PropertyDetailPage({
   }, [id]);
 
   const handleBookNow = async () => {
+    if (isOwner) {
+      setActiveModal('ownerWarning');
+      return;
+    }
     const token = Cookies.get('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to book this property.');
@@ -314,6 +318,7 @@ export default function PropertyDetailPage({
       }
       setIsBookingRequested(false);
       triggerToast('Booking request cancelled.');
+      setActiveModal(null);
     } catch (err: any) {
       triggerToast(err.message || 'Error cancelling booking');
     } finally {
@@ -365,6 +370,10 @@ export default function PropertyDetailPage({
     : '';
 
   const handleChatWithOwner = async () => {
+    if (isOwner) {
+      setActiveModal('ownerWarning');
+      return;
+    }
     const token = Cookies.get('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to chat with the owner.');
@@ -406,6 +415,10 @@ export default function PropertyDetailPage({
   };
 
   const handleRequestBookingVisit = () => {
+    if (isOwner) {
+      setActiveModal('ownerWarning');
+      return;
+    }
     const token = Cookies.get('stayzo_token');
     if (!token) {
       triggerToast('Please sign in to schedule a visit.');
@@ -537,9 +550,9 @@ export default function PropertyDetailPage({
       <div className="text-center space-y-4 max-w-sm px-6">
         <p className="text-2xl font-black text-[#1A1A1A]">Property Not Found</p>
         <p className="text-sm text-gray-500">{error ?? 'This listing may have been removed.'}</p>
-        <Link href={fromSaved ? "/dashboard/tenant/saved" : "/search"} className="inline-block mt-4 bg-[#1A1A1A] text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-full">
-          {fromSaved ? "Back to Saved Properties" : "Back to Search"}
-        </Link>
+        <button onClick={() => router.back()} className="inline-block mt-4 bg-[#1A1A1A] text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-full cursor-pointer hover:bg-black transition">
+          Back
+        </button>
       </div>
     </div>
   );
@@ -560,10 +573,10 @@ export default function PropertyDetailPage({
 
         {/* Breadcrumb */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
-          <Link href={fromSaved ? "/dashboard/tenant/saved" : "/search"} className="group flex items-center space-x-2 text-xs font-bold text-gray-500 hover:text-[#1A1A1A] transition">
+          <button onClick={() => router.back()} className="group flex items-center space-x-2 text-xs font-bold text-gray-500 hover:text-[#1A1A1A] transition cursor-pointer">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span>{fromSaved ? "Back to Saved Properties" : "Back to Search Results"}</span>
-          </Link>
+            <span>Back</span>
+          </button>
           <button onClick={handleBookmarkToggle} className="flex items-center space-x-1.5 text-xs font-bold text-gray-600 hover:text-[#1A1A1A] transition">
             <Heart className={`w-4 h-4 transition-colors ${isBookmarked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
             <span>{isBookmarked ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
@@ -588,17 +601,6 @@ export default function PropertyDetailPage({
                 </button>
                 <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full shadow-md flex items-center justify-center transition active:scale-95 z-10">
                   <ChevronRight className="w-5 h-5" />
-                </button>
-                <div className="absolute top-4 left-4 flex gap-2 z-10">
-                  <div className="bg-white/90 text-gray-800 text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <HelpCircle className="w-3.5 h-3.5 text-gray-500" /><span>Premium Stay?</span>
-                  </div>
-                  <div className="bg-[#1A1A1A] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /><span>Confirmed</span>
-                  </div>
-                </div>
-                <button onClick={() => triggerToast('Property link copied!')} className="absolute top-4 right-4 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-md transition z-10">
-                  <Share2 className="w-4 h-4" />
                 </button>
                 {/* Image counter */}
                 <div className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10">
@@ -671,20 +673,6 @@ export default function PropertyDetailPage({
               </div>
             </div>
 
-            {/* Amenities */}
-            {property.amenities?.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Amenities</h4>
-                <div className="flex flex-wrap gap-2.5">
-                  {property.amenities.map((a, i) => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A1A1A] flex items-center gap-1.5 shadow-sm hover:border-gray-300 transition">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Description */}
             {property.description && (
@@ -713,7 +701,7 @@ export default function PropertyDetailPage({
                 {[
                   { label: 'Bedrooms', val: property.bedrooms, Icon: BedDouble },
                   { label: 'Bathrooms', val: property.bathrooms, Icon: Bath },
-                  { label: 'Size (sqft)', val: property.sqft, Icon: Maximize2 },
+                  { label: 'Halls', val: property.hall, Icon: Maximize2 },
                 ].map(({ label, val, Icon }) => (
                   <div key={label} className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
                     <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100 shrink-0">
@@ -850,38 +838,13 @@ export default function PropertyDetailPage({
                     <span className="text-xs text-gray-400 font-bold ml-1">/mo</span>
                   </div>
                 </div>
-                <span className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-extrabold px-3 py-1 rounded-lg shrink-0">
-                  Get up to 8% off
-                </span>
               </div>
 
               <p className="text-xs text-gray-500 font-semibold leading-relaxed border-t border-gray-100 pt-4">
-                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.sqft} sqft — {property.type}.
+                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}, {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}, {property.hall} hall{property.hall !== 1 ? 's' : ''} — {property.type}.
               </p>
 
-              {/* Date planner */}
-              <div className="border-t border-gray-100 pt-4 space-y-4">
-                <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Plan your move</h5>
-                <div className="grid grid-cols-2 bg-gray-50 p-1 border border-gray-150 rounded-xl">
-                  {(['month', 'dates'] as const).map(t => (
-                    <button key={t} onClick={() => setPlanType(t)}
-                      className={`text-xs font-bold py-2 rounded-lg transition ${planType === t ? 'bg-[#1A1A1A] text-white' : 'text-gray-500 hover:text-gray-900'}`}
-                    >
-                      {t === 'month' ? 'By month' : 'Exact dates'}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-3 hover:border-gray-400 transition">
-                  <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                  <div className="flex-1 flex gap-2 items-center text-xs font-bold text-gray-700">
-                    <input type="date" value={checkInDate} onChange={e => setCheckInDate(e.target.value)} className="bg-transparent border-none p-0 outline-none w-full text-center" />
-                    <span className="text-gray-300">to</span>
-                    <input type="date" value={checkOutDate} onChange={e => setCheckOutDate(e.target.value)} className="bg-transparent border-none p-0 outline-none w-full text-center" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 mt-4">
                 <button
                   onClick={handleRequestBookingVisit}
                   className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
@@ -895,7 +858,6 @@ export default function PropertyDetailPage({
                   <MessageCircle className="w-4 h-4" />
                   Chat with owner
                 </button>
-                {!isOwner && (
                   <div className="pt-2 flex flex-col gap-2">
                     <button
                       onClick={isBookingRequested ? undefined : handleBookNow}
@@ -906,7 +868,7 @@ export default function PropertyDetailPage({
                     </button>
                     {isBookingRequested && (
                       <button
-                        onClick={handleCancelBooking}
+                        onClick={() => setActiveModal('cancelBooking')}
                         disabled={isBookingLoading}
                         className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
                       >
@@ -914,20 +876,47 @@ export default function PropertyDetailPage({
                       </button>
                     )}
                   </div>
-                )}
               </div>
             </div>
 
             {/* Reviews list right under Request Visit / Chat */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Reviews</h4>
-              <PropertyReviews propertyId={id} />
+              <PropertyReviews 
+                propertyId={id} 
+                isOwner={isOwner} 
+                onOwnerClick={() => setActiveModal('ownerWarning')}
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Modals ─────────────────────────────────────────────────────────────── */}
+
+      {/* Owner Warning Modal */}
+      {activeModal === 'ownerWarning' && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center relative">
+            <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition">
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-amber-500" />
+            </div>
+            <h3 className="text-xl font-black text-[#1A1A1A] mb-2">Notice</h3>
+            <p className="text-sm font-semibold text-gray-500 mb-6">
+              You are the owner of this property. These actions are reserved for prospective tenants.
+            </p>
+            <button
+              onClick={() => setActiveModal(null)}
+              className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3 rounded-xl text-sm font-bold transition shadow-md"
+            >
+              Understood
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Photo Gallery Modal */}
       {activeModal === 'photos' && (
@@ -966,6 +955,40 @@ export default function PropertyDetailPage({
               <div className="absolute top-4 left-4 bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-full pointer-events-none z-10 flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5" />
                 <span>360° Interactive Viewer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Modal */}
+      {activeModal === 'cancelBooking' && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Cancel Booking Request</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to cancel this booking request? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={() => setActiveModal(null)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={handleCancelBooking}
+                  disabled={isBookingLoading}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition disabled:opacity-50"
+                >
+                  {isBookingLoading ? 'Processing...' : 'Confirm'}
+                </button>
               </div>
             </div>
           </div>

@@ -104,7 +104,7 @@ export default function TenantDashboardLayout({
 
   const navItems = [
     { name: 'Overview', href: '/dashboard/tenant', icon: LayoutDashboard },
-    { name: 'Saved Properties', href: '/dashboard/tenant/saved', icon: Heart },
+    { name: 'Properties', href: '/dashboard/tenant/saved', icon: Heart },
     { name: 'Visit Scheduler', href: '/dashboard/tenant/visits', icon: CalendarCheck },
     { name: 'Secure Chat', href: '/dashboard/tenant/chat', icon: MessageSquare },
     { name: 'Agreement', href: '/dashboard/tenant/agreement', icon: FileText },
@@ -237,14 +237,6 @@ export default function TenantDashboardLayout({
                       ))
                     )}
                   </div>
-
-                  <Link
-                    href="/dashboard/tenant/visits"
-                    onClick={() => setShowNotifications(false)}
-                    className="block text-center text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] py-3 border-t border-gray-100 transition"
-                  >
-                    View Visits Scheduler →
-                  </Link>
                 </div>
               </>
             )}

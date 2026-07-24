@@ -12,6 +12,9 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/dashboard/owners')) {
+    if (pathname.startsWith('/dashboard/owners/broker')) {
+      return NextResponse.next();
+    }
     if (!token) {
       return NextResponse.redirect(new URL('/auth?role=landlord', request.url));
     }

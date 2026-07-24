@@ -8,6 +8,7 @@ interface Review {
   rating: number;
   comment: string;
   createdAt: string;
+  authorId?: string | null;
   user: {
     id: string;
     firstName: string | null;
@@ -20,6 +21,8 @@ interface PropertyReviewsProps {
   onAverageRatingChange?: (avg: number, count: number) => void;
   showFormOnlyOnDashboard?: boolean;
   hideForm?: boolean;
+  isOwner?: boolean;
+  onOwnerClick?: () => void;
 }
 
 function decodeToken(token: string): Record<string, any> | null {
@@ -31,7 +34,7 @@ function decodeToken(token: string): Record<string, any> | null {
   }
 }
 
-export default function PropertyReviews({ propertyId, onAverageRatingChange, hideForm }: PropertyReviewsProps) {
+export default function PropertyReviews({ propertyId, onAverageRatingChange, hideForm, isOwner, onOwnerClick }: PropertyReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -39,6 +42,7 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isTenant, setIsTenant] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   // Check role on mount
@@ -48,6 +52,7 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
       const decoded = decodeToken(token);
       if (decoded && decoded.isTenant) {
         setIsTenant(true);
+        setUserId(decoded.id || null);
       }
     }
   }, []);
@@ -184,7 +189,7 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
         </div>
       ) : (
         count > 0 && (
-          <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {reviews.map((item) => {
               const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
                 month: 'short',
@@ -213,19 +218,29 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
         )
       )}
 
-      {/* Write a Review Button (Tenant Only) */}
-      {isTenant && !hideForm && (
-        <button
-          onClick={() => {
-            setRating(0);
-            setComment('');
-            setShowModal(true);
-          }}
-          className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white py-2.5 rounded-xl text-xs font-bold transition duration-200 cursor-pointer uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
-        >
-          <Send className="w-3.5 h-3.5" />
-          <span>Write a Review</span>
-        </button>
+      {/* Write a Review Button */}
+      {!hideForm && (
+        reviews.some(r => r.user?.id === userId || r.authorId === userId) ? (
+          <div className="w-full text-center py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-bold text-gray-400 uppercase tracking-wider select-none">
+            You have already reviewed this property
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              if (isOwner && onOwnerClick) {
+                onOwnerClick();
+              } else {
+                setRating(0);
+                setComment('');
+                setShowModal(true);
+              }
+            }}
+            className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white py-2.5 rounded-xl text-xs font-bold transition duration-200 cursor-pointer uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Write a Review</span>
+          </button>
+        )
       )}
 
       {/* Review Modal Form overlay */}

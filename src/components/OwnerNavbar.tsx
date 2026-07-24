@@ -220,9 +220,10 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                             {n.title}
                           </p>
                           <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
-                          {n.type === 'BOOKING_REQUEST' && (
+                          {(n.type === 'BOOKING_REQUEST' || n.type === 'booking_request') && (
                             <Link 
-                              href="/dashboard/owners/appointments"
+                              href="/dashboard/owners/listings?tab=booking_request"
+                              onClick={() => setShowNotifications(false)}
                               className="mt-2 inline-block bg-[#4F46E5] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-[#4338CA] transition"
                             >
                               View Booking Request
@@ -237,14 +238,6 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                     ))
                   )}
                 </div>
-
-                <Link
-                  href="/dashboard/owners/appointments"
-                  onClick={() => setShowNotifications(false)}
-                  className="block text-center text-[10px] font-bold text-[#4F46E5] hover:text-[#4338CA] py-3 border-t border-gray-100 transition"
-                >
-                  View Appointments →
-                </Link>
               </div>
             )}
           </div>

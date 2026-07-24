@@ -85,18 +85,7 @@ export default function SearchMap({
     initMap();
   }, [initMap]);
 
-  // Update center when active property changes
-  useEffect(() => {
-    if (!mapInstance.current || activePropertyId === null) return;
-    const activeListing = listings.find(l => l.id === activePropertyId);
-    if (activeListing && typeof activeListing.lat === 'number' && typeof activeListing.lng === 'number') {
-      const coords = { lat: activeListing.lat, lng: activeListing.lng };
-      mapInstance.current.panTo(coords);
-      mapInstance.current.setZoom(15);
-    }
-  }, [activePropertyId, listings]);
-
-  // Update markers
+  // Update markers and center when active property changes
   useEffect(() => {
     if (!mapInstance.current || !mapReady) return;
 
@@ -104,49 +93,36 @@ export default function SearchMap({
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
-    listings.forEach((listing) => {
-      if (typeof listing.lat !== 'number' || typeof listing.lng !== 'number') return;
-      const coords = { lat: listing.lat, lng: listing.lng };
+    if (activePropertyId !== null) {
+      const activeListing = listings.find(l => l.id === activePropertyId);
+      if (activeListing && typeof activeListing.lat === 'number' && typeof activeListing.lng === 'number') {
+        const coords = { lat: activeListing.lat, lng: activeListing.lng };
 
-      const isActive = activePropertyId === listing.id;
+        // Define standard styling for marker
+        const marker = new window.google.maps.Marker({
+          position: coords,
+          map: mapInstance.current,
+          title: activeListing.title,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 12,
+            fillColor: '#4F46E5',
+            fillOpacity: 1.0,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+          zIndex: 99,
+        });
 
-      // Define standard styling for marker
-      const marker = new window.google.maps.Marker({
-        position: coords,
-        map: mapInstance.current,
-        title: listing.title,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: isActive ? 12 : 8,
-          fillColor: isActive ? '#4F46E5' : '#1A1A1A',
-          fillOpacity: 1.0,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-        },
-        zIndex: isActive ? 99 : 10,
-      });
+        marker.addListener('click', () => {
+          onActivePropertyChange(activeListing.id);
+        });
 
-      marker.addListener('click', () => {
-        onActivePropertyChange(listing.id);
-      });
+        markersRef.current.push(marker);
 
-      markersRef.current.push(marker);
-    });
-
-    // Fit map bounds to show all markers
-    const validCoordsList = listings
-      .filter(listing => typeof listing.lat === 'number' && typeof listing.lng === 'number')
-      .map(listing => ({ lat: listing.lat, lng: listing.lng }));
-
-    if (validCoordsList.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      validCoordsList.forEach(coords => {
-        bounds.extend(coords);
-      });
-      mapInstance.current.fitBounds(bounds);
-      
-      if (validCoordsList.length === 1) {
-        mapInstance.current.setZoom(14);
+        // Pan to location and zoom
+        mapInstance.current.panTo(coords);
+        mapInstance.current.setZoom(15);
       }
     }
   }, [listings, mapReady, activePropertyId, onActivePropertyChange]);
