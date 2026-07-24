@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, BedDouble, Bath, Maximize2, MapPin, Clock, X } from 'lucide-react';
-import PropertyReviews from '@/components/PropertyReviews';
+import { Heart, BedDouble, Bath, Maximize, MapPin, Clock, X } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 interface WishlistItem {
@@ -13,7 +12,7 @@ interface WishlistItem {
   address: string;
   beds: number;
   baths: number;
-  sqft: number;
+  halls: number;
   price: string;
   image: string;
 }
@@ -73,11 +72,11 @@ export default function SavedPropertiesPage() {
               return {
                 id: data.id,
                 title: data.title,
-                address: data.address,
+                address: `${data.city || 'Colombo'}, ${data.state || 'Western'}`,
                 beds: data.bedrooms || 1,
                 baths: data.bathrooms || 1,
-                sqft: data.sqft || 1000,
-                price: `Rs. ${Number(data.price).toLocaleString()}`,
+                halls: data.hall || 1,
+                price: `Rs. ${Number(data.price || data.rentPerMonth || 0).toLocaleString()}`,
                 image: data.images?.[0] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80'
               };
             } catch (err) {
@@ -209,52 +208,77 @@ export default function SavedPropertiesPage() {
                 <div
                   key={item.id}
                   onClick={() => router.push(`/properties/${item.id}?from=saved`)}
-                  className="bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group cursor-pointer"
+                  className="group bg-white border border-gray-200 hover:border-gray-400 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col cursor-pointer"
                 >
-                  <div className="h-[220px] w-full bg-gray-50 relative shrink-0 overflow-hidden">
+                  {/* Image Area */}
+                  <div className="h-[180px] bg-gray-100 relative overflow-hidden shrink-0">
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                     />
                     <button
                       onClick={(e) => handleRemove(item.id, e)}
-                      className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition z-10"
+                      className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A1A1A] p-2.5 rounded-full shadow-sm transition z-10 cursor-pointer"
                       title="Remove from saved"
                     >
                       <Heart className="w-4 h-4 fill-[#1A1A1A] text-[#1A1A1A]" />
                     </button>
                   </div>
+                  
+                  {/* Card Content */}
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-bold text-base text-[#1A1A1A] leading-tight group-hover:text-black transition-colors mb-1">
+                      <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate">
                         {item.title}
                       </h3>
-                      <p className="text-gray-500 text-xs font-medium mb-4">{item.address}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                        {item.address}
+                      </p>
+                      
+                      <p className="text-xl font-black text-[#1A1A1A] mt-4 leading-none">
+                        {item.price}
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
+                      </p>
                     </div>
-                    <div className="flex items-center gap-4 text-xs font-semibold text-gray-600 mb-4">
-                      <span className="flex items-center gap-1.5">
-                        <BedDouble className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                        {item.beds} Beds
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Bath className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                        {item.baths} Baths
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Maximize2 className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                        {item.sqft.toLocaleString()} sqft
-                      </span>
-                    </div>
-                    <PropertyReviews propertyId={String(item.id)} />
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div>
-                        <span className="text-base font-extrabold text-[#1A1A1A]">{item.price}</span>
-                        <span className="text-[10px] text-gray-400 font-semibold uppercase ml-1">/mo</span>
+
+                    {/* Specs */}
+                    <div className="grid grid-cols-3 gap-2 border-t border-b border-gray-100 py-3 my-4">
+                      <div className="text-center">
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Bedrooms</p>
+                        <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                          <BedDouble className="w-3 h-3 text-gray-500" />
+                          {item.beds}
+                        </p>
                       </div>
-                      <span className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-4 py-2 rounded-xl text-xs font-bold transition duration-200 shadow-sm">
-                        View
-                      </span>
+                      <div className="text-center border-x border-gray-100">
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Baths</p>
+                        <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                          <Bath className="w-3 h-3 text-gray-500" />
+                          {item.baths}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Halls</p>
+                        <p className="text-xs font-black text-[#1A1A1A] mt-1 flex items-center justify-center gap-1">
+                          <Maximize className="w-3 h-3 text-gray-500" />
+                          {item.halls}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/properties/${item.id}?from=saved`);
+                        }}
+                        className="flex-1 py-3 bg-gray-50 hover:bg-gray-100 text-[#1A1A1A] text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -366,7 +390,7 @@ export default function SavedPropertiesPage() {
                             e.stopPropagation();
                             if (request.property?.id) router.push(`/properties/${request.property.id}?from=booking`);
                           }}
-                          className="flex-1 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                          className="flex-1 bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm cursor-pointer"
                         >
                           View Property
                         </button>
@@ -375,7 +399,7 @@ export default function SavedPropertiesPage() {
                             e.stopPropagation();
                             setCancelConfirmId(request.id);
                           }}
-                          className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                          className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm cursor-pointer"
                         >
                           Cancel Booking
                         </button>
@@ -386,7 +410,7 @@ export default function SavedPropertiesPage() {
                           e.stopPropagation();
                           if (request.property?.id) router.push(`/properties/${request.property.id}?from=booking`);
                         }}
-                        className="w-full bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm"
+                        className="w-full bg-[#1A1A1A] hover:bg-black text-white text-[11px] font-black tracking-widest uppercase py-3 rounded-xl transition shadow-sm cursor-pointer"
                       >
                         View Property
                       </button>
@@ -417,13 +441,13 @@ export default function SavedPropertiesPage() {
               <div className="flex gap-3 w-full mt-4">
                 <button 
                   onClick={() => setCancelConfirmId(null)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition"
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition cursor-pointer"
                 >
                   Close
                 </button>
                 <button 
                   onClick={() => handleCancelBooking(cancelConfirmId)}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition"
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition cursor-pointer"
                 >
                   Confirm
                 </button>

@@ -164,7 +164,23 @@ export default function StartListingPage() {
   }, []);
 
   const handleSaveAndExit = () => {
-    localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData, currentStep }));
+    try {
+      localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData, currentStep }));
+    } catch (err) {
+      console.warn('Storage quota exceeded. Saving draft without large image payloads.', err);
+      // Strip heavy base64 images so text inputs and step state persist safely
+      const cleanFormData = {
+        ...formData,
+        images: formData.images.map(img => (img && img.length > 50000 ? '' : img)),
+        panoramaImage: formData.panoramaImage && formData.panoramaImage.length > 50000 ? '' : formData.panoramaImage,
+        waterBillImage: formData.waterBillImage && formData.waterBillImage.length > 50000 ? '' : formData.waterBillImage,
+      };
+      try {
+        localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData: cleanFormData, currentStep }));
+      } catch (innerErr) {
+        console.error('Failed to save draft:', innerErr);
+      }
+    }
     router.push("/dashboard/owners/listings");
   };
 
@@ -367,7 +383,7 @@ export default function StartListingPage() {
         return;
       }
 
-      toast.success(`Image location verified! (${(distanceKm * 1000).toFixed(0)}m from property)`, { id: "gps-verify" });
+      toast.success("Image location verified!", { id: "gps-verify" });
       setGpsVerificationDetails(`Image location matched (${(distanceKm * 1000).toFixed(0)}m away). Result: VERIFIED.`);
       setPhotosVerified(true);
       setIsVerifyingPhotos(false);
@@ -894,52 +910,7 @@ export default function StartListingPage() {
                 </div>
               )}
 
-              {/* Simulation Testing Panel */}
-              {formData.waterBillImage && !isVerifyingBill && (
-                <div className="mb-8 p-5 bg-gray-50 border border-gray-200 rounded-2xl">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">AI Verification Extracted Details</h4>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 font-semibold">NIC / Owner Name:</span>
-                      <span className="font-bold text-[#1A1A1A]">{billOcrName || "Not extracted"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 font-semibold">Bill Service Address:</span>
-                      <span className="font-bold text-[#1A1A1A]">{billOcrAddress || "Not extracted"}</span>
-                    </div>
-                  </div>
 
-                  {billVerificationError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-700 text-xs font-semibold rounded-lg">
-                      ⚠️ {billVerificationError}
-                    </div>
-                  )}
-
-                  <div className="border-t border-gray-200 pt-3">
-                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Test Simulation Controls (OCR Sandbox)</h5>
-                    <div className="flex flex-wrap gap-4">
-                      <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={simulateMismatchAddress}
-                          onChange={(e) => setSimulateMismatchAddress(e.target.checked)}
-                          className="rounded border-gray-300 text-black focus:ring-black"
-                        />
-                        Force Mismatched Address (Blocks Listing)
-                      </label>
-                      <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={simulateMismatchName}
-                          onChange={(e) => setSimulateMismatchName(e.target.checked)}
-                          className="rounded border-gray-300 text-black focus:ring-black"
-                        />
-                        Force Mismatched Name (Redirects to Broker)
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Ownership Type Section */}
               <div className="mb-8">
@@ -1354,56 +1325,6 @@ export default function StartListingPage() {
                   </div>
                 )}
               </div>
-
-              {/* GPS Metadata Scanner Overlay & Simulation Dashboard */}
-              {(formData.images[0] || formData.panoramaImage) && (
-                <div className="mt-6 p-5 bg-gray-50 border border-gray-200 rounded-2xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Metadata Geolocation validation</h4>
-                    {isVerifyingPhotos ? (
-                      <span className="text-[10px] bg-blue-50 border border-blue-100 text-blue-700 font-bold px-2 py-1 rounded-full flex items-center gap-1 animate-pulse">
-                        ⌛ Scanning...
-                      </span>
-                    ) : photosVerified ? (
-                      <span className="text-[10px] bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-full">
-                        ✓ GPS Match Verified
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-rose-50 border border-rose-100 text-rose-700 font-bold px-2 py-1 rounded-full">
-                        ⚠️ Fraud Detected / Missing GPS
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-gray-600 leading-relaxed font-mono bg-white border border-gray-150 p-3 rounded-lg mb-4 whitespace-pre-wrap">
-                    {gpsVerificationDetails || "No photos verified yet."}
-                  </p>
-
-                  <div className="border-t border-gray-200 pt-3">
-                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">GPS Verification Simulation Controls (EXIF Sandbox)</h5>
-                    <div className="flex gap-2">
-                      {[
-                        { mode: "match", label: "On-Site (Match)" },
-                        { mode: "fraud", label: "Off-Site (Fraud)" },
-                        { mode: "no-gps", label: "No GPS tags" }
-                      ].map((item) => (
-                        <button
-                          key={item.mode}
-                          type="button"
-                          onClick={() => setGpsSimulationMode(item.mode as any)}
-                          className={`flex-1 py-2 px-3 border text-xs font-bold rounded-lg transition-all ${
-                            gpsSimulationMode === item.mode
-                              ? "bg-black border-black text-white"
-                              : "bg-white border-gray-200 text-gray-600 hover:border-black"
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -1709,19 +1630,19 @@ export default function StartListingPage() {
               <div className="space-y-3">
                 <button 
                   onClick={handleSaveAndExit}
-                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm"
+                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm cursor-pointer"
                 >
                   Save & Exit
                 </button>
                 <button 
                   onClick={handleExitWithoutSave}
-                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition"
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer"
                 >
                   Exit (Without Save)
                 </button>
                 <button 
                   onClick={() => setShowExitModal(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -799,7 +799,7 @@ export default function PropertyDetailPage({
                   className={`w-full py-3 rounded-xl text-xs font-extrabold transition uppercase tracking-wider ${
                     property.isBoosted 
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer'
                   }`}
                 >
                   {property.isBoosted ? 'Boosted' : 'Boost listing'}
@@ -847,13 +847,13 @@ export default function PropertyDetailPage({
               <div className="flex flex-col gap-3 mt-4">
                 <button
                   onClick={handleRequestBookingVisit}
-                  className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                  className="w-full bg-[#1A1A1A] hover:bg-black text-white py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] cursor-pointer"
                 >
                   Request Booking / Visit
                 </button>
                 <button
                   onClick={handleChatWithOwner}
-                  className="w-full bg-white border-2 border-gray-200 hover:border-[#1A1A1A] text-[#1A1A1A] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="w-full bg-white border-2 border-gray-200 hover:border-[#1A1A1A] text-[#1A1A1A] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Chat with owner
@@ -862,7 +862,7 @@ export default function PropertyDetailPage({
                     <button
                       onClick={isBookingRequested ? undefined : handleBookNow}
                       disabled={isBookingLoading}
-                      className="w-full text-white bg-[#4F46E5] hover:bg-[#4338CA] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                      className="w-full text-white bg-[#4F46E5] hover:bg-[#4338CA] py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] cursor-pointer"
                     >
                       {isBookingLoading ? 'Processing...' : isBookingRequested ? 'Requested' : 'Book now'}
                     </button>
@@ -870,7 +870,7 @@ export default function PropertyDetailPage({
                       <button
                         onClick={() => setActiveModal('cancelBooking')}
                         disabled={isBookingLoading}
-                        className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98]"
+                        className="w-full bg-white border border-red-500 text-red-500 hover:bg-red-50 py-3.5 rounded-xl text-xs font-extrabold transition shadow-sm uppercase tracking-wider active:scale-[0.98] cursor-pointer"
                       >
                         Cancel Booking
                       </button>
