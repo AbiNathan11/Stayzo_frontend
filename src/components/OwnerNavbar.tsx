@@ -22,6 +22,8 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+  const [activatingTenant, setActivatingTenant] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -37,7 +39,8 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
           firstName: payload.firstName || '',
           lastName: payload.lastName || '',
           email: email,
-          profileImage: payload.profileImage || null
+          profileImage: payload.profileImage || null,
+          isTenant: payload.isTenant ?? false
         });
 
         if (email) {
@@ -61,7 +64,8 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
                   firstName: data.user.firstName || payload.firstName || '',
                   lastName: data.user.lastName || payload.lastName || '',
                   email: data.user.email || payload.email || '',
-                  profileImage: data.user.profileImage || null
+                  profileImage: data.user.profileImage || null,
+                  isTenant: Boolean(data.user.isTenant)
                 });
               } else if (data.error) {
                 Cookies.remove('stayzo_token');
@@ -81,6 +85,47 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
       window.location.href = '/auth?role=landlord';
     }
   }, []);
+
+  const handleSwitchToTenant = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (user?.isTenant) {
+      window.location.href = '/dashboard/tenant';
+    } else {
+      setShowActivateModal(true);
+    }
+  };
+
+  const handleConfirmTenantActivation = async () => {
+    if (!user?.email) return;
+    try {
+      setActivatingTenant(true);
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch('http://localhost:3001/api/auth/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: user.email,
+          isTenant: true
+        })
+      });
+
+      if (res.ok) {
+        setUser(prev => prev ? { ...prev, isTenant: true } : null);
+        setShowActivateModal(false);
+        window.location.href = '/dashboard/tenant';
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to activate tenant role. Please try again.');
+      }
+    } catch (err) {
+      console.error('Tenant activation error:', err);
+    } finally {
+      setActivatingTenant(false);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -156,12 +201,12 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
         {/* Right side */}
         <div className="flex-1 flex justify-end items-center space-x-4">
           {!hideLinks && (
-            <Link
-              href="/dashboard/tenant"
-              className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200"
+            <button
+              onClick={handleSwitchToTenant}
+              className="hidden sm:inline text-sm font-semibold text-gray-900 hover:bg-[#EEF2FF] hover:text-[#4F46E5] active:bg-[#E0E7FF] px-4 py-2 rounded-full transition duration-200 cursor-pointer"
             >
               Switch to tenant
-            </Link>
+            </button>
           )}
           <div className="relative" ref={notifRef}>
             <button
@@ -292,6 +337,40 @@ export default function OwnerNavbar({ hideLinks = false }: { hideLinks?: boolean
       user={user} 
       onSuccess={handleProfileSuccess} 
     />
+
+    {/* Activate Tenant Role Modal */}
+    {showActivateModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !activatingTenant && setShowActivateModal(false)} />
+        <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 border border-gray-100">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
+            <span className="text-xl">🏠</span>
+          </div>
+          <h3 className="text-lg font-black text-[#1A1A1A] mb-2">
+            Activate Tenant Access
+          </h3>
+          <p className="text-xs text-gray-500 font-semibold leading-relaxed mb-6">
+            Your account does not currently have active tenant role permissions. Would you like to activate tenant access to explore and book property listings?
+          </p>
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={() => setShowActivateModal(false)}
+              disabled={activatingTenant}
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmTenantActivation}
+              disabled={activatingTenant}
+              className="px-6 py-2.5 rounded-full text-xs font-bold bg-[#4F46E5] hover:bg-[#4338CA] text-white transition shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2"
+            >
+              {activatingTenant ? 'Activating...' : 'Activate & Proceed'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

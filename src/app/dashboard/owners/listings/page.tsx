@@ -39,6 +39,7 @@ interface Listing {
   images: string[];
   panoramaImage?: string;
   status: string;
+  bookingStatus?: string;
   createdAt: string;
   noisePrediction?: {
     noiseLevelScore: number;
@@ -407,6 +408,18 @@ export default function OwnerListings() {
                         <div className="absolute top-3 left-3 bg-amber-500/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 border border-amber-400/30">
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                           Pending Approval
+                        </div>
+                      )}
+                      {(listing.status?.toLowerCase() === 'disabled') && (
+                        <div className="absolute top-3 left-3 bg-rose-600/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 border border-rose-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                          Disabled
+                        </div>
+                      )}
+                      {(listing.bookingStatus?.toLowerCase() === 'booked') && (
+                        <div className="absolute top-3 right-3 bg-emerald-600/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                          Booked
                         </div>
                       )}
                     </div>

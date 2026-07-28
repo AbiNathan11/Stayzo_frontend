@@ -172,6 +172,10 @@ function SearchContent() {
 
   // ── Dynamic Client-side Filters ──
   const filteredListings = listings.filter(item => {
+    if (item.bookingStatus && item.bookingStatus.toLowerCase() === 'booked') {
+      return false;
+    }
+
     if (searchQuery) {
       const term = searchQuery.toLowerCase();
       const matchesText = (
@@ -255,7 +259,7 @@ function SearchContent() {
   }
 
   return (
-    <div className="h-screen overflow-hidden pt-[68px] bg-[#F5F7F8] text-[#2D2D2D] font-sans flex flex-col">
+    <div className="h-screen overflow-hidden pt-[68px] bg-[#F5F7F8] text-[#2D2D2D] font-sans flex flex-col" suppressHydrationWarning={true}>
       
       {/* Top Navbar Component */}
       <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -267,6 +271,7 @@ function SearchContent() {
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1 text-gray-600 text-xs font-semibold hover:text-gray-900 transition-colors group"
+            suppressHydrationWarning={true}
           >
             <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
             Go Back
@@ -319,6 +324,7 @@ function SearchContent() {
             <button 
               onClick={() => setShowFilters(false)}
               className="lg:hidden px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full font-bold text-[10px] uppercase hover:bg-gray-200 transition"
+              suppressHydrationWarning={true}
             >
               Close
             </button>
