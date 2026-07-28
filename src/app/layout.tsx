@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Stayzo',
   description: 'Stayzo Web Application',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
