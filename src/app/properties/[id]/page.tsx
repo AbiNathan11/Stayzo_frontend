@@ -117,13 +117,18 @@ export default function PropertyDetailPage({
       // Helper function to initialize Pannellum viewer
       const initViewer = () => {
         if ((window as any).pannellum && property?.panoramaImage) {
+          const panoramaUrl = property.panoramaImage.startsWith('http')
+            ? `/api/proxy-image?url=${encodeURIComponent(property.panoramaImage)}`
+            : property.panoramaImage;
+
           try {
             (window as any).pannellum.viewer('panorama-container', {
               type: 'equirectangular',
-              panorama: property.panoramaImage,
+              panorama: panoramaUrl,
               autoLoad: true,
               compass: false,
               mouseZoom: true,
+              crossOrigin: 'anonymous',
             });
           } catch (e) {
             console.error('Pannellum initialization failed:', e);
