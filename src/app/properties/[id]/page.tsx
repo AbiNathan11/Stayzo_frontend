@@ -48,6 +48,7 @@ interface Property {
     firstName: string | null;
     lastName: string | null;
     email: string;
+    verified?: boolean;
   };
   latitude: number | null;
   longitude: number | null;
@@ -569,7 +570,7 @@ export default function PropertyDetailPage({
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             <span>Back</span>
           </button>
-          <button onClick={handleBookmarkToggle} className="flex items-center space-x-1.5 text-xs font-bold text-gray-600 hover:text-[#1A1A1A] transition">
+          <button onClick={handleBookmarkToggle} className="flex items-center space-x-1.5 text-xs font-bold text-gray-600 hover:text-[#1A1A1A] transition cursor-pointer">
             <Heart className={`w-4 h-4 transition-colors ${isBookmarked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
             <span>{isBookmarked ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
           </button>
@@ -810,11 +811,13 @@ export default function PropertyDetailPage({
                   <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 mr-1" />
                   <span>Property Owner</span>
                 </div>
-                <div className="flex gap-2 mt-2">
-                  <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-0.5">
-                    <Check className="w-2.5 h-2.5" /> Verified
-                  </span>
-                </div>
+                {property.owner?.verified && (
+                  <div className="flex gap-2 mt-2">
+                    <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-0.5">
+                      <Check className="w-2.5 h-2.5" /> Verified
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

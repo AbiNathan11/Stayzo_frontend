@@ -7,7 +7,7 @@ import Navbar from '../../components/Navbar';
 import SearchMap from '../../components/maps/SearchMap';
 import PropertyReviews from '@/components/PropertyReviews';
 import { 
-  Home, Building2, Landmark, Map, HelpCircle,
+  Home, Building2, Landmark, Map, Users,
   MapPin, SlidersHorizontal, Heart, Star, ChevronLeft
 } from 'lucide-react';
 
@@ -39,8 +39,7 @@ function SearchContent() {
   const [minPrice, setMinPrice] = useState(5000);
   const [maxPrice, setMaxPrice] = useState(200000);
   const [neighbourhood, setNeighbourhood] = useState({ school: false, hospital: false, transport: false, market: false, park: false, gym: false });
-  const [conveniences, setConveniences] = useState({ parking: false, pet: false, furnished: false, wifi: false, ac: false, security: false });
-  const [suitableFor, setSuitableFor] = useState<string>('');
+  const [noiseLevel, setNoiseLevel] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Active/Hovered Card for Map Sync
@@ -208,33 +207,46 @@ function SearchContent() {
     }
 
     const amenitiesLower = (item.amenities || []).map((a: string) => a.toLowerCase());
+    const factorsText = (item.noisePrediction?.factors || [])
+      .map((f: any) => `${f.name} ${f.description}`)
+      .join(' ')
+      .toLowerCase();
+
     const matchesNeighbourhood = Object.entries(neighbourhood).every(([facility, active]) => {
       if (!active) return true;
-      if (facility === 'school') return amenitiesLower.some((a: string) => a.includes('school') || a.includes('university'));
-      if (facility === 'hospital') return amenitiesLower.some((a: string) => a.includes('hospital') || a.includes('medical') || a.includes('clinic'));
-      if (facility === 'transport') return amenitiesLower.some((a: string) => a.includes('transport') || a.includes('bus') || a.includes('station') || a.includes('railway'));
-      if (facility === 'market') return amenitiesLower.some((a: string) => a.includes('market') || a.includes('supermarket') || a.includes('grocery') || a.includes('shop'));
-      if (facility === 'park') return amenitiesLower.some((a: string) => a.includes('park') || a.includes('garden'));
-      if (facility === 'gym') return amenitiesLower.some((a: string) => a.includes('gym') || a.includes('fitness'));
+      if (facility === 'school') {
+        return amenitiesLower.some((a: string) => a.includes('school') || a.includes('university')) || 
+               factorsText.includes('school') || factorsText.includes('university');
+      }
+      if (facility === 'hospital') {
+        return amenitiesLower.some((a: string) => a.includes('hospital') || a.includes('medical') || a.includes('clinic')) || 
+               factorsText.includes('hospital') || factorsText.includes('medical') || factorsText.includes('clinic');
+      }
+      if (facility === 'transport') {
+        return amenitiesLower.some((a: string) => a.includes('transport') || a.includes('bus') || a.includes('station') || a.includes('railway')) || 
+               factorsText.includes('transit') || factorsText.includes('bus') || factorsText.includes('station') || factorsText.includes('railway') || factorsText.includes('road');
+      }
+      if (facility === 'market') {
+        return amenitiesLower.some((a: string) => a.includes('market') || a.includes('supermarket') || a.includes('grocery') || a.includes('shop')) || 
+               factorsText.includes('market') || factorsText.includes('supermarket') || factorsText.includes('grocery') || factorsText.includes('dining') || factorsText.includes('restaurant') || factorsText.includes('bar');
+      }
+      if (facility === 'park') {
+        return amenitiesLower.some((a: string) => a.includes('park') || a.includes('garden')) || 
+               factorsText.includes('park') || factorsText.includes('garden');
+      }
+      if (facility === 'gym') {
+        return amenitiesLower.some((a: string) => a.includes('gym') || a.includes('fitness')) || 
+               factorsText.includes('gym') || factorsText.includes('fitness');
+      }
       return true;
     });
     if (!matchesNeighbourhood) return false;
 
-    const matchesConveniences = Object.entries(conveniences).every(([conv, active]) => {
-      if (!active) return true;
-      if (conv === 'parking') return amenitiesLower.some((a: string) => a.includes('parking') || a.includes('garage'));
-      if (conv === 'pet') return amenitiesLower.some((a: string) => a.includes('pet') || a.includes('dog') || a.includes('cat') || a.includes('allow'));
-      if (conv === 'furnished') return amenitiesLower.some((a: string) => a.includes('furnish') || a.includes('bed') || a.includes('sofa'));
-      if (conv === 'wifi') return amenitiesLower.some((a: string) => a.includes('wifi') || a.includes('wi-fi') || a.includes('internet'));
-      if (conv === 'ac') return amenitiesLower.some((a: string) => a.includes('ac') || a.includes('air') || a.includes('condition'));
-      if (conv === 'security') return amenitiesLower.some((a: string) => a.includes('security') || a.includes('cctv') || a.includes('guard'));
-      return true;
-    });
-    if (!matchesConveniences) return false;
-
-    if (suitableFor && suitableFor !== 'Anyone') {
-      const text = ((item.title || '') + ' ' + (item.description || '') + ' ' + (item.amenities || []).join(' ')).toLowerCase();
-      if (!text.includes(suitableFor.toLowerCase())) return false;
+    if (noiseLevel) {
+      const itemNoiseLabel = item.noisePrediction?.label?.toLowerCase() || '';
+      if (itemNoiseLabel !== noiseLevel.toLowerCase()) {
+        return false;
+      }
     }
 
     return true;
@@ -364,13 +376,13 @@ function SearchContent() {
               {[
                 { key: 'house', label: 'House', Icon: Home },
                 { key: 'apartment', label: 'Apartment', Icon: Building2 },
-                { key: 'shared', label: 'Shared Room', Icon: HelpCircle },
+                { key: 'shared', label: 'Shared Room', Icon: Users },
                 { key: 'private', label: 'Private Room', Icon: Landmark },
               ].map(({ key, label, Icon }) => (
                 <button
                   key={key}
                   onClick={() => setPropertyType(propertyType === key ? '' : key)}
-                  className={`flex flex-col items-center justify-center py-3 px-2 border rounded-xl text-[10px] font-semibold transition ${
+                  className={`flex flex-col items-center justify-center py-3 px-2 border rounded-xl text-[10px] font-semibold transition cursor-pointer ${
                     propertyType === key
                       ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white'
                       : 'border-gray-150 text-gray-500 bg-white hover:bg-gray-50'
@@ -408,46 +420,26 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Additional Conveniences */}
-          <div className="mb-5 pb-5 border-b border-gray-100">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Additional Conveniences</h3>
-            <div className="grid grid-cols-2 gap-y-2.5">
-              {([
-                ['parking', 'Parking'],
-                ['pet', 'Pet Allowed'],
-                ['furnished', 'Furnished'],
-                ['wifi', 'Wi-Fi'],
-                ['ac', 'Air Con'],
-                ['security', 'Security'],
-              ] as [keyof typeof conveniences, string][]).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 text-xs font-medium text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={conveniences[key]}
-                    onChange={(e) => setConveniences({ ...conveniences, [key]: e.target.checked })}
-                    className="accent-[#1A1A1A] w-3.5 h-3.5 cursor-pointer rounded"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Suitable For */}
+          {/* Noise Level */}
           <div className="mb-4">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Suitable For</h3>
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Noise Level</h3>
             <div className="flex flex-wrap gap-2">
-              {['Anyone', 'Students', 'Professionals', 'Families'].map((opt) => (
+              {[
+                { value: '', label: 'Any' },
+                { value: 'low', label: 'Low (Quiet)' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'high', label: 'High (Lively)' },
+              ].map((opt) => (
                 <button
-                  key={opt}
-                  onClick={() => setSuitableFor(suitableFor === opt ? '' : opt)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-                    suitableFor === opt
+                  key={opt.value}
+                  onClick={() => setNoiseLevel(opt.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                    noiseLevel === opt.value
                       ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {opt}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -496,7 +488,7 @@ function SearchContent() {
                     {/* Bookmark Heart Button */}
                     <button 
                       onClick={(e) => handleBookmarkToggle(listing.id, e)}
-                      className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/10 hover:bg-black/25 backdrop-blur-xs transition"
+                      className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/10 hover:bg-black/25 backdrop-blur-xs transition cursor-pointer"
                     >
                       <Heart className={`w-4 h-4 transition-colors ${bookmarkedIds.includes(String(listing.id)) ? 'fill-red-500 stroke-red-500' : 'fill-transparent stroke-white'}`} />
                     </button>
