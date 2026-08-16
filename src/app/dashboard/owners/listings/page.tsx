@@ -5,29 +5,41 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
-import { 
-  Pencil, 
-  Trash2, 
-  Play, 
-  Building, 
-  MapPin, 
-  Home, 
-  BedDouble, 
-  Bath, 
-  Maximize, 
-  AlertCircle, 
+import {
+  Pencil,
+  Trash2,
+  Play,
+  Building,
+  MapPin,
+  Home,
+  BedDouble,
+  Bath,
+  Maximize,
+  AlertCircle,
   Clock,
   CheckCircle2,
   Check,
   X
 } from 'lucide-react';
 import PropertyReviews from '@/components/PropertyReviews';
+import dynamic from 'next/dynamic';
+
+const PropertyMap = dynamic(() => import('@/components/maps/PropertyMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] bg-gray-50 rounded-2xl flex flex-col items-center justify-center border border-gray-150">
+      <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p className="text-xs text-gray-500 font-bold tracking-widest uppercase animate-pulse">Initializing Google Maps...</p>
+    </div>
+  ),
+});
 
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Listing {
   id: string;
   title: string;
+  description?: string;
   price: number;
   rentPerMonth?: number;
   address: string;
@@ -36,9 +48,13 @@ interface Listing {
   bedrooms: number;
   bathrooms: number;
   hall: number;
+  type?: string;
+  latitude?: number;
+  longitude?: number;
   images: string[];
   panoramaImage?: string;
   status: string;
+  isDeleted?: boolean;
   bookingStatus?: string;
   createdAt: string;
   noisePrediction?: {
@@ -92,12 +108,12 @@ const TOTAL_ASSETS = 25;
 
 // ── Nav Links ──────────────────────────────────────────────────────────────────
 const navLinks = [
-  { label: 'Home',         href: '/dashboard/owners' },
-  { label: 'Listings',     href: '/dashboard/owners/listings' },
+  { label: 'Home', href: '/dashboard/owners' },
+  { label: 'Listings', href: '/dashboard/owners/listings' },
   { label: 'Appointments', href: '/dashboard/owners/appointments' },
-  { label: 'Chat',         href: '/dashboard/owners/chat' },
-  { label: 'Agreement',    href: '/dashboard/owners/agreement' },
-  { label: 'Profile',      href: '/dashboard/owners/profile' },
+  { label: 'Chat', href: '/dashboard/owners/chat' },
+  { label: 'Agreement', href: '/dashboard/owners/agreement' },
+  { label: 'Profile', href: '/dashboard/owners/profile' },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -115,24 +131,145 @@ export default function OwnerListings() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [ownerId, setOwnerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'active' | 'processing' | 'booking_request'>(
+  const [activeTab, setActiveTab] = useState<'active' | 'processing' | 'booking_request' | 'deleted_listings'>(
     tabParam === 'booking_request' ? 'booking_request' : 'active'
   );
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
   const [declineConfirmId, setDeclineConfirmId] = useState<string | null>(null);
+  const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
+  const [retrievePropertyId, setRetrievePropertyId] = useState<string | null>(null);
   const [draft, setDraft] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteDraftConfirm, setShowDeleteDraftConfirm] = useState(false);
   const [formData, setFormData] = useState({
-    title: '', description: '', price: '', address: '', city: '', 
-    type: 'Apartment', bedrooms: '', bathrooms: '', hall: '', 
+    title: '', description: '', price: '', address: '', city: '',
+    type: 'Apartment', bedrooms: '', bathrooms: '', hall: '',
     panoramaImage: '', waterBillImage: '', image: ''
   });
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<Listing>>({});
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleEditClick = (listing: Listing) => {
+    setEditFormData({
+      id: listing.id,
+      title: listing.title,
+      description: listing.description || '',
+      price: listing.price,
+      address: listing.address,
+      latitude: listing.latitude || 6.9271,
+      longitude: listing.longitude || 79.8612,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      hall: listing.hall,
+      type: listing.type || 'Apartment',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.id) return;
+    setIsEditing(true);
+    try {
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch(`http://localhost:3001/api/properties/${editFormData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          description: editFormData.description,
+          price: editFormData.price,
+          address: editFormData.address,
+          latitude: editFormData.latitude,
+          longitude: editFormData.longitude,
+          bedrooms: editFormData.bedrooms?.toString(),
+          bathrooms: editFormData.bathrooms?.toString(),
+          hall: editFormData.hall?.toString(),
+          type: editFormData.type,
+        })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setListings(prev => prev.map(l => l.id === updated.id ? { ...l, ...updated } : l));
+        toast.success('Listing updated successfully!');
+        setIsEditModalOpen(false);
+      } else {
+        const errorData = await res.json();
+        toast.error(`Update failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred during update');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletePropertyId) return;
+    try {
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch(`http://localhost:3001/api/properties/${deletePropertyId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ isDeleted: true })
+      });
+
+      if (res.ok) {
+        setListings(prev => prev.map(l => l.id === deletePropertyId ? { ...l, isDeleted: true } : l));
+        toast.success('Property moved to Deleted Listings');
+      } else {
+        toast.error('Failed to delete property');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred during deletion');
+    } finally {
+      setDeletePropertyId(null);
+    }
+  };
+
+  const handleConfirmRetrieve = async () => {
+    if (!retrievePropertyId) return;
+    try {
+      const token = Cookies.get('stayzo_token');
+      const res = await fetch(`http://localhost:3001/api/properties/${retrievePropertyId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ isDeleted: false })
+      });
+
+      if (res.ok) {
+        setListings(prev => prev.map(l => l.id === retrievePropertyId ? { ...l, isDeleted: false } : l));
+        toast.success('Property retrieved successfully');
+      } else {
+        toast.error('Failed to retrieve property');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred during retrieval');
+    } finally {
+      setRetrievePropertyId(null);
+    }
+  };
+
+
 
   // Load draft on mount
   useEffect(() => {
@@ -178,7 +315,7 @@ export default function OwnerListings() {
       if (listings.length === 0) setLoading(true);
       try {
         const token = Cookies.get('stayzo_token');
-        
+
         // Fetch properties
         if (listings.length === 0) {
           const res = await fetch(`http://localhost:3001/api/properties/owner/${ownerId}`, {
@@ -249,7 +386,10 @@ export default function OwnerListings() {
     }
   };
 
-  const totalPages = Math.ceil(listings.length / 6) || 1;
+  const activeListings = listings.filter(l => !l.isDeleted && l.status?.toLowerCase() !== 'deleted');
+  const deletedListings = listings.filter(l => l.isDeleted || l.status?.toLowerCase() === 'deleted');
+  const currentListings = activeTab === 'deleted_listings' ? deletedListings : activeListings;
+  const totalPages = Math.ceil(currentListings.length / 6) || 1;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
@@ -269,8 +409,8 @@ export default function OwnerListings() {
       const res = await fetch('http://localhost:3001/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...formData, 
+        body: JSON.stringify({
+          ...formData,
           ownerId,                                    // real owner ID from JWT
           images: formData.image ? [formData.image] : []
         })
@@ -303,7 +443,7 @@ export default function OwnerListings() {
               Manage your active properties and view incomplete drafts.
             </p>
           </div>
-          <Link 
+          <Link
             href="/dashboard/owners/start_listing"
             className="shrink-0 text-xs font-bold text-[#4F46E5] bg-[#EEF2FF] hover:bg-[#E0E7FF] px-5 py-2.5 rounded-xl transition duration-200 shadow-xs cursor-pointer"
           >
@@ -312,36 +452,42 @@ export default function OwnerListings() {
         </div>
 
         <div className="flex border-b border-gray-200 mb-8 select-none">
-          <button 
+          <button
             onClick={() => setActiveTab('active')}
-            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
-              activeTab === 'active' 
-                ? 'border-[#4F46E5] text-[#4F46E5]' 
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
+            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'active'
+              ? 'border-[#4F46E5] text-[#4F46E5]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
           >
-            Active Listings ({listings.length})
+            Active Listings ({activeListings.length})
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('processing')}
-            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
-              activeTab === 'processing' 
-                ? 'border-[#4F46E5] text-[#4F46E5]' 
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
+            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${activeTab === 'processing'
+              ? 'border-[#4F46E5] text-[#4F46E5]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
           >
             In Progress & Drafts ({draft ? 1 : 0})
             {draft && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('booking_request')}
-            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
-              activeTab === 'booking_request' 
-                ? 'border-[#4F46E5] text-[#4F46E5]' 
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
+            className={`mr-8 pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${activeTab === 'booking_request'
+              ? 'border-[#4F46E5] text-[#4F46E5]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
           >
             Booking Request ({bookingRequests.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('deleted_listings')}
+            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${activeTab === 'deleted_listings'
+              ? 'border-[#4F46E5] text-[#4F46E5]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+          >
+            Deleted Listings ({deletedListings.length})
           </button>
         </div>
 
@@ -349,7 +495,7 @@ export default function OwnerListings() {
         {activeTab === 'active' && loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
             {[...Array(3)].map((_, i) => (
-              <div 
+              <div
                 key={i}
                 className="bg-white border border-gray-200 rounded-3xl overflow-hidden flex flex-col h-[380px]"
               >
@@ -384,7 +530,7 @@ export default function OwnerListings() {
 
         {activeTab === 'active' && !loading && (
           <div>
-            {listings.length === 0 ? (
+            {activeListings.length === 0 ? (
               <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/55">
                 <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Active Properties Found</p>
@@ -392,15 +538,15 @@ export default function OwnerListings() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {listings.slice((currentPage - 1) * 6, currentPage * 6).map((listing) => (
-                  <div 
+                {activeListings.slice((currentPage - 1) * 6, currentPage * 6).map((listing) => (
+                  <div
                     key={listing.id}
                     className="group bg-white border border-gray-200 rounded-3xl overflow-hidden hover:border-gray-400 hover:shadow-md transition-all duration-300 flex flex-col"
                   >
                     {/* Image Area */}
                     <div className="h-[180px] bg-gray-100 relative overflow-hidden shrink-0">
-                      <img 
-                        src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'} 
+                      <img
+                        src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'}
                         alt={listing.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                       />
@@ -434,7 +580,7 @@ export default function OwnerListings() {
                           <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                           {listing.city || 'Colombo'}, {listing.state || 'Western'}
                         </p>
-                        
+
                         <p className="text-xl font-black text-[#1A1A1A] mt-4 leading-none">
                           Rs. {Number(listing.price || listing.rentPerMonth || 0).toLocaleString()}
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
@@ -468,16 +614,23 @@ export default function OwnerListings() {
 
                       {/* Action buttons */}
                       <div className="flex gap-2">
-                        <Link 
+                        <Link
                           href={`/properties/${listing.id}`}
                           className="flex-1 text-center bg-gray-50 hover:bg-gray-100 text-[#1A1A1A] border border-gray-200 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition"
                         >
                           View Details
                         </Link>
-                        <button 
-                          className="px-3 border border-gray-200 hover:border-blue-600 hover:text-blue-600 rounded-xl text-[#1A1A1A] transition flex items-center justify-center"
+                        <button
+                          onClick={() => handleEditClick(listing)}
+                          className="px-3 border border-gray-200 hover:border-blue-600 hover:text-blue-600 rounded-xl text-[#1A1A1A] transition flex items-center justify-center cursor-pointer"
                         >
                           <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletePropertyId(listing.id)}
+                          className="px-3 border border-gray-200 hover:border-red-600 hover:text-red-600 rounded-xl text-[#1A1A1A] transition flex items-center justify-center cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -500,15 +653,15 @@ export default function OwnerListings() {
             ) : (
               <div className="max-w-xl bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:border-gray-400 transition relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 opacity-50 rounded-full blur-xl transform translate-x-1/3 -translate-y-1/3"></div>
-                
+
                 <div className="flex justify-between items-start relative z-10">
                   <div>
                     <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
                       In-Progress Draft
                     </span>
                     <h3 className="text-[18px] font-black text-[#1A1A1A] uppercase tracking-wide mt-3">
-                      {draft.formData?.houseNo && draft.formData?.street 
-                        ? `${draft.formData.houseNo} ${draft.formData.street}` 
+                      {draft.formData?.houseNo && draft.formData?.street
+                        ? `${draft.formData.houseNo} ${draft.formData.street}`
                         : "Untitled Draft Property"
                       }
                     </h3>
@@ -517,7 +670,7 @@ export default function OwnerListings() {
                       {draft.formData?.city || "City Not Set"}
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={handleDeleteDraft}
                     className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition"
                     title="Delete Draft"
@@ -533,8 +686,8 @@ export default function OwnerListings() {
                     <span className="text-amber-700 font-extrabold">Step {draft.currentStep} of 8</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-amber-500 rounded-full transition-all duration-500" 
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-500"
                       style={{ width: `${((draft.currentStep - 1) / 7) * 100}%` }}
                     />
                   </div>
@@ -542,13 +695,13 @@ export default function OwnerListings() {
 
                 {/* Quick Resume info */}
                 <p className="text-[11px] text-gray-400 mt-4 leading-relaxed relative z-10">
-                  Category: <strong className="text-gray-700">{draft.formData?.propertyCategory || "None Specified"}</strong> • 
+                  Category: <strong className="text-gray-700">{draft.formData?.propertyCategory || "None Specified"}</strong> •
                   Price Draft: <strong className="text-gray-700">Rs. {draft.formData?.rentPerMonth ? parseInt(draft.formData.rentPerMonth).toLocaleString() : "0"}</strong>
                 </p>
 
                 {/* Continue Actions */}
                 <div className="mt-6 flex gap-3 relative z-10">
-                  <Link 
+                  <Link
                     href="/dashboard/owners/start_listing"
                     className="flex-1 flex items-center justify-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition"
                   >
@@ -583,11 +736,11 @@ export default function OwnerListings() {
                           {new Date(request.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                      
+
                       <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate">
                         {request.property?.title}
                       </h3>
-                      
+
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5 mb-4">
                         <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                         {request.property?.address}
@@ -605,13 +758,13 @@ export default function OwnerListings() {
                       </div>
 
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => handleApproveBooking(request.id)}
                           className="flex-1 flex justify-center items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" /> Accept
                         </button>
-                        <button 
+                        <button
                           onClick={() => setDeclineConfirmId(request.id)}
                           className="flex-1 flex justify-center items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl transition cursor-pointer"
                         >
@@ -626,22 +779,84 @@ export default function OwnerListings() {
           </div>
         )}
 
+        {/* ── Deleted Listings Tab ── */}
+        {activeTab === 'deleted_listings' && !loading && (
+          <div>
+            {deletedListings.length === 0 ? (
+              <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/55">
+                <Trash2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No Deleted Properties</p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">Properties that you have deleted will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {deletedListings.slice((currentPage - 1) * 6, currentPage * 6).map((listing) => (
+                  <div
+                    key={listing.id}
+                    className="group bg-white border border-gray-200 rounded-3xl overflow-hidden grayscale opacity-75 flex flex-col"
+                  >
+                    {/* Image Area */}
+                    <div className="h-[180px] bg-gray-100 relative overflow-hidden shrink-0">
+                      <img
+                        src={listing.images?.[0] || 'https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=400&h=240&fit=crop&q=80'}
+                        alt={listing.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3 bg-red-600/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 border border-red-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                        Deleted
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-[#1A1A1A] uppercase tracking-wide truncate line-through">
+                          {listing.title}
+                        </h3>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          {listing.city || 'Colombo'}, {listing.state || 'Western'}
+                        </p>
+
+                        <p className="text-xl font-black text-[#1A1A1A] mt-4 leading-none">
+                          Rs. {Number(listing.price || listing.rentPerMonth || 0).toLocaleString()}
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
+                        </p>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 mt-4 border-t border-gray-100 pt-4">
+                        <button
+                          onClick={() => setRetrievePropertyId(listing.id)}
+                          className="flex-1 text-center bg-gray-50 hover:bg-gray-100 text-[#1A1A1A] border border-gray-200 text-[10px] font-black tracking-widest uppercase py-2.5 rounded-xl cursor-pointer transition"
+                        >
+                          Retrieve
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Pagination ── */}
-        {activeTab === 'active' && listings.length > 0 && (
+        {(activeTab === 'active' || activeTab === 'deleted_listings') && currentListings.length > 0 && (
           <div className="flex items-center justify-between mt-12 pt-6 border-t border-gray-100">
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-              Showing {(currentPage - 1) * 6 + 1}-{Math.min(currentPage * 6, listings.length)} of {listings.length} assets
+              Showing {(currentPage - 1) * 6 + 1}-{Math.min(currentPage * 6, currentListings.length)} of {currentListings.length} assets
             </p>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 text-[12px] font-extrabold border transition-colors rounded-lg ${
-                    currentPage === page
-                      ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
-                      : 'bg-white text-[#1A1A1A] border-gray-200 hover:border-[#4F46E5]'
-                  }`}
+                  className={`w-8 h-8 text-[12px] font-extrabold border transition-colors rounded-lg ${currentPage === page
+                    ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
+                    : 'bg-white text-[#1A1A1A] border-gray-200 hover:border-[#4F46E5]'
+                    }`}
                 >
                   {page}
                 </button>
@@ -662,22 +877,22 @@ export default function OwnerListings() {
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Property Title *</label>
-                    <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="e.g. Skyline Pavilion Penthouse" />
+                    <input required type="text" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="e.g. Skyline Pavilion Penthouse" />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Monthly Rent ($) *</label>
-                    <input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="e.g. 2500" />
+                    <input required type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="e.g. 2500" />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Property Type</label>
-                    <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black">
+                    <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black">
                       <option>Apartment</option>
                       <option>House</option>
                       <option>Condo</option>
@@ -687,26 +902,26 @@ export default function OwnerListings() {
 
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Address</label>
-                    <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="Street Address" />
+                    <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="Street Address" />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">City</label>
-                    <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="City" />
+                    <input type="text" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="City" />
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Beds</label>
-                      <input type="number" value={formData.bedrooms} onChange={e => setFormData({...formData, bedrooms: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
+                      <input type="number" value={formData.bedrooms} onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Baths</label>
-                      <input type="number" step="0.5" value={formData.bathrooms} onChange={e => setFormData({...formData, bathrooms: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
+                      <input type="number" step="0.5" value={formData.bathrooms} onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Halls</label>
-                      <input type="number" value={formData.hall} onChange={e => setFormData({...formData, hall: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
+                      <input type="number" value={formData.hall} onChange={e => setFormData({ ...formData, hall: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" />
                     </div>
                   </div>
 
@@ -747,13 +962,103 @@ export default function OwnerListings() {
 
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Description</label>
-                    <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="Describe the property..." />
+                    <textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black" placeholder="Describe the property..." />
                   </div>
                 </div>
 
                 <div className="border-t pt-5 flex justify-end gap-3 mt-8">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-[11px] font-bold text-gray-500 hover:text-black uppercase tracking-widest">Cancel</button>
                   <button type="submit" className="px-6 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-colors shadow-sm">Publish Listing</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Listing Modal ── */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200 rounded-2xl">
+            <div className="p-6 md:p-8">
+              <div className="flex justify-between items-center border-b pb-4 mb-6">
+                <h2 className="text-[20px] font-black uppercase text-[#1A1A1A]">Edit Listing</h2>
+                <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-black">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-6">
+                {/* Location & Map Section */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">1. Property Location</h3>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Address Override</label>
+                    <input type="text" value={editFormData.address || ''} onChange={e => setEditFormData({ ...editFormData, address: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" placeholder="Street Address" />
+                  </div>
+                  <div className="bg-white p-1 border border-gray-200 rounded-2xl overflow-hidden">
+                    <PropertyMap
+                      coords={{ lat: editFormData.latitude || 6.9271, lng: editFormData.longitude || 79.8612 }}
+                      draggable={true}
+                      onCoordinatesChange={(coords) => setEditFormData({ ...editFormData, latitude: coords.lat, longitude: coords.lng })}
+                      propertyTitle={editFormData.title}
+                    />
+                    <p className="text-[10px] text-gray-500 text-center mt-2 pb-2">Drag the pin to update precise location coordinates.</p>
+                  </div>
+                </div>
+
+                {/* Configuration Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">2. Configuration & Types</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Property Type</label>
+                      <select value={editFormData.type || 'Apartment'} onChange={e => setEditFormData({ ...editFormData, type: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg">
+                        <option>Apartment</option>
+                        <option>Individual House</option>
+                        <option>Villa/Mansion</option>
+                        <option>Studio Apartment</option>
+                        <option>Annex</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Beds</label>
+                      <input type="number" min="0" value={editFormData.bedrooms || 0} onChange={e => setEditFormData({ ...editFormData, bedrooms: parseInt(e.target.value) || 0 })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Baths</label>
+                      <input type="number" min="0" step="0.5" value={editFormData.bathrooms || 0} onChange={e => setEditFormData({ ...editFormData, bathrooms: parseFloat(e.target.value) || 0 })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Halls</label>
+                      <input type="number" min="0" value={editFormData.hall || 0} onChange={e => setEditFormData({ ...editFormData, hall: parseInt(e.target.value) || 0 })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">3. Description</h3>
+                  <div className="space-y-1">
+                    <textarea rows={4} value={editFormData.description || ''} onChange={e => setEditFormData({ ...editFormData, description: e.target.value })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" placeholder="Detailed property description..." />
+                  </div>
+                </div>
+
+                {/* Pricing & Deposit Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">4. Pricing & Limits</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Monthly Rent (Rs.) *</label>
+                      <input required type="number" min="0" value={editFormData.price || ''} onChange={e => setEditFormData({ ...editFormData, price: parseFloat(e.target.value) || 0 })} className="w-full border border-gray-200 p-2.5 text-[13px] outline-none focus:border-black rounded-lg" placeholder="e.g. 25000" />
+                    </div>
+                    {/* Additional fields like expected tenants could be handled here if added to schema */}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
+                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 text-[11px] font-bold text-gray-500 hover:text-black uppercase tracking-widest cursor-pointer">Cancel</button>
+                  <button type="submit" disabled={isEditing} className="px-6 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] disabled:bg-gray-400 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-colors shadow-sm cursor-pointer">{isEditing ? 'Saving...' : 'Save Changes'}</button>
                 </div>
               </form>
             </div>
@@ -776,13 +1081,13 @@ export default function OwnerListings() {
                 </p>
               </div>
               <div className="flex gap-3 w-full mt-4">
-                <button 
+                <button
                   onClick={() => setDeclineConfirmId(null)}
                   className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={() => handleDeclineBooking(declineConfirmId)}
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition cursor-pointer"
                 >
@@ -809,19 +1114,88 @@ export default function OwnerListings() {
                 </p>
               </div>
               <div className="flex gap-3 w-full mt-4">
-                <button 
+                <button
                   onClick={() => setShowDeleteDraftConfirm(false)}
                   className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold uppercase tracking-widest rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={confirmDeleteDraft}
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition cursor-pointer"
                 >
                   Confirm
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deletePropertyId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Delete Listing</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to delete this listing? You can retrieve the listing within 7 days from the "Deleted Listings" section.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => setDeletePropertyId(null)}
+                className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold uppercase tracking-widest text-[10px] py-3 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest text-[10px] py-3 rounded-xl shadow-md transition"
+              >
+                Move to Trash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ── Retrieve Confirmation Modal ── */}
+      {retrievePropertyId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative p-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Check className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1A1A1A]">Retrieve Listing</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Are you sure you want to retrieve this property listing? It will become active again and tenants can see it.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => setRetrievePropertyId(null)}
+                className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold uppercase tracking-widest text-[10px] py-3 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRetrieve}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[10px] py-3 rounded-xl shadow-md transition"
+              >
+                Retrieve
+              </button>
             </div>
           </div>
         </div>
