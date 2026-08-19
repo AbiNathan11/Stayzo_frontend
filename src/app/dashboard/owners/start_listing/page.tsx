@@ -53,7 +53,7 @@ const PanoramaPreview = ({ imageUrl }: { imageUrl: string }) => {
     img.onload = () => {
       canvas.width = canvas.parentElement?.clientWidth || 600;
       canvas.height = 300;
-      
+
       const render = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const w = img.width;
@@ -193,7 +193,7 @@ export default function StartListingPage() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = ''; 
+      e.returnValue = '';
     };
 
     const handlePopState = (e: PopStateEvent) => {
@@ -228,7 +228,7 @@ export default function StartListingPage() {
     attachedBathrooms: 0,
     separateBathrooms: 1,
     rentPerMonth: "",
-    advanceMoney: "",
+    advanceMoney: "20000",
     advanceDetails: "",
     expectedTenants: 1,
     foodFacilities: "",
@@ -257,7 +257,7 @@ export default function StartListingPage() {
   const [billOcrAddress, setBillOcrAddress] = useState("");
   const [billVerificationError, setBillVerificationError] = useState("");
   const [billErrorType, setBillErrorType] = useState<string | null>(null);
-  
+
   // Controls to toggle mock OCR outcomes
   const [simulateMismatchAddress, setSimulateMismatchAddress] = useState(false);
   const [simulateMismatchName, setSimulateMismatchName] = useState(false);
@@ -265,7 +265,7 @@ export default function StartListingPage() {
   // Photos Fraud Verification States
   const [isVerifyingPhotos, setIsVerifyingPhotos] = useState(false);
   const [photosVerified, setPhotosVerified] = useState(false);
-  
+
   // Controls for testing GPS fraud scenarios: "match", "fraud", "no-gps"
   const [gpsSimulationMode, setGpsSimulationMode] = useState<"match" | "fraud" | "no-gps">("match");
   const [gpsVerificationDetails, setGpsVerificationDetails] = useState<string>("");
@@ -284,7 +284,7 @@ export default function StartListingPage() {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         if (payload.firstName) expectedName = `${payload.firstName} ${payload.lastName || ''}`.trim();
-      } catch {}
+      } catch { }
     }
 
     const expectedAddress = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street ? formData.street + ', ' : ''}${formData.streetLine2 ? formData.streetLine2 + ', ' : ''}${formData.city}`;
@@ -296,7 +296,7 @@ export default function StartListingPage() {
         body: JSON.stringify({ image: imgData, expectedName, expectedAddress })
       });
       const data = await res.json();
-      
+
       if (!res.ok || !data.isValid) {
         if (data.errorType === "NAME_MISMATCH") {
           // It's just a name mismatch (address is fine)
@@ -344,10 +344,10 @@ export default function StartListingPage() {
   const processImageWithGPS = async (file: File, onSuccess: (dataUrl: string) => void) => {
     setIsVerifyingPhotos(true);
     setGpsVerificationDetails("Extracting GPS data from image...");
-    
+
     try {
       const gps = await exifr.gps(file);
-      
+
       if (!gps || !gps.latitude || !gps.longitude) {
         toast.error("Image does not contain GPS location data. Please upload an original photo taken on-site.", { id: "gps-verify" });
         setGpsVerificationDetails("Image has no GPS EXIF data. Verification blocked.");
@@ -368,11 +368,11 @@ export default function StartListingPage() {
       const R = 6371; // Earth's radius in km
       const dLat = (gps.latitude - propLat) * Math.PI / 180;
       const dLon = (gps.longitude - propLng) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(propLat * Math.PI / 180) * Math.cos(gps.latitude * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(propLat * Math.PI / 180) * Math.cos(gps.latitude * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distanceKm = R * c;
 
       if (distanceKm > 1.0) {
@@ -460,7 +460,7 @@ export default function StartListingPage() {
         toast.error("Please provide at least a Street Name, City, and Postal Code to continue.");
         return;
       }
-      
+
       const fullAddress = `${formData.street}, ${formData.city}, ${formData.district || ''}, ${formData.postalCode}`;
       try {
         toast.loading("Resolving property location...", { id: "geocode" });
@@ -523,9 +523,15 @@ export default function StartListingPage() {
     }
 
     // Validation for Step 6: Rent
-    if (currentStep === 6 && !formData.rentPerMonth) {
-      toast.error("Please specify a monthly rent amount.");
-      return;
+    if (currentStep === 6) {
+      if (!formData.rentPerMonth) {
+        toast.error("Please specify a monthly rent amount.");
+        return;
+      }
+      if (!formData.advanceMoney || parseFloat(formData.advanceMoney) < 20000) {
+        toast.error("Advance money amount must be at least 20,000 LKR.");
+        return;
+      }
     }
 
     // Validation for Step 7: Media Upload & GPS EXIF location validation
@@ -563,7 +569,7 @@ export default function StartListingPage() {
         const description = formData.description;
         const address = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street}${formData.streetLine2 ? ', ' : ''}${formData.streetLine2}`;
         const price = formData.rentPerMonth ? parseFloat(formData.rentPerMonth) : 0;
-        
+
         // Filter out empty strings from images array
         const filteredImages = formData.images.filter((img) => img !== "");
 
@@ -633,7 +639,7 @@ export default function StartListingPage() {
           });
 
           if (!response.ok) throw new Error('Failed to initialize payment');
-          
+
           const data = await response.json();
           toast.dismiss("payhere");
 
@@ -725,7 +731,7 @@ export default function StartListingPage() {
           </div>
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </button>
-        <button 
+        <button
           onClick={handleSaveAndExit}
           className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer"
         >
@@ -736,14 +742,14 @@ export default function StartListingPage() {
       {/* ── Main Content Area ── */}
       <main className="flex-1 overflow-y-auto pt-16 pb-32">
         <div className="max-w-3xl mx-auto px-6 pt-8 pb-12 md:pt-12 md:pb-20">
-          
+
           {/* Sub-header Step Indicator */}
           <div className="mb-6">
             <span className="text-xs font-bold text-gray-800 tracking-widest uppercase">
               Step {currentStep} of {TOTAL_STEPS}
             </span>
           </div>
-          
+
           {/* STEP 1: ADDRESS */}
           {currentStep === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -849,7 +855,7 @@ export default function StartListingPage() {
                     <span className="text-sm font-bold text-green-600 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" /> Document Attached Successfully
                     </span>
-                    
+
                     {billVerificationError && !isVerifyingBill && (
                       billErrorType === "NAME_MISMATCH" ? (
                         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-center max-w-sm">
@@ -873,7 +879,7 @@ export default function StartListingPage() {
                         </div>
                       )
                     )}
-                    
+
                     <p className="text-xs text-gray-400 mt-2">Click to replace or select another document</p>
                     <button
                       type="button"
@@ -924,11 +930,10 @@ export default function StartListingPage() {
                       type="button"
                       disabled={simulateMismatchName && role === "Owner"}
                       onClick={() => setFormData({ ...formData, ownershipType: role })}
-                      className={`flex-1 py-4 px-6 rounded-xl border-2 font-medium text-sm transition-all ${
-                        formData.ownershipType === role
-                          ? "border-black bg-gray-50 text-black"
-                          : "border-gray-200 text-gray-600 hover:border-gray-900"
-                      } disabled:opacity-40 disabled:cursor-not-allowed`}
+                      className={`flex-1 py-4 px-6 rounded-xl border-2 font-medium text-sm transition-all ${formData.ownershipType === role
+                        ? "border-black bg-gray-50 text-black"
+                        : "border-gray-200 text-gray-600 hover:border-gray-900"
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       {role}
                     </button>
@@ -982,7 +987,7 @@ export default function StartListingPage() {
               <p className="text-gray-500 mb-6">
                 Drag the marker to pinpoint the exact location of your property on the map.
               </p>
-              
+
               <div className="w-full bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-4">
                 <div className="w-full h-[400px] bg-gray-100 rounded-2xl overflow-hidden relative border border-gray-200">
                   <PropertyMap
@@ -1022,7 +1027,7 @@ export default function StartListingPage() {
                 Which of these best describes your place?
               </h1>
               <p className="text-gray-500 mb-8">Share some basics about your property.</p>
-              
+
               {/* Categories */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-12">
                 {PROPERTY_CATEGORIES.map((cat) => (
@@ -1030,11 +1035,10 @@ export default function StartListingPage() {
                     key={cat.label}
                     type="button"
                     onClick={() => setFormData({ ...formData, propertyCategory: cat.label as PropertyCategory })}
-                    className={`flex flex-col items-start p-4 border rounded-xl transition-all ${
-                      formData.propertyCategory === cat.label
-                        ? "border-black bg-gray-50 ring-1 ring-black"
-                        : "border-gray-200 hover:border-gray-900"
-                    }`}
+                    className={`flex flex-col items-start p-4 border rounded-xl transition-all ${formData.propertyCategory === cat.label
+                      ? "border-black bg-gray-50 ring-1 ring-black"
+                      : "border-gray-200 hover:border-gray-900"
+                      }`}
                   >
                     <cat.icon className="w-7 h-7 mb-3 text-gray-700" strokeWidth={1.5} />
                     <span className="text-sm font-medium text-gray-900 text-left">{cat.label}</span>
@@ -1087,7 +1091,7 @@ export default function StartListingPage() {
               <p className="text-gray-500 mb-8">
                 Write a high-quality description listing the unique qualities, views, rules, and advantages of your property.
               </p>
-              
+
               <div className="space-y-4 max-w-xl">
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -1143,10 +1147,11 @@ export default function StartListingPage() {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rs.</span>
                     <input
                       type="number"
+                      min={20000}
                       value={formData.advanceMoney}
                       onChange={(e) => setFormData({ ...formData, advanceMoney: e.target.value })}
                       className="w-full pl-12 pr-4 py-4 text-xl font-medium border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all"
-                      placeholder="0.00"
+                      placeholder="20000"
                     />
                   </div>
                 </div>
@@ -1195,7 +1200,7 @@ export default function StartListingPage() {
               <h1 className="text-3xl font-semibold text-gray-900 mb-4">
                 Add photos and virtual tour
               </h1>
-              
+
               {/* Location EXIF Fraud Protection Warning Notice */}
               <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
                 <h4 className="text-xs font-bold text-amber-800 flex items-center gap-2 mb-1.5">
@@ -1361,7 +1366,7 @@ export default function StartListingPage() {
                     </button>
                   </div>
                   <p className="text-[11px] text-gray-400 mb-4 font-semibold">Optionally provide local food/catering details for your tenants.</p>
-                  
+
                   <div className="space-y-4">
                     {(formData.foodFacilitiesList || [{ name: "", specialty: "", area: "", phone: "" }]).map((item, idx) => (
                       <div key={idx} className="p-4 bg-gray-50/50 border border-gray-100 rounded-2xl space-y-3 relative group">
@@ -1467,7 +1472,7 @@ export default function StartListingPage() {
                     </button>
                   </div>
                   <p className="text-[11px] text-gray-400 mb-4 font-semibold">Highlight flexible vacancies or nearby work locations.</p>
-                  
+
                   <div className="space-y-4">
                     {(formData.partTimeJobsList || [{ position: "", company: "", location: "", phone: "" }]).map((item, idx) => (
                       <div key={idx} className="p-4 bg-gray-50/50 border border-gray-100 rounded-2xl space-y-3 relative group">
@@ -1581,7 +1586,7 @@ export default function StartListingPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         {/* Progress Bar */}
         <div className="h-1 w-full bg-gray-200 absolute top-0 left-0">
-          <div 
+          <div
             className="h-full bg-black transition-all duration-300 ease-out"
             style={{ width: `${progressPercentage}%` }}
           />
@@ -1592,16 +1597,16 @@ export default function StartListingPage() {
             type="button"
             onClick={handleBack}
             disabled={isSubmitting}
-            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
           >
             Back
           </button>
-          
+
           <button
             type="button"
             onClick={handleNext}
             disabled={isSubmitting}
-            className="bg-[#222222] hover:bg-black text-white px-8 py-3.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="bg-[#222222] hover:bg-black text-white px-8 py-3.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -1628,19 +1633,19 @@ export default function StartListingPage() {
                 You have unsaved progress. What would you like to do before exiting?
               </p>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={handleSaveAndExit}
                   className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm cursor-pointer"
                 >
                   Save & Exit
                 </button>
-                <button 
+                <button
                   onClick={handleExitWithoutSave}
                   className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer"
                 >
                   Exit (Without Save)
                 </button>
-                <button 
+                <button
                   onClick={() => setShowExitModal(false)}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer"
                 >

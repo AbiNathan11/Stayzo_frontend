@@ -55,6 +55,7 @@ interface Listing {
   panoramaImage?: string;
   status: string;
   isDeleted?: boolean;
+  deletedAt?: string;
   bookingStatus?: string;
   createdAt: string;
   noisePrediction?: {
@@ -229,7 +230,7 @@ export default function OwnerListings() {
       });
 
       if (res.ok) {
-        setListings(prev => prev.map(l => l.id === deletePropertyId ? { ...l, isDeleted: true } : l));
+        setListings(prev => prev.map(l => l.id === deletePropertyId ? { ...l, isDeleted: true, deletedAt: new Date().toISOString() } : l));
         toast.success('Property moved to Deleted Listings');
       } else {
         toast.error('Failed to delete property');
@@ -256,7 +257,7 @@ export default function OwnerListings() {
       });
 
       if (res.ok) {
-        setListings(prev => prev.map(l => l.id === retrievePropertyId ? { ...l, isDeleted: false } : l));
+        setListings(prev => prev.map(l => l.id === retrievePropertyId ? { ...l, isDeleted: false, deletedAt: undefined } : l));
         toast.success('Property retrieved successfully');
       } else {
         toast.error('Failed to retrieve property');
@@ -824,6 +825,14 @@ export default function OwnerListings() {
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">/ mo</span>
                         </p>
                       </div>
+
+                      {listing.deletedAt && (
+                        <div className="mt-3 p-2 bg-red-50 border border-red-100 rounded-lg">
+                          <p className="text-[9px] font-black text-red-600 uppercase tracking-widest text-center">
+                            Permanently deletes in {Math.max(0, 7 - Math.floor((Date.now() - new Date(listing.deletedAt).getTime()) / (1000 * 60 * 60 * 24)))} Days
+                          </p>
+                        </div>
+                      )}
 
                       {/* Action buttons */}
                       <div className="flex gap-2 mt-4 border-t border-gray-100 pt-4">
