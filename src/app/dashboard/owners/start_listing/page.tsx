@@ -148,69 +148,8 @@ export default function StartListingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
-
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    const draft = localStorage.getItem('stayzo_listing_draft');
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        if (parsed.formData) setFormData(parsed.formData);
-        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
-      } catch (err) {
-        console.error('Error loading draft:', err);
-      }
-    }
-  }, []);
-
-  const handleSaveAndExit = () => {
-    try {
-      localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData, currentStep }));
-    } catch (err) {
-      console.warn('Storage quota exceeded. Saving draft without large image payloads.', err);
-      // Strip heavy base64 images so text inputs and step state persist safely
-      const cleanFormData = {
-        ...formData,
-        images: formData.images.map(img => (img && img.length > 50000 ? '' : img)),
-        panoramaImage: formData.panoramaImage && formData.panoramaImage.length > 50000 ? '' : formData.panoramaImage,
-        waterBillImage: formData.waterBillImage && formData.waterBillImage.length > 50000 ? '' : formData.waterBillImage,
-      };
-      try {
-        localStorage.setItem('stayzo_listing_draft', JSON.stringify({ formData: cleanFormData, currentStep }));
-      } catch (innerErr) {
-        console.error('Failed to save draft:', innerErr);
-      }
-    }
-    router.push("/dashboard/owners/listings");
-  };
-
-  const handleExitWithoutSave = () => {
-    localStorage.removeItem('stayzo_listing_draft');
-    router.push("/dashboard/owners/listings");
-  };
-
-  // Intercept navigation
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-
-    const handlePopState = (e: PopStateEvent) => {
-      e.preventDefault();
-      setShowExitModal(true);
-      window.history.pushState(null, '', window.location.href);
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+  const [draftPropertyId, setDraftPropertyId] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   // --- Form State ---
   const [formData, setFormData] = useState({
@@ -250,6 +189,211 @@ export default function StartListingPage() {
     description: "",
   });
 
+  // Ref to always have latest formData, step, & draft ID for synchronous exit events (beforeunload / pagehide)
+  const latestDataRef = useRef({ formData, currentStep, draftPropertyId });
+  useEffect(() => {
+    latestDataRef.current = { formData, currentStep, draftPropertyId };
+  }, [formData, currentStep, draftPropertyId]);
+
+  // Load draft ONLY if explicitly instructed via query param (e.g. from "In Progress & Drafts" section)
+  useEffect(() => {
+    try {
+      localStorage.removeItem('stayzo_listing_draft');
+    } catch {}
+
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const shouldResume = searchParams.get('resume') === 'true' || Boolean(searchParams.get('draftId'));
+    const requestedDraftId = searchParams.get('draftId');
+
+    // If user clicked "Get Started" or "+ Create New Listing", start a fresh listing without loading existing draft
+    if (!shouldResume) {
+      return;
+    }
+
+    const loadDraftFromDatabase = async () => {
+      const token = Cookies.get('stayzo_token');
+      if (!token) return;
+
+      try {
+        const url = requestedDraftId
+          ? `http://localhost:3001/api/properties/draft?draftId=${requestedDraftId}`
+          : `http://localhost:3001/api/properties/draft`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.draft) {
+            setDraftPropertyId(data.draft.id);
+            latestDataRef.current.draftPropertyId = data.draft.id;
+            if (data.formData) {
+              setFormData((prev) => ({
+                ...prev,
+                ...data.formData,
+              }));
+              if (data.formData.waterBillImage) {
+                setBillVerified(true);
+              }
+            }
+            if (data.currentStep && data.currentStep >= 1 && data.currentStep <= TOTAL_STEPS) {
+              setCurrentStep(data.currentStep);
+            }
+            toast.success("Resumed your listing draft from the database.", { id: "draft-load" });
+          }
+        }
+      } catch (err) {
+        console.error('Error loading draft from database:', err);
+      }
+    };
+
+    loadDraftFromDatabase();
+  }, []);
+
+  // Save draft directly into database Property table with status = 'draft'
+  const saveDraftToBackend = async (redirectPath?: string, stepOverride?: number) => {
+    setIsSavingDraft(true);
+    const token = Cookies.get('stayzo_token');
+    let ownerId = '';
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.id) ownerId = payload.id;
+      } catch {}
+    }
+
+    const targetStep = stepOverride !== undefined ? stepOverride : currentStep;
+
+    try {
+      const payload = {
+        ownerId,
+        draftPropertyId: draftPropertyId || latestDataRef.current.draftPropertyId,
+        formData,
+        currentStep: targetStep,
+        ownershipType: formData.ownershipType,
+        realOwnerName: formData.realOwnerName,
+        realOwnerEmail: formData.realOwnerEmail,
+      };
+
+      const res = await fetch("http://localhost:3001/api/properties/draft", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.property?.id) {
+          setDraftPropertyId(data.property.id);
+          latestDataRef.current.draftPropertyId = data.property.id;
+        }
+        if (redirectPath) {
+          toast.success("Listing progress saved as draft in database!");
+          router.push(redirectPath);
+        }
+        return data.property;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error("Draft save failed:", err);
+        if (redirectPath) {
+          toast.error("Could not save draft: " + (err.error || "Unknown error"));
+        }
+      }
+    } catch (err) {
+      console.error("Error saving draft to database:", err);
+      if (redirectPath) {
+        toast.error("Network error saving draft.");
+      }
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handleSaveAndExit = async (redirectPath: string = "/dashboard/owners/listings") => {
+    await saveDraftToBackend(redirectPath);
+  };
+
+  const handleExitWithoutSave = async () => {
+    const targetId = draftPropertyId || latestDataRef.current.draftPropertyId;
+    if (targetId) {
+      const token = Cookies.get('stayzo_token');
+      await fetch(`http://localhost:3001/api/properties/draft/${targetId}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        }
+      }).catch(console.error);
+    }
+    router.push("/dashboard/owners/listings");
+  };
+
+  // Intercept navigation and persist to database on page exit / tab close / window close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const token = Cookies.get('stayzo_token');
+      if (!token) return;
+
+      const current = latestDataRef.current;
+      let ownerId = '';
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.id) ownerId = payload.id;
+      } catch {}
+
+      if (!ownerId) return;
+
+      const payload = JSON.stringify({
+        ownerId,
+        draftPropertyId: current.draftPropertyId,
+        formData: current.formData,
+        currentStep: current.currentStep,
+        ownershipType: current.formData.ownershipType,
+        realOwnerName: current.formData.realOwnerName,
+        realOwnerEmail: current.formData.realOwnerEmail,
+      });
+
+      try {
+        fetch("http://localhost:3001/api/properties/draft", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: payload,
+          keepalive: true
+        });
+      } catch (err) {
+        console.error("beforeunload draft save error:", err);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      setShowExitModal(true);
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // --- Stayzo AI document & GPS validation states ---
   const [isVerifyingBill, setIsVerifyingBill] = useState(false);
   const [billVerified, setBillVerified] = useState(false);
@@ -287,7 +431,11 @@ export default function StartListingPage() {
       } catch { }
     }
 
-    const expectedAddress = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street ? formData.street + ', ' : ''}${formData.streetLine2 ? formData.streetLine2 + ', ' : ''}${formData.city}`;
+    const cleanAddressPart = (val: string) => (val || '').trim().replace(/^,+|,+$/g, '').trim();
+    const expectedAddress = [formData.houseNo, formData.street, formData.streetLine2, formData.city]
+      .map(cleanAddressPart)
+      .filter(Boolean)
+      .join(', ');
 
     try {
       const res = await fetch("http://localhost:3001/api/properties/verify-bill", {
@@ -303,7 +451,11 @@ export default function StartListingPage() {
           setBillVerificationError(data.reason || "Name mismatch detected.");
           setBillErrorType("NAME_MISMATCH");
           setBillVerified(true); // Allow them to proceed!
-          setFormData(prev => ({ ...prev, ownershipType: "Broker" }));
+          setFormData(prev => ({
+            ...prev,
+            ownershipType: "Broker",
+            realOwnerName: data.extractedName || prev.realOwnerName
+          }));
           toast("Name mismatch detected! Property relationship set to 'Broker'.", { id: "bill-verify", icon: "⚠️" });
           if (data.extractedName) setBillOcrName(data.extractedName);
           if (data.extractedAddress) setBillOcrAddress(data.extractedAddress);
@@ -319,6 +471,7 @@ export default function StartListingPage() {
       } else {
         setBillVerified(true);
         setBillErrorType(null);
+        setFormData(prev => ({ ...prev, ownershipType: "Owner" }));
         toast.success("Document verified successfully! Ownership details matched.", { id: "bill-verify" });
         setBillOcrName(data.extractedName || expectedName);
         setBillOcrAddress(data.extractedAddress || expectedAddress);
@@ -567,7 +720,8 @@ export default function StartListingPage() {
 
         const title = `${formData.propertyCategory || "Property"} at ${formData.street}`;
         const description = formData.description;
-        const address = `${formData.houseNo ? formData.houseNo + ', ' : ''}${formData.street}${formData.streetLine2 ? ', ' : ''}${formData.streetLine2}`;
+        const cleanAddressPart = (val: string) => (val || '').trim().replace(/^,+|,+$/g, '').trim();
+        const address = [formData.houseNo, formData.street, formData.streetLine2].map(cleanAddressPart).filter(Boolean).join(', ');
         const price = formData.rentPerMonth ? parseFloat(formData.rentPerMonth) : 0;
 
         // Filter out empty strings from images array
@@ -600,7 +754,8 @@ export default function StartListingPage() {
           partTimeJobs: (formData.partTimeJobsList || []).filter((item: any) => item.position.trim() !== "" || item.phone.trim() !== ""),
           ownershipType: formData.ownershipType,
           realOwnerName: formData.realOwnerName,
-          realOwnerEmail: formData.realOwnerEmail
+          realOwnerEmail: formData.realOwnerEmail,
+          draftPropertyId: draftPropertyId || latestDataRef.current.draftPropertyId || undefined
         };
 
         const submitToBackend = async (transactionData?: any) => {
@@ -617,8 +772,16 @@ export default function StartListingPage() {
           });
 
           if (res.ok) {
-            localStorage.removeItem('stayzo_listing_draft');
-            toast.success("Listing submitted successfully! Images have been saved to AWS S3.");
+            setDraftPropertyId(null);
+            latestDataRef.current.draftPropertyId = null;
+            try {
+              localStorage.removeItem('stayzo_listing_draft');
+            } catch {}
+            if (formData.ownershipType === 'Broker') {
+              toast.success("Payment verified! Listing submitted with 'pending' status awaiting landlord approval.", { duration: 5000 });
+            } else {
+              toast.success("Payment verified! Property listing is now 'Available'.", { duration: 5000 });
+            }
             router.push("/dashboard/owners/listings");
           } else {
             const errData = await res.json();
@@ -710,7 +873,7 @@ export default function StartListingPage() {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
     } else {
-      router.push("/dashboard/owners");
+      handleSaveAndExit("/dashboard/owners");
     }
   };
 
@@ -722,7 +885,11 @@ export default function StartListingPage() {
       <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', fontWeight: 700, fontSize: '13px', borderRadius: '12px' } }} />
       {/* ── Global Header ── */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6 lg:px-10">
-        <button onClick={() => setShowExitModal(true)} className="flex items-center space-x-2 group">
+        <button
+          onClick={() => handleSaveAndExit("/dashboard/owners")}
+          className="flex items-center space-x-2 group cursor-pointer"
+          title="Save draft to database and return to dashboard"
+        >
           <div className="flex items-end space-x-1 h-5">
             <div className="w-[3px] h-3 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
             <div className="w-[3px] h-5 bg-[#1A1A1A] rounded-full group-hover:bg-black transition-colors"></div>
@@ -732,10 +899,11 @@ export default function StartListingPage() {
           <span className="text-xl font-bold tracking-tight text-[#1A1A1A]">Stayzo</span>
         </button>
         <button
-          onClick={handleSaveAndExit}
-          className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer"
+          onClick={() => handleSaveAndExit("/dashboard/owners/listings")}
+          disabled={isSavingDraft}
+          className="text-xs font-bold text-gray-900 bg-white border border-gray-200 hover:shadow-sm px-4 py-2 rounded-full transition cursor-pointer disabled:opacity-50"
         >
-          Save and Exit
+          {isSavingDraft ? "Saving..." : "Save and Exit"}
         </button>
       </header>
 
@@ -836,7 +1004,7 @@ export default function StartListingPage() {
                 Verify your property ownership
               </h1>
               <p className="text-gray-500 mb-6">
-                Please upload a recent water bill or electrical bill to verify that the property details match the owner&apos;s NIC profile.
+                Please upload a recent water bill or electrical bill (CEB, Electricity Distribution Lanka, or Water Board) to verify that the property details match the owner&apos;s NIC profile.
               </p>
 
               {/* Document Upload Zone */}
@@ -873,7 +1041,7 @@ export default function StartListingPage() {
                             ⚠️ Invalid Document Detected
                           </span>
                           <span className="text-xs font-semibold text-red-500">
-                            You must upload a valid Ceylon Electricity Board (CEB) or Water Board bill with a matching address.
+                            You must upload a valid Ceylon Electricity Board (CEB), Electricity Distribution Lanka (Private) Limited, or Water Board bill with a matching address.
                           </span>
                           <span className="text-[10px] text-red-400 block mt-1">({billVerificationError})</span>
                         </div>
@@ -1634,16 +1802,17 @@ export default function StartListingPage() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={handleSaveAndExit}
-                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm cursor-pointer"
+                  onClick={() => handleSaveAndExit("/dashboard/owners/listings")}
+                  disabled={isSavingDraft}
+                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  Save & Exit
+                  {isSavingDraft ? "Saving to Database..." : "Save & Exit"}
                 </button>
                 <button
                   onClick={handleExitWithoutSave}
                   className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-black uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer"
                 >
-                  Exit (Without Save)
+                  Exit (Discard Draft)
                 </button>
                 <button
                   onClick={() => setShowExitModal(false)}

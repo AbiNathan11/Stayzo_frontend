@@ -79,6 +79,18 @@ export default function LandingPage() {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const [contactForm, setContactForm] = useState({ fullName: '', email: '', subject: '', message: '' });
+  const [realTestimonials, setRealTestimonials] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/reviews/testimonials', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRealTestimonials(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const handlePinHover = (pinId: number, event: React.MouseEvent) => {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
@@ -820,155 +832,202 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Infinite Auto-Scrolling Testimonials Marquee */}
+          {/* Infinite Auto-Scrolling Real Testimonials Marquee ("Make it move") */}
           <div className="relative w-full overflow-hidden py-4">
             <style>{`
             @keyframes marquee {
               0% { transform: translateX(0); }
-              100% { transform: translateX(calc(-33.333% - 16px)); }
+              100% { transform: translateX(calc(-33.3333% - 8px)); }
             }
             .animate-marquee-hover:hover {
               animation-play-state: paused !important;
             }
           `}</style>
 
-            <div
-              className="flex space-x-6 w-max animate-marquee-hover"
-              style={{
-                animation: 'marquee 40s linear infinite',
-              }}
-            >
-              {[
-                // First Set of Reviews
+            {(() => {
+              const fallbackReviews = [
                 {
                   quote: "Impressed by the professionalism and attention to detail. Stayzo made every step of my renting journey completely stress-free.",
                   name: "Sarah M.",
-                  handle: "@sarahm_lk",
-                  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  subtitle: "Colombo",
+                  propertyTitle: "Luxury Downtown Apartment",
+                  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                  rating: 5,
+                  initial: "S"
                 },
                 {
                   quote: "A seamless experience from start to finish. Highly recommend! Found my perfect apartment in Colombo within three days.",
                   name: "James K.",
-                  handle: "@jameskdy",
-                  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  subtitle: "Kandy",
+                  propertyTitle: "Modern Hillside Villa",
+                  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                  rating: 5,
+                  initial: "J"
                 },
                 {
                   quote: "Reliable and trustworthy. Made my life so much easier! The verified listings gave me peace of mind I never thought I'd have.",
                   name: "Priya R.",
-                  handle: "@priyarents",
-                  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  subtitle: "Galle",
+                  propertyTitle: "Beachfront Studio",
+                  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                  rating: 5,
+                  initial: "P"
                 },
                 {
                   quote: "From viewing to signing, everything was smooth and transparent. Best rental platform I have ever used in Sri Lanka.",
                   name: "Anil P.",
-                  handle: "@anilp_colomob",
-                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  subtitle: "Colombo",
+                  propertyTitle: "Premium City Loft",
+                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                  rating: 5,
+                  initial: "A"
                 },
                 {
                   quote: "The digital lease agreement saved me so much time. I signed everything online and moved in within a week. Incredible!",
                   name: "Nisha T.",
-                  handle: "@nisha_t",
-                  avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                // Second Set of Reviews for Infinite Loop
-                {
-                  quote: "Impressed by the professionalism and attention to detail. Stayzo made every step of my renting journey completely stress-free.",
-                  name: "Sarah M.",
-                  handle: "@sarahm_lk",
-                  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "A seamless experience from start to finish. Highly recommend! Found my perfect apartment in Colombo within three days.",
-                  name: "James K.",
-                  handle: "@jameskdy",
-                  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "Reliable and trustworthy. Made my life so much easier! The verified listings gave me peace of mind I never thought I'd have.",
-                  name: "Priya R.",
-                  handle: "@priyarents",
-                  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "From viewing to signing, everything was smooth and transparent. Best rental platform I have ever used in Sri Lanka.",
-                  name: "Anil P.",
-                  handle: "@anilp_colomob",
-                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "The digital lease agreement saved me so much time. I signed everything online and moved in within a week. Incredible!",
-                  name: "Nisha T.",
-                  handle: "@nisha_t",
-                  avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                // Third Set of Reviews for Seamless Wrap
-                {
-                  quote: "Impressed by the professionalism and attention to detail. Stayzo made every step of my renting journey completely stress-free.",
-                  name: "Sarah M.",
-                  handle: "@sarahm_lk",
-                  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "A seamless experience from start to finish. Highly recommend! Found my perfect apartment in Colombo within three days.",
-                  name: "James K.",
-                  handle: "@jameskdy",
-                  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "Reliable and trustworthy. Made my life so much easier! The verified listings gave me peace of mind I never thought I'd have.",
-                  name: "Priya R.",
-                  handle: "@priyarents",
-                  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "From viewing to signing, everything was smooth and transparent. Best rental platform I have ever used in Sri Lanka.",
-                  name: "Anil P.",
-                  handle: "@anilp_colomob",
-                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                },
-                {
-                  quote: "The digital lease agreement saved me so much time. I signed everything online and moved in within a week. Incredible!",
-                  name: "Nisha T.",
-                  handle: "@nisha_t",
-                  avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  subtitle: "Negombo",
+                  propertyTitle: "Spacious Garden House",
+                  avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                  rating: 5,
+                  initial: "N"
                 }
-              ].map((t, i) => {
-                const isBlue = i % 2 === 0;
-                return (
-                  <div
-                    key={i}
-                    className={`rounded-3xl p-8 flex flex-col justify-between shrink-0 w-[320px] md:w-[360px] transition-all duration-300 hover:shadow-2xl hover:scale-105 group premium-fade-in ${isBlue
-                        ? 'bg-[#EEF2FF] shadow-sm text-[#1A1A1A] hover:bg-indigo-100/70'
-                        : 'bg-white shadow-md shadow-gray-100/30 text-[#1A1A1A] hover:bg-gradient-to-br hover:from-white hover:to-indigo-50/20'
-                      }`}
-                  >
-                    {/* Large quotation mark */}
-                    <div>
-                      <span className={`text-5xl font-extrabold leading-none select-none transition-all duration-300 group-hover:scale-110 ${isBlue ? 'text-[#4F46E5]/25 group-hover:text-[#4F46E5]/40' : 'text-gray-200 group-hover:text-gray-300'
-                        }`}>"</span>
-                      <p className="font-semibold text-[15px] leading-relaxed mt-3 mb-8 whitespace-normal group-hover:text-[#1A1A1A] transition-colors">
-                        {t.quote}
-                      </p>
-                    </div>
-                    {/* Avatar + name + handle */}
-                    <div className={`flex items-center space-x-3 pt-4 border-t transition-colors ${isBlue ? 'border-[#4F46E5]/15 group-hover:border-[#4F46E5]/40' : 'border-gray-100 group-hover:border-gray-200'
-                      }`}>
-                      <img
-                        src={t.avatar}
-                        alt={t.name}
-                        className={`w-10 h-10 rounded-full object-cover shrink-0 border transition-all group-hover:scale-110 ${isBlue ? 'border-[#4F46E5]/15' : 'border-gray-150'
+              ];
+
+              let rawTestimonialsList: any[] = fallbackReviews;
+              if (realTestimonials && realTestimonials.length > 0) {
+                rawTestimonialsList = realTestimonials.map((item: any) => {
+                  const authorName = (item.user ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim() : '') 
+                    || item.authorName 
+                    || 'Verified Tenant';
+                  const propertyTitle = item.property?.title || item.targetName || 'Stayzo Property';
+                  return {
+                    id: item.id,
+                    propertyId: item.property?.id || item.propertyId || null,
+                    quote: item.comment,
+                    name: authorName,
+                    propertyTitle: propertyTitle,
+                    avatar: item.user?.profileImage || null,
+                    rating: item.rating || 5,
+                    initial: (authorName.charAt(0) || 'T').toUpperCase()
+                  };
+                });
+              }
+
+              let baseSet = [...rawTestimonialsList];
+              while (baseSet.length < 6) {
+                baseSet = [...baseSet, ...baseSet];
+              }
+              const marqueeCards = [...baseSet, ...baseSet, ...baseSet];
+
+              return (
+                <div
+                  className="flex space-x-6 w-max animate-marquee-hover"
+                  style={{
+                    animation: 'marquee 35s linear infinite',
+                  }}
+                >
+                  {marqueeCards.map((t: any, i: number) => {
+                    const isBlue = i % 2 === 0;
+                    return (
+                      <div
+                        key={i}
+                        className={`rounded-3xl p-7 flex flex-col justify-between shrink-0 w-[320px] md:w-[360px] transition-all duration-300 hover:shadow-2xl hover:scale-105 group cursor-pointer ${
+                          isBlue
+                            ? 'bg-[#EEF2FF] shadow-sm text-[#1A1A1A] hover:bg-indigo-100/70 border border-indigo-100/70'
+                            : 'bg-white shadow-md shadow-gray-100/40 text-[#1A1A1A] hover:bg-gradient-to-br hover:from-white hover:to-indigo-50/30 border border-gray-100'
+                        }`}
+                      >
+                        {/* Large quotation mark & Star rating */}
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-4xl font-black leading-none select-none transition-all duration-300 group-hover:scale-110 ${
+                                isBlue ? 'text-[#4F46E5]/30 group-hover:text-[#4F46E5]/50' : 'text-gray-200 group-hover:text-gray-300'
+                              }`}
+                            >
+                              “
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`w-3.5 h-3.5 ${
+                                    s <= (t.rating || 5)
+                                      ? 'fill-amber-400 stroke-amber-400'
+                                      : 'text-gray-200 stroke-gray-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          <p className="font-semibold text-[14px] leading-relaxed mt-4 mb-6 whitespace-normal line-clamp-4 group-hover:text-[#1A1A1A] transition-colors">
+                            "{t.quote}"
+                          </p>
+                        </div>
+
+                        {/* Avatar + name + property info */}
+                        <div
+                          className={`flex items-center space-x-3 pt-4 border-t transition-colors ${
+                            isBlue ? 'border-[#4F46E5]/15 group-hover:border-[#4F46E5]/40' : 'border-gray-100 group-hover:border-gray-200'
                           }`}
-                      />
-                      <div>
-                        <p className="font-extrabold text-[#1A1A1A] text-sm leading-tight">{t.name}</p>
-                        <p className={`text-xs font-semibold transition-colors ${isBlue ? 'text-[#4F46E5]/70 group-hover:text-[#4F46E5]' : 'text-gray-400 group-hover:text-gray-600'
-                          }`}>{t.handle}</p>
+                        >
+                          {t.avatar ? (
+                            <img
+                              src={t.avatar}
+                              alt={t.name}
+                              className={`w-10 h-10 rounded-full object-cover shrink-0 border transition-all group-hover:scale-110 ${
+                                isBlue ? 'border-[#4F46E5]/20' : 'border-gray-200'
+                              }`}
+                            />
+                          ) : (
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 select-none shadow-xs text-white ${
+                                isBlue
+                                  ? 'bg-gradient-to-br from-[#4F46E5] to-indigo-700'
+                                  : 'bg-gradient-to-br from-[#1A1A1A] to-gray-700'
+                              }`}
+                            >
+                              {t.initial}
+                            </div>
+                          )}
+
+                          <div className="overflow-hidden">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-extrabold text-[#1A1A1A] text-sm leading-tight truncate">{t.name}</p>
+                              <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded shrink-0">
+                                Verified
+                              </span>
+                            </div>
+                            {t.propertyId ? (
+                              <Link
+                                href={`/properties/${t.propertyId}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`text-xs font-semibold truncate block mt-0.5 hover:underline ${
+                                  isBlue ? 'text-[#4F46E5]/85 group-hover:text-[#4F46E5]' : 'text-gray-400 group-hover:text-gray-600'
+                                }`}
+                                title={t.propertyTitle}
+                              >
+                                {t.propertyTitle}
+                              </Link>
+                            ) : (
+                              <p
+                                className={`text-xs font-semibold truncate mt-0.5 ${
+                                  isBlue ? 'text-[#4F46E5]/80 group-hover:text-[#4F46E5]' : 'text-gray-400 group-hover:text-gray-600'
+                                }`}
+                                title={t.propertyTitle}
+                              >
+                                {t.propertyTitle}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </section>

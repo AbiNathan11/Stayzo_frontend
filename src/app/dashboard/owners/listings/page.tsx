@@ -54,6 +54,7 @@ interface Listing {
   images: string[];
   panoramaImage?: string;
   status: string;
+  draftStep?: number | null;
   isDeleted?: boolean;
   deletedAt?: string;
   bookingStatus?: string;
@@ -144,7 +145,7 @@ export default function OwnerListings() {
   const [declineConfirmId, setDeclineConfirmId] = useState<string | null>(null);
   const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
   const [retrievePropertyId, setRetrievePropertyId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<any | null>(null);
+  const [deleteDraftId, setDeleteDraftId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteDraftConfirm, setShowDeleteDraftConfirm] = useState(false);
   const [formData, setFormData] = useState({
@@ -272,26 +273,35 @@ export default function OwnerListings() {
 
 
 
-  // Load draft on mount
+  // Cleanup browser draft storage
   useEffect(() => {
-    const savedDraft = localStorage.getItem('stayzo_listing_draft');
-    if (savedDraft) {
-      try {
-        setDraft(JSON.parse(savedDraft));
-      } catch (e) {
-        console.error('Error loading draft:', e);
-      }
-    }
+    try {
+      localStorage.removeItem('stayzo_listing_draft');
+    } catch {}
   }, []);
 
-  const handleDeleteDraft = () => {
+  const handleDeleteDraft = (id: string) => {
+    setDeleteDraftId(id);
     setShowDeleteDraftConfirm(true);
   };
 
-  const confirmDeleteDraft = () => {
-    localStorage.removeItem('stayzo_listing_draft');
-    setDraft(null);
+  const confirmDeleteDraft = async () => {
+    if (deleteDraftId) {
+      const token = Cookies.get('stayzo_token');
+      await fetch(`http://localhost:3001/api/properties/draft/${deleteDraftId}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        }
+      }).catch(console.error);
+      setListings(prev => prev.filter(l => l.id !== deleteDraftId));
+    }
+    try {
+      localStorage.removeItem('stayzo_listing_draft');
+    } catch {}
+    setDeleteDraftId(null);
     setShowDeleteDraftConfirm(false);
+    toast.success("Draft discarded successfully.");
   };
 
   // Decode JWT once on mount to get the real owner ID
@@ -387,7 +397,8 @@ export default function OwnerListings() {
     }
   };
 
-  const activeListings = listings.filter(l => !l.isDeleted && l.status?.toLowerCase() !== 'deleted');
+  const activeListings = listings.filter(l => !l.isDeleted && l.status?.toLowerCase() !== 'deleted' && l.status?.toLowerCase() !== 'draft');
+  const draftListings = listings.filter(l => !l.isDeleted && l.status?.toLowerCase() === 'draft');
   const deletedListings = listings.filter(l => l.isDeleted || l.status?.toLowerCase() === 'deleted');
   const currentListings = activeTab === 'deleted_listings' ? deletedListings : activeListings;
   const totalPages = Math.ceil(currentListings.length / 6) || 1;
@@ -469,8 +480,8 @@ export default function OwnerListings() {
               : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
           >
-            In Progress & Drafts ({draft ? 1 : 0})
-            {draft && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+            In Progress & Drafts ({draftListings.length})
+            {draftListings.length > 0 && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
           </button>
           <button
             onClick={() => setActiveTab('booking_request')}
@@ -645,71 +656,80 @@ export default function OwnerListings() {
         {/* ── Processing / Drafts Tab ── */}
         {activeTab === 'processing' && (
           <div className="space-y-6">
-            {!draft ? (
+            {draftListings.length === 0 ? (
               <div className="py-20 text-center border border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
                 <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wide">No In-Progress Drafts Found</p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">When you exit the property creation wizard mid-way using "Save and Exit", your progress will appear here.</p>
               </div>
             ) : (
-              <div className="max-w-xl bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:border-gray-400 transition relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 opacity-50 rounded-full blur-xl transform translate-x-1/3 -translate-y-1/3"></div>
-
-                <div className="flex justify-between items-start relative z-10">
-                  <div>
-                    <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                      In-Progress Draft
-                    </span>
-                    <h3 className="text-[18px] font-black text-[#1A1A1A] uppercase tracking-wide mt-3">
-                      {draft.formData?.houseNo && draft.formData?.street
-                        ? `${draft.formData.houseNo} ${draft.formData.street}`
-                        : "Untitled Draft Property"
-                      }
-                    </h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                      {draft.formData?.city || "City Not Set"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDeleteDraft}
-                    className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition"
-                    title="Delete Draft"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Progress Indicators */}
-                <div className="mt-6 pt-5 border-t border-gray-100 relative z-10">
-                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    <span>Draft Completeness</span>
-                    <span className="text-amber-700 font-extrabold">Step {draft.currentStep} of 8</span>
-                  </div>
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {draftListings.map((draftItem) => {
+                  const step = draftItem.draftStep || 1;
+                  const displayTitle = draftItem.address || draftItem.title || "Untitled Draft Property";
+                  return (
                     <div
-                      className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                      style={{ width: `${((draft.currentStep - 1) / 7) * 100}%` }}
-                    />
-                  </div>
-                </div>
+                      key={draftItem.id}
+                      className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:border-gray-400 hover:shadow-md transition relative overflow-hidden group flex flex-col justify-between"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 opacity-50 rounded-full blur-xl transform translate-x-1/3 -translate-y-1/3"></div>
 
-                {/* Quick Resume info */}
-                <p className="text-[11px] text-gray-400 mt-4 leading-relaxed relative z-10">
-                  Category: <strong className="text-gray-700">{draft.formData?.propertyCategory || "None Specified"}</strong> •
-                  Price Draft: <strong className="text-gray-700">Rs. {draft.formData?.rentPerMonth ? parseInt(draft.formData.rentPerMonth).toLocaleString() : "0"}</strong>
-                </p>
+                      <div>
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="pr-4">
+                            <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                              In-Progress Draft
+                            </span>
+                            <h3 className="text-[18px] font-black text-[#1A1A1A] uppercase tracking-wide mt-3 line-clamp-1" title={displayTitle}>
+                              {displayTitle}
+                            </h3>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-1">
+                              <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                              {draftItem.city || "City Not Set"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteDraft(draftItem.id)}
+                            className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition cursor-pointer shrink-0"
+                            title="Delete Draft"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
 
-                {/* Continue Actions */}
-                <div className="mt-6 flex gap-3 relative z-10">
-                  <Link
-                    href="/dashboard/owners/start_listing"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continue Wizard</span>
-                  </Link>
-                </div>
+                        {/* Progress Indicators */}
+                        <div className="mt-6 pt-5 border-t border-gray-100 relative z-10">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            <span>Draft Completeness</span>
+                            <span className="text-amber-700 font-extrabold">Step {step} of 8</span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                              style={{ width: `${((step - 1) / 7) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Quick Resume info */}
+                        <p className="text-[11px] text-gray-400 mt-4 leading-relaxed relative z-10">
+                          Category: <strong className="text-gray-700">{draftItem.type || "None Specified"}</strong> • Price Draft: <strong className="text-gray-700">Rs. {draftItem.price ? Number(draftItem.price).toLocaleString() : "0"}</strong>
+                        </p>
+                      </div>
+
+                      {/* Continue Actions */}
+                      <div className="mt-6 flex gap-3 relative z-10 pt-2">
+                        <Link
+                          href={`/dashboard/owners/start_listing?resume=true&draftId=${draftItem.id}`}
+                          className="flex-1 flex items-center justify-center gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-xl shadow-sm transition cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Continue Wizard</span>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
