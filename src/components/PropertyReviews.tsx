@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { Star, MessageSquare, Loader2, Send, X } from 'lucide-react';
+import { Star, MessageSquare, Loader2, Send, X, ChevronDown, ChevronUp, ShieldCheck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Review {
@@ -8,11 +8,14 @@ interface Review {
   rating: number;
   comment: string;
   createdAt: string;
+  authorName?: string;
+  authorEmail?: string;
   authorId?: string | null;
   user: {
     id: string;
     firstName: string | null;
     lastName: string | null;
+    profileImage?: string | null;
   } | null;
 }
 
@@ -44,6 +47,8 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
   const [isTenant, setIsTenant] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showAllModal, setShowAllModal] = useState(false);
+  const [expandedInline, setExpandedInline] = useState(false);
 
   // Check role on mount
   useEffect(() => {
@@ -183,37 +188,90 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
 
       {/* Reviews List */}
       {loading ? (
-        <div className="flex items-center justify-center py-4 text-gray-400 text-xs font-semibold gap-1.5">
+        <div className="flex items-center justify-center py-6 text-gray-400 text-xs font-semibold gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-          <span>Loading reviews...</span>
+          <span>Loading verified reviews...</span>
         </div>
       ) : (
         count > 0 && (
-          <div className="space-y-3 max-h-48 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {reviews.map((item) => {
-              const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              });
-              const author = item.user 
-                ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim() || 'Anonymous Tenant'
-                : 'Anonymous Tenant';
-              return (
-                <div key={item.id} className="bg-white border border-gray-100 rounded-xl p-3 space-y-2 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-black text-gray-800">{author}</span>
-                      <span className="text-[9px] text-gray-400 font-semibold block mt-0.5">{dateStr}</span>
+          <div className="space-y-3">
+            <div className={`space-y-3 ${expandedInline ? 'max-h-[500px] overflow-y-auto pr-1' : ''}`}>
+              {(expandedInline ? reviews : reviews.slice(0, 3)).map((item) => {
+                const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
+                const author = (item.user ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim() : '') 
+                  || item.authorName 
+                  || 'Anonymous Tenant';
+                const initial = (author.charAt(0) || 'T').toUpperCase();
+
+                return (
+                  <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-3.5 space-y-2.5 shadow-2xs hover:border-gray-200 transition">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        {item.user?.profileImage ? (
+                          <img
+                            src={item.user.profileImage}
+                            alt={author}
+                            className="w-8 h-8 rounded-full object-cover border border-gray-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1A1A1A] to-indigo-700 text-white flex items-center justify-center font-black text-xs shrink-0 select-none shadow-2xs">
+                            {initial}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-gray-900">{author}</span>
+                            <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded">
+                              Verified
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-gray-400 font-semibold block mt-0.5">{dateStr}</span>
+                        </div>
+                      </div>
+                      {renderStars(item.rating, "w-3 h-3")}
                     </div>
-                    {renderStars(item.rating, "w-3 h-3")}
+                    <p className="text-xs font-medium text-gray-600 leading-relaxed pl-0.5">
+                      "{item.comment}"
+                    </p>
                   </div>
-                  <p className="text-[11px] font-semibold text-gray-600 italic leading-relaxed">
-                    "{item.comment}"
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* View All / Expand Controls if multiple reviews */}
+            {count > 3 && (
+              <div className="flex items-center justify-between pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setExpandedInline(!expandedInline)}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition"
+                >
+                  {expandedInline ? (
+                    <>
+                      <span>Show fewer</span>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Show all {count} reviews</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAllModal(true)}
+                  className="text-[11px] font-bold text-gray-500 hover:text-gray-800 underline decoration-gray-300 cursor-pointer transition"
+                >
+                  Full view
+                </button>
+              </div>
+            )}
           </div>
         )
       )}
@@ -330,6 +388,99 @@ export default function PropertyReviews({ propertyId, onAverageRatingChange, hid
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* All Reviews Full Modal */}
+      {showAllModal && (
+        <div className="fixed inset-0 bg-[#1A1A1A]/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200 rounded-[32px] w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-5 border-b border-gray-100 shrink-0">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-black text-[#1A1A1A]">Property Reviews</h3>
+                  <span className="bg-indigo-50 text-indigo-700 text-xs font-black px-2.5 py-0.5 rounded-full border border-indigo-100">
+                    {count} {count === 1 ? 'review' : 'reviews'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {renderStars(average, "w-4 h-4")}
+                  <span className="text-sm font-extrabold text-gray-900">{average.toFixed(1)} / 5</span>
+                  <span className="text-xs text-gray-400 font-bold">• 100% verified tenant feedback</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowAllModal(false)}
+                className="bg-gray-100 hover:bg-gray-200 p-2.5 rounded-full transition cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Scrollable list of all reviews */}
+            <div className="overflow-y-auto py-5 space-y-4 flex-1 pr-2">
+              {reviews.map((item) => {
+                const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
+                const author = (item.user ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim() : '') 
+                  || item.authorName 
+                  || 'Anonymous Tenant';
+                const initial = (author.charAt(0) || 'T').toUpperCase();
+
+                return (
+                  <div key={item.id} className="bg-[#F8FAFB] border border-gray-100 rounded-2xl p-4 space-y-2.5 hover:bg-white hover:border-gray-200 hover:shadow-sm transition duration-200">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {item.user?.profileImage ? (
+                          <img
+                            src={item.user.profileImage}
+                            alt={author}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1A1A1A] to-indigo-700 text-white flex items-center justify-center font-black text-sm shrink-0 select-none shadow-xs">
+                            {initial}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-gray-900">{author}</span>
+                            <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md">
+                              Verified Stay
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">{dateStr}</span>
+                        </div>
+                      </div>
+
+                      {renderStars(item.rating, "w-3.5 h-3.5")}
+                    </div>
+
+                    <p className="text-xs font-semibold text-gray-700 leading-relaxed pl-1 pt-1">
+                      "{item.comment}"
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-gray-100 flex justify-end shrink-0">
+              <button
+                onClick={() => setShowAllModal(false)}
+                className="bg-[#1A1A1A] hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
           </div>
         </div>
       )}
