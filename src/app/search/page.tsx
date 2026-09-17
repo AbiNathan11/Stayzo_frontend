@@ -36,8 +36,8 @@ function SearchContent() {
 
   // Filter States
   const [propertyType, setPropertyType] = useState<string>('');
-  const [minPrice, setMinPrice] = useState(5000);
-  const [maxPrice, setMaxPrice] = useState(200000);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(10000000);
   const [neighbourhood, setNeighbourhood] = useState({ school: false, hospital: false, transport: false, market: false, park: false, gym: false });
   const [noiseLevel, setNoiseLevel] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,23 +61,53 @@ function SearchContent() {
     const budgetStr = searchParams.get('budget');
     const q = searchParams.get('q');
 
+    let parsedMin = 0;
+    let parsedMax = 10000000;
+
+    if (budgetStr && budgetStr !== 'Any Budget') {
+      if (budgetStr === 'Under Rs.50,000') {
+        parsedMin = 0;
+        parsedMax = 50000;
+      } else if (budgetStr === 'Rs.50,000 - Rs.100,000') {
+        parsedMin = 50000;
+        parsedMax = 100000;
+      } else if (budgetStr === 'Rs.100,000 - Rs.200,000') {
+        parsedMin = 100000;
+        parsedMax = 200000;
+      } else if (budgetStr === 'Rs.200,000 - Rs.500,000') {
+        parsedMin = 200000;
+        parsedMax = 500000;
+      } else if (budgetStr === 'Over Rs.500,000') {
+        parsedMin = 500000;
+        parsedMax = 10000000;
+      }
+    }
+
+    setMinPrice(parsedMin);
+    setMaxPrice(parsedMax);
+
+    if (type && type !== 'All Types') {
+      const lowerT = type.toLowerCase();
+      if (lowerT.includes('house') || lowerT.includes('bungalow') || lowerT.includes('villa') || lowerT.includes('annex') || lowerT.includes('townhouse')) {
+        setPropertyType('house');
+      } else if (lowerT.includes('apartment') || lowerT.includes('flat') || lowerT.includes('studio') || lowerT.includes('bedsit')) {
+        setPropertyType('apartment');
+      } else if (lowerT.includes('shared')) {
+        setPropertyType('shared');
+      } else if (lowerT.includes('private')) {
+        setPropertyType('private');
+      }
+    }
+
     // Build fetch URL
     let apiUrl = 'http://localhost:3001/api/properties/search';
     const params = new URLSearchParams();
-    if (district) params.set('district', district);
-    if (type) params.set('type', type);
+    if (district && district !== 'All Locations') params.set('district', district);
+    if (type && type !== 'All Types') params.set('type', type);
     if (q) params.set('q', q);
-    
-    if (budgetStr && budgetStr !== 'Any Budget' && budgetStr !== 'Over Rs.50,0000') {
-      let limit = 0;
-      if (budgetStr === 'Under Rs.50,000') limit = 50000;
-      else if (budgetStr === 'Rs.50,000 - Rs.100,000') limit = 100000;
-      else if (budgetStr === 'Rs.100,000 - Rs.200,000') limit = 200000;
-      else if (budgetStr === 'Rs.200,000 - Rs.500,000') limit = 500000;
-      if (limit > 0) {
-        params.set('budget', limit.toString());
-      }
-    }
+    if (budgetStr && budgetStr !== 'Any Budget') params.set('budget', budgetStr);
+    if (parsedMin > 0) params.set('minPrice', parsedMin.toString());
+    if (parsedMax < 10000000) params.set('maxPrice', parsedMax.toString());
 
     const queryString = params.toString();
     if (queryString) {
@@ -188,8 +218,11 @@ function SearchContent() {
       if (!matchesText) return false;
     }
 
-    const priceVal = Number(String(item.price).replace(/[^0-9]/g, ''));
-    if (priceVal < minPrice || priceVal > maxPrice) return false;
+    const priceVal = Number(String(item.price).replace(/[^0-9.]/g, ''));
+    if (!isNaN(priceVal)) {
+      if (minPrice > 0 && priceVal < minPrice) return false;
+      if (maxPrice > 0 && priceVal > maxPrice) return false;
+    }
 
     if (propertyType) {
       const typeLower = (item.type || '').toLowerCase();
@@ -366,7 +399,7 @@ function SearchContent() {
                 />
               </div>
             </div>
-            <p className="text-[10px] text-gray-400">Rs {minPrice.toLocaleString()} – Rs {maxPrice.toLocaleString()} / month</p>
+            <p className="text-[10px] text-gray-400">Rs {minPrice.toLocaleString()} – {maxPrice >= 10000000 ? 'No Limit' : `Rs ${maxPrice.toLocaleString()}`} / month</p>
           </div>
 
           {/* Property Type */}
