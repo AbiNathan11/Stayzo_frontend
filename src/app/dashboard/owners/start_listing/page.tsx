@@ -191,6 +191,8 @@ export default function StartListingPage() {
 
   // Ref to always have latest formData, step, & draft ID for synchronous exit events (beforeunload / pagehide)
   const latestDataRef = useRef({ formData, currentStep, draftPropertyId });
+  const isIntentionalExitRef = useRef(false);
+  const hasSavedOnExitRef = useRef(false);
   useEffect(() => {
     latestDataRef.current = { formData, currentStep, draftPropertyId };
   }, [formData, currentStep, draftPropertyId]);
@@ -202,6 +204,16 @@ export default function StartListingPage() {
     } catch {}
 
     if (typeof window === 'undefined') return;
+
+    // Check if we arrived here because of a browser reload that was allowed to exit
+    try {
+      if (sessionStorage.getItem('stayzo_exit_after_reload') === 'true') {
+        sessionStorage.removeItem('stayzo_exit_after_reload');
+        router.replace('/dashboard/owners/listings');
+        return;
+      }
+    } catch {}
+
     const searchParams = new URLSearchParams(window.location.search);
     const shouldResume = searchParams.get('resume') === 'true' || Boolean(searchParams.get('draftId'));
     const requestedDraftId = searchParams.get('draftId');
@@ -318,10 +330,12 @@ export default function StartListingPage() {
   };
 
   const handleSaveAndExit = async (redirectPath: string = "/dashboard/owners/listings") => {
+    isIntentionalExitRef.current = true;
     await saveDraftToBackend(redirectPath);
   };
 
   const handleExitWithoutSave = async () => {
+    isIntentionalExitRef.current = true;
     const targetId = draftPropertyId || latestDataRef.current.draftPropertyId;
     if (targetId) {
       const token = Cookies.get('stayzo_token');
@@ -338,6 +352,39 @@ export default function StartListingPage() {
   // Intercept navigation and persist to database on page exit / tab close / window close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isIntentionalExitRef.current || isSubmitting) return;
+
+      const current = latestDataRef.current;
+      const isDirty =
+        current.currentStep > 1 ||
+        Boolean(current.draftPropertyId) ||
+        Boolean(
+          current.formData.houseNo?.trim() ||
+          current.formData.street?.trim() ||
+          current.formData.streetLine2?.trim() ||
+          current.formData.city?.trim() ||
+          current.formData.district?.trim() ||
+          current.formData.postalCode?.trim() ||
+          current.formData.propertyCategory ||
+          current.formData.rentPerMonth?.trim() ||
+          current.formData.description?.trim() ||
+          current.formData.images?.some(Boolean) ||
+          current.formData.waterBillImage ||
+          current.formData.panoramaImage
+        );
+
+      if (!isDirty) return;
+
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    const handlePageHide = () => {
+      if (isIntentionalExitRef.current || isSubmitting) return;
+      if (hasSavedOnExitRef.current) return;
+      hasSavedOnExitRef.current = true;
+
       const token = Cookies.get('stayzo_token');
       if (!token) return;
 
@@ -349,6 +396,10 @@ export default function StartListingPage() {
       } catch {}
 
       if (!ownerId) return;
+
+      try {
+        sessionStorage.setItem('stayzo_exit_after_reload', 'true');
+      } catch {}
 
       const payload = JSON.stringify({
         ownerId,
@@ -371,12 +422,12 @@ export default function StartListingPage() {
           keepalive: true
         });
       } catch (err) {
-        console.error("beforeunload draft save error:", err);
+        console.error("pagehide draft save error:", err);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
 
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
@@ -389,10 +440,10 @@ export default function StartListingPage() {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, []);
+  }, [isSubmitting]);
 
   // --- Stayzo AI document & GPS validation states ---
   const [isVerifyingBill, setIsVerifyingBill] = useState(false);
@@ -704,6 +755,7 @@ export default function StartListingPage() {
     } else {
       // Submit logic
       setIsSubmitting(true);
+      isIntentionalExitRef.current = true;
       try {
         let ownerId = "owner-123";
         let ownerEmail = "owner@example.com";
@@ -774,6 +826,7 @@ export default function StartListingPage() {
           if (res.ok) {
             setDraftPropertyId(null);
             latestDataRef.current.draftPropertyId = null;
+            isIntentionalExitRef.current = true;
             try {
               localStorage.removeItem('stayzo_listing_draft');
             } catch {}
@@ -782,12 +835,19 @@ export default function StartListingPage() {
             } else {
               toast.success("Payment verified! Property listing is now 'Available'.", { duration: 5000 });
             }
-            router.push("/dashboard/owners/listings");
+            try {
+              router.push("/dashboard/owners/listings");
+            } catch {}
+            setTimeout(() => {
+              window.location.href = "/dashboard/owners/listings";
+            }, 1000);
+            return;
           } else {
             const errData = await res.json();
             toast.error("Failed to submit listing: " + (errData.error || "Unknown error"));
+            setIsSubmitting(false);
+            isIntentionalExitRef.current = false;
           }
-          setIsSubmitting(false);
         };
 
         const advanceAmount = formData.advanceMoney ? parseFloat(formData.advanceMoney) : 0;
@@ -826,12 +886,14 @@ export default function StartListingPage() {
           payhere.onDismissed = function onDismissed() {
             toast.error('Payment cancelled. Listing was not submitted.');
             setIsSubmitting(false);
+            isIntentionalExitRef.current = false;
           };
 
           // @ts-ignore
           payhere.onError = function onError(error) {
             toast.error('An error occurred during payment: ' + error);
             setIsSubmitting(false);
+            isIntentionalExitRef.current = false;
           };
 
           const payment = {
@@ -865,6 +927,7 @@ export default function StartListingPage() {
         console.error("Error submitting listing:", err);
         toast.error(err.message || "An error occurred while submitting. Please check your network and try again.");
         setIsSubmitting(false);
+        isIntentionalExitRef.current = false;
       }
     }
   };
@@ -873,7 +936,8 @@ export default function StartListingPage() {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
     } else {
-      handleSaveAndExit("/dashboard/owners");
+      isIntentionalExitRef.current = true;
+      router.push("/dashboard/owners");
     }
   };
 
